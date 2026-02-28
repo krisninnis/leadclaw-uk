@@ -1,0 +1,38 @@
+﻿# dependencies
+node_modules
+
+# next.js
+.next
+out
+dist
+build
+
+# env files
+.env
+.env.*
+!.env.example
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# vercel
+.vercel
+
+# misc
+coverage
+.cache
+# exports / archives
+*.zip
+*.7z
+*.tar
+*.gz
