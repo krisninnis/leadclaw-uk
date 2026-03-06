@@ -1,95 +1,106 @@
-import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
-import LogoutButton from '@/components/logout-button'
-import PortalChat from '@/components/portal-chat'
-import PortalTrialCta from '@/components/portal-trial-cta'
-import PortalPlanUpgrade from '@/components/portal-plan-upgrade'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { buildWidgetSnippet } from '@/lib/onboarding'
-
-const mockLeads = [
-  { name: 'Sophie', service: 'Botox', status: 'New' },
-  { name: 'Aisha', service: 'Teeth Whitening', status: 'Follow-up' },
-]
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import LogoutButton from "@/components/logout-button";
+import PortalChat from "@/components/portal-chat";
+import PortalTrialCta from "@/components/portal-trial-cta";
+import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { buildWidgetSnippet } from "@/lib/onboarding";
 
 export default async function PortalPage({
   searchParams,
 }: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  if (!user) redirect('/login')
+  if (!user) redirect("/login");
 
-  const params = (await searchParams) || {}
-  const trialStarted = params.trial === 'started'
+  const params = (await searchParams) || {};
+  const trialStarted = params.trial === "started";
 
-  const admin = createAdminClient()
-  let subStatus = 'No active subscription found'
-  let rawSubscriptionStatus = 'none'
-  let activePlan = 'starter'
-  let trialEnd: string | null = null
-  let hasActiveSubscription = false
-  let isTrialing = false
+  const admin = createAdminClient();
+  let subStatus = "No active subscription found";
+  let rawSubscriptionStatus = "none";
+  let activePlan = "starter";
+  let trialEnd: string | null = null;
+  let hasActiveSubscription = false;
+  let isTrialing = false;
+
   if (admin) {
     const { data } = await admin
-      .from('subscriptions')
-      .select('status,plan,trial_end,current_period_end')
-      .eq('email', user.email || '')
-      .order('updated_at', { ascending: false })
+      .from("subscriptions")
+      .select("status,plan,trial_end,current_period_end")
+      .eq("email", user.email || "")
+      .order("updated_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle();
 
     if (data?.status) {
-      rawSubscriptionStatus = String(data.status).toLowerCase()
-      const planLabel = data.plan ? `${String(data.plan).toUpperCase()} • ` : ''
-      subStatus = `${planLabel}${data.status}`
-      hasActiveSubscription = ['trialing', 'active', 'past_due'].includes(rawSubscriptionStatus)
-      isTrialing = rawSubscriptionStatus === 'trialing'
-      activePlan = String(data.plan || 'starter')
-      trialEnd = data.trial_end || null
+      rawSubscriptionStatus = String(data.status).toLowerCase();
+      const planLabel = data.plan
+        ? `${String(data.plan).toUpperCase()} • `
+        : "";
+      subStatus = `${planLabel}${data.status}`;
+      hasActiveSubscription = ["trialing", "active", "past_due"].includes(
+        rawSubscriptionStatus,
+      );
+      isTrialing = rawSubscriptionStatus === "trialing";
+      activePlan = String(data.plan || "starter");
+      trialEnd = data.trial_end || null;
     }
   }
 
-  let onboarding: { domain: string; siteStatus: string; widgetSnippet: string } | null = null
+  let onboarding: {
+    domain: string;
+    siteStatus: string;
+    widgetSnippet: string;
+    snippetReady: boolean;
+  } | null = null;
+
   if (admin && user.email) {
     const { data: client } = await admin
-      .from('onboarding_clients')
-      .select('id')
-      .eq('contact_email', user.email)
-      .order('created_at', { ascending: false })
+      .from("onboarding_clients")
+      .select("id")
+      .eq("contact_email", user.email)
+      .order("created_at", { ascending: false })
       .limit(1)
-      .maybeSingle()
+      .maybeSingle();
 
     if (client?.id) {
       const { data: site } = await admin
-        .from('onboarding_sites')
-        .select('id,domain,status')
-        .eq('onboarding_client_id', client.id)
-        .order('created_at', { ascending: false })
+        .from("onboarding_sites")
+        .select("id,domain,status")
+        .eq("onboarding_client_id", client.id)
+        .order("created_at", { ascending: false })
         .limit(1)
-        .maybeSingle()
+        .maybeSingle();
 
       if (site?.id) {
         const { data: tokenRow } = await admin
-          .from('widget_tokens')
-          .select('token')
-          .eq('onboarding_site_id', site.id)
-          .eq('status', 'active')
-          .order('created_at', { ascending: false })
+          .from("widget_tokens")
+          .select("token")
+          .eq("onboarding_site_id", site.id)
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
           .limit(1)
-          .maybeSingle()
+          .maybeSingle();
 
         if (tokenRow?.token) {
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || 'https://leadclaw.uk'
+          const appUrl =
+            process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
+          const widgetSnippet = buildWidgetSnippet(appUrl, tokenRow.token);
+          const snippetReady = widgetSnippet.trim().length > 0;
+
           onboarding = {
             domain: site.domain,
-            siteStatus: String(site.status || 'pending_install'),
-            widgetSnippet: buildWidgetSnippet(appUrl, tokenRow.token),
-          }
+            siteStatus: String(site.status || "pending_install"),
+            widgetSnippet,
+            snippetReady,
+          };
         }
       }
     }
@@ -106,10 +117,28 @@ export default async function PortalPage({
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-xl border bg-white p-4"><p className="text-sm text-slate-500">Subscription</p><p className="text-xl font-semibold">{subStatus}</p></div>
-        <div className="rounded-xl border bg-white p-4"><p className="text-sm text-slate-500">Leads this week</p><p className="text-xl font-semibold">12</p></div>
-        <div className="rounded-xl border bg-white p-4"><p className="text-sm text-slate-500">Avg response time</p><p className="text-xl font-semibold">42 sec</p></div>
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-sm text-slate-500">Subscription</p>
+          <p className="text-xl font-semibold">{subStatus}</p>
+        </div>
+
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-sm text-slate-500">Leads this week</p>
+          <p className="text-xl font-semibold">—</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Live lead tracking not connected yet.
+          </p>
+        </div>
+
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-sm text-slate-500">Avg response time</p>
+          <p className="text-xl font-semibold">—</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Response analytics not available yet.
+          </p>
+        </div>
       </div>
+
       {trialStarted && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
           ✅ Free trial started. Your setup section is now active below.
@@ -120,24 +149,43 @@ export default async function PortalPage({
 
       {isTrialing && (
         <>
-          <div className="rounded-xl border bg-white p-6 space-y-3">
+          <div className="space-y-3 rounded-xl border bg-white p-6">
             <h2 className="text-lg font-semibold">Free Trial Setup Section</h2>
             <p className="text-sm text-slate-600">
               Trial status: <strong>{rawSubscriptionStatus}</strong>
-              {trialEnd ? ` • Trial ends: ${new Date(trialEnd).toLocaleString()}` : ''}
+              {trialEnd
+                ? ` • Trial ends: ${new Date(trialEnd).toLocaleString()}`
+                : ""}
             </p>
+
             {onboarding ? (
               <>
-                <p className="text-sm text-slate-700">Site: <strong>{onboarding.domain}</strong> • Setup status: <strong>{onboarding.siteStatus}</strong></p>
-                <div className="rounded border bg-slate-50 p-3 text-xs overflow-x-auto">
-                  <div className="mb-1 font-medium">Install snippet (paste before &lt;/body&gt;):</div>
-                  <code>{onboarding.widgetSnippet}</code>
-                </div>
+                <p className="text-sm text-slate-700">
+                  Site: <strong>{onboarding.domain}</strong> • Setup status:{" "}
+                  <strong>{onboarding.siteStatus}</strong>
+                </p>
+
+                {onboarding.snippetReady ? (
+                  <div className="overflow-x-auto rounded border bg-slate-50 p-3 text-xs">
+                    <div className="mb-1 font-medium">
+                      Install snippet (paste before &lt;/body&gt;):
+                    </div>
+                    <code>{onboarding.widgetSnippet}</code>
+                  </div>
+                ) : (
+                  <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                    Install package exists, but the widget snippet is not ready
+                    yet.
+                  </div>
+                )}
               </>
             ) : (
-              <p className="text-sm text-slate-600">Setup package is preparing. Refresh in a few seconds.</p>
+              <p className="text-sm text-slate-600">
+                Setup package is preparing. Refresh in a few seconds.
+              </p>
             )}
           </div>
+
           <PortalPlanUpgrade email={user.email} />
         </>
       )}
@@ -145,25 +193,30 @@ export default async function PortalPage({
       {!isTrialing && hasActiveSubscription && (
         <div className="rounded-xl border bg-white p-6">
           <h2 className="text-lg font-semibold">Subscribed Package Section</h2>
-          <p className="text-sm text-slate-600">You are on the <strong>{activePlan.toUpperCase()}</strong> package. Manage usage and support from this portal.</p>
+          <p className="text-sm text-slate-600">
+            You are on the <strong>{activePlan.toUpperCase()}</strong> package.
+            Manage usage and support from this portal.
+          </p>
         </div>
       )}
 
       <div className="rounded-xl border bg-white p-6">
         <h2 className="mb-3 text-lg font-semibold">Lead inbox</h2>
-        <table className="w-full text-left text-sm">
-          <thead><tr className="border-b"><th className="py-2">Name</th><th>Service</th><th>Status</th></tr></thead>
-          <tbody>
-            {mockLeads.map((lead) => (
-              <tr key={lead.name} className="border-b last:border-0">
-                <td className="py-2">{lead.name}</td><td>{lead.service}</td><td>{lead.status}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="rounded-lg border border-dashed bg-slate-50 p-6 text-sm text-slate-600">
+          <p className="font-medium text-slate-800">
+            No live leads to show yet.
+          </p>
+          <p className="mt-2">
+            This inbox will populate after the widget and lead capture flow are
+            fully connected.
+          </p>
+          <p className="mt-1">
+            For now, use the setup section above to prepare installation.
+          </p>
+        </div>
       </div>
 
       <PortalChat />
     </div>
-  )
+  );
 }
