@@ -283,7 +283,7 @@ export async function GET(req: Request) {
   return new NextResponse(js, {
     headers: {
       "content-type": "application/javascript; charset=utf-8",
-      "cache-control": "public, max-age=300",
+      "cache-control": "no-store, max-age=0",
     },
   });
 }
