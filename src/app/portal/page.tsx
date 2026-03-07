@@ -1,11 +1,26 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/logout-button";
-import PortalChat from "@/components/portal-chat";
 import PortalTrialCta from "@/components/portal-trial-cta";
 import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildWidgetSnippet } from "@/lib/onboarding";
+
+type PortalContext = {
+  clientId: string;
+  siteId: string | null;
+  domain: string | null;
+  siteStatus: string | null;
+  clinicId: string | null;
+  widgetToken: string | null;
+};
+
+type EnquiryRow = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+};
 
 export default async function PortalPage({
   searchParams,
@@ -23,6 +38,7 @@ export default async function PortalPage({
   const trialStarted = params.trial === "started";
 
   const admin = createAdminClient();
+
   let subStatus = "No active subscription found";
   let rawSubscriptionStatus = "none";
   let activePlan = "starter";
@@ -54,12 +70,8 @@ export default async function PortalPage({
     }
   }
 
-  let onboarding: {
-    domain: string;
-    siteStatus: string;
-    widgetSnippet: string;
-    snippetReady: boolean;
-  } | null = null;
+  let portalContext: PortalContext | null = null;
+  let enquiries: EnquiryRow[] = [];
 
   if (admin && user.email) {
     const { data: client } = await admin
@@ -73,11 +85,13 @@ export default async function PortalPage({
     if (client?.id) {
       const { data: site } = await admin
         .from("onboarding_sites")
-        .select("id,domain,status")
+        .select("id,domain,status,clinic_id")
         .eq("onboarding_client_id", client.id)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      let widgetToken: string | null = null;
 
       if (site?.id) {
         const { data: tokenRow } = await admin
@@ -89,53 +103,23 @@ export default async function PortalPage({
           .limit(1)
           .maybeSingle();
 
-        if (tokenRow?.token) {
-          const appUrl =
-            process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
-          const widgetSnippet = buildWidgetSnippet(appUrl, tokenRow.token);
-          const snippetReady = widgetSnippet.trim().length > 0;
-
-          onboarding = {
-            domain: site.domain,
-            siteStatus: String(site.status || "pending_install"),
-            widgetSnippet,
-            snippetReady,
-          };
-        }
+        widgetToken = tokenRow?.token || null;
       }
-    }
-  }
 
-  let enquiries: Array<{
-    id: string;
-    name: string | null;
-    email: string | null;
-    phone: string | null;
-  }> = [];
+      portalContext = {
+        clientId: client.id,
+        siteId: site?.id || null,
+        domain: site?.domain || null,
+        siteStatus: site?.status || null,
+        clinicId: site?.clinic_id || null,
+        widgetToken,
+      };
 
-  if (admin && user.email) {
-    const { data: client } = await admin
-      .from("onboarding_clients")
-      .select("id")
-      .eq("contact_email", user.email)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (client?.id) {
-      const { data: site } = await admin
-        .from("onboarding_sites")
-        .select("clinic_id")
-        .eq("onboarding_client_id", client.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (site?.clinic_id) {
+      if (portalContext.clinicId) {
         const { data: enquiryRows } = await admin
           .from("enquiries")
           .select("id,name,email,phone")
-          .eq("clinic_id", site.clinic_id)
+          .eq("clinic_id", portalContext.clinicId)
           .order("id", { ascending: false })
           .limit(20);
 
@@ -143,6 +127,13 @@ export default async function PortalPage({
       }
     }
   }
+
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
+  const widgetSnippet = portalContext?.widgetToken
+    ? buildWidgetSnippet(appUrl, portalContext.widgetToken)
+    : "";
+  const snippetReady = widgetSnippet.trim().length > 0;
 
   return (
     <div className="space-y-6">
@@ -153,6 +144,7 @@ export default async function PortalPage({
         </div>
         <LogoutButton />
       </div>
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-white p-4">
           <p className="text-sm text-slate-500">Subscription</p>
@@ -175,12 +167,15 @@ export default async function PortalPage({
           </p>
         </div>
       </div>
+
       {trialStarted && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
           ✅ Free trial started. Your setup section is now active below.
         </div>
       )}
+
       {!hasActiveSubscription && <PortalTrialCta />}
+
       {isTrialing && (
         <>
           <div className="space-y-3 rounded-xl border bg-white p-6">
@@ -192,19 +187,21 @@ export default async function PortalPage({
                 : ""}
             </p>
 
-            {onboarding ? (
+            {portalContext?.domain ? (
               <>
                 <p className="text-sm text-slate-700">
-                  Site: <strong>{onboarding.domain}</strong> • Setup status:{" "}
-                  <strong>{onboarding.siteStatus}</strong>
+                  Site: <strong>{portalContext.domain}</strong> • Setup status:{" "}
+                  <strong>
+                    {portalContext.siteStatus || "pending_install"}
+                  </strong>
                 </p>
 
-                {onboarding.snippetReady ? (
+                {snippetReady ? (
                   <div className="overflow-x-auto rounded border bg-slate-50 p-3 text-xs">
                     <div className="mb-1 font-medium">
                       Install snippet (paste before &lt;/body&gt;):
                     </div>
-                    <code>{onboarding.widgetSnippet}</code>
+                    <code>{widgetSnippet}</code>
                   </div>
                 ) : (
                   <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -223,6 +220,7 @@ export default async function PortalPage({
           <PortalPlanUpgrade email={user.email} />
         </>
       )}
+
       {!isTrialing && hasActiveSubscription && (
         <div className="rounded-xl border bg-white p-6">
           <h2 className="text-lg font-semibold">Subscribed Package Section</h2>
@@ -232,6 +230,7 @@ export default async function PortalPage({
           </p>
         </div>
       )}
+
       <div className="rounded-xl border bg-white p-6">
         <h2 className="mb-3 text-lg font-semibold">Lead inbox</h2>
 
@@ -277,6 +276,7 @@ export default async function PortalPage({
           </div>
         )}
       </div>
+
       {/* <PortalChat /> */}
     </div>
   );
