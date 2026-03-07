@@ -106,6 +106,44 @@ export default async function PortalPage({
     }
   }
 
+  let enquiries: Array<{
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+  }> = [];
+
+  if (admin && user.email) {
+    const { data: client } = await admin
+      .from("onboarding_clients")
+      .select("id")
+      .eq("contact_email", user.email)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (client?.id) {
+      const { data: site } = await admin
+        .from("onboarding_sites")
+        .select("clinic_id")
+        .eq("onboarding_client_id", client.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (site?.clinic_id) {
+        const { data: enquiryRows } = await admin
+          .from("enquiries")
+          .select("id,name,email,phone")
+          .eq("clinic_id", site.clinic_id)
+          .order("id", { ascending: false })
+          .limit(20);
+
+        enquiries = enquiryRows || [];
+      }
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -115,7 +153,6 @@ export default async function PortalPage({
         </div>
         <LogoutButton />
       </div>
-
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-white p-4">
           <p className="text-sm text-slate-500">Subscription</p>
@@ -138,15 +175,12 @@ export default async function PortalPage({
           </p>
         </div>
       </div>
-
       {trialStarted && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
           ✅ Free trial started. Your setup section is now active below.
         </div>
       )}
-
       {!hasActiveSubscription && <PortalTrialCta />}
-
       {isTrialing && (
         <>
           <div className="space-y-3 rounded-xl border bg-white p-6">
@@ -189,7 +223,6 @@ export default async function PortalPage({
           <PortalPlanUpgrade email={user.email} />
         </>
       )}
-
       {!isTrialing && hasActiveSubscription && (
         <div className="rounded-xl border bg-white p-6">
           <h2 className="text-lg font-semibold">Subscribed Package Section</h2>
@@ -199,24 +232,52 @@ export default async function PortalPage({
           </p>
         </div>
       )}
-
       <div className="rounded-xl border bg-white p-6">
         <h2 className="mb-3 text-lg font-semibold">Lead inbox</h2>
-        <div className="rounded-lg border border-dashed bg-slate-50 p-6 text-sm text-slate-600">
-          <p className="font-medium text-slate-800">
-            No live leads to show yet.
-          </p>
-          <p className="mt-2">
-            This inbox will populate after the widget and lead capture flow are
-            fully connected.
-          </p>
-          <p className="mt-1">
-            For now, use the setup section above to prepare installation.
-          </p>
-        </div>
-      </div>
 
-      <PortalChat />
+        {enquiries.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-left text-sm">
+              <thead>
+                <tr className="border-b text-slate-500">
+                  <th className="py-2 pr-4 font-medium">Name</th>
+                  <th className="py-2 pr-4 font-medium">Email</th>
+                  <th className="py-2 pr-4 font-medium">Phone</th>
+                </tr>
+              </thead>
+              <tbody>
+                {enquiries.map((enquiry) => (
+                  <tr key={enquiry.id} className="border-b last:border-0">
+                    <td className="py-3 pr-4 font-medium text-slate-900">
+                      {enquiry.name || "—"}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {enquiry.email || "—"}
+                    </td>
+                    <td className="py-3 pr-4 text-slate-600">
+                      {enquiry.phone || "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="rounded-lg border border-dashed bg-slate-50 p-6 text-sm text-slate-600">
+            <p className="font-medium text-slate-800">
+              No live leads to show yet.
+            </p>
+            <p className="mt-2">
+              This inbox will populate after the widget and lead capture flow
+              are fully connected.
+            </p>
+            <p className="mt-1">
+              For now, use the setup section above to prepare installation.
+            </p>
+          </div>
+        )}
+      </div>
+      {/* <PortalChat /> */}
     </div>
   );
 }
