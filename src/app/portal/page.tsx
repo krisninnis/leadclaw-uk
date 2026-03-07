@@ -21,6 +21,7 @@ type EnquiryRow = {
   name: string | null;
   email: string | null;
   phone: string | null;
+  created_at: string | null;
 };
 
 export default async function PortalPage({
@@ -80,6 +81,8 @@ export default async function PortalPage({
   let portalContext: PortalContext | null = null;
   let enquiries: EnquiryRow[] = [];
   let leadsThisWeek = 0;
+  let totalLeads = 0;
+  let lastLeadReceived: string | null = null;
 
   if (admin && user.email) {
     const { data: client } = await admin
@@ -126,23 +129,32 @@ export default async function PortalPage({
       if (portalContext.clinicId && hasActiveSubscription) {
         const { data: enquiryRows } = await admin
           .from("enquiries")
-          .select("id,name,email,phone")
+          .select("id,name,email,phone,created_at")
           .eq("clinic_id", portalContext.clinicId)
-          .order("id", { ascending: false })
+          .order("created_at", { ascending: false })
           .limit(20);
 
-        enquiries = enquiryRows || [];
+        enquiries = (enquiryRows as EnquiryRow[] | null) || [];
+        lastLeadReceived = enquiries[0]?.created_at || null;
 
         const sevenDaysAgo = new Date();
         sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-        const { count } = await admin
-          .from("enquiries")
-          .select("*", { count: "exact", head: true })
-          .eq("clinic_id", portalContext.clinicId)
-          .gte("created_at", sevenDaysAgo.toISOString());
+        const [{ count: weeklyCount }, { count: totalCount }] =
+          await Promise.all([
+            admin
+              .from("enquiries")
+              .select("*", { count: "exact", head: true })
+              .eq("clinic_id", portalContext.clinicId)
+              .gte("created_at", sevenDaysAgo.toISOString()),
+            admin
+              .from("enquiries")
+              .select("*", { count: "exact", head: true })
+              .eq("clinic_id", portalContext.clinicId),
+          ]);
 
-        leadsThisWeek = count || 0;
+        leadsThisWeek = weeklyCount || 0;
+        totalLeads = totalCount || 0;
       }
     }
   }
@@ -158,6 +170,16 @@ export default async function PortalPage({
   const showTrialExpiredBox = isTrialExpired;
   const showUpgradeBox =
     !hasActiveSubscription || rawSubscriptionStatus === "past_due";
+
+  const widgetStatus = !canUsePortalFeatures
+    ? "Locked"
+    : portalContext?.siteStatus === "handover_ready"
+      ? "Live"
+      : portalContext?.siteStatus === "pending_install"
+        ? "Pending install"
+        : snippetReady
+          ? "Ready to install"
+          : "Preparing";
 
   return (
     <div className="space-y-6">
@@ -184,6 +206,42 @@ export default async function PortalPage({
             {canUsePortalFeatures
               ? "Real enquiries captured in the last 7 days."
               : "Upgrade to unlock live lead tracking."}
+          </p>
+        </div>
+
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-sm text-slate-500">Widget status</p>
+          <p className="text-xl font-semibold">{widgetStatus}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            {canUsePortalFeatures
+              ? "Current setup state of your website assistant."
+              : "Activate a package to unlock installation."}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-sm text-slate-500">Total leads</p>
+          <p className="text-xl font-semibold">
+            {canUsePortalFeatures ? totalLeads : "—"}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            All enquiries captured for your clinic.
+          </p>
+        </div>
+
+        <div className="rounded-xl border bg-white p-4">
+          <p className="text-sm text-slate-500">Last lead received</p>
+          <p className="text-xl font-semibold">
+            {canUsePortalFeatures
+              ? lastLeadReceived
+                ? new Date(lastLeadReceived).toLocaleString()
+                : "—"
+              : "—"}
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Latest enquiry timestamp from your live widget.
           </p>
         </div>
 
