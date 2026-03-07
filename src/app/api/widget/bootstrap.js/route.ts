@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const token = (url.searchParams.get("token") || "").trim();
+  const appOrigin = url.origin;
 
   const js = `(function () {
   try {
@@ -11,6 +12,18 @@ export async function GET(req: Request) {
       currentScript && currentScript.getAttribute
         ? currentScript.getAttribute('data-claw-token') || ''
         : '';
+
+    var scriptSrc =
+      currentScript && currentScript.src
+        ? currentScript.src
+        : '${appOrigin}/api/widget/bootstrap.js';
+
+    var appBase = '${appOrigin}';
+    try {
+      appBase = new URL(scriptSrc).origin;
+    } catch (_) {}
+
+    var submitUrl = appBase + '/api/widget/submit';
 
     var token = String(window.clawWidgetToken || dataToken || '${token}')
       .trim();
@@ -28,17 +41,18 @@ export async function GET(req: Request) {
     root.style.right = '20px';
     root.style.bottom = '20px';
     root.style.zIndex = '2147483000';
-    root.style.fontFamily = 'Arial, sans-serif';
+    root.style.fontFamily = 'Inter, Arial, Helvetica, sans-serif';
 
     var panelOpen = false;
+    var submitting = false;
 
     var panel = document.createElement('div');
-    panel.style.width = '320px';
+    panel.style.width = '360px';
     panel.style.maxWidth = 'calc(100vw - 24px)';
     panel.style.background = '#ffffff';
     panel.style.border = '1px solid #e2e8f0';
-    panel.style.borderRadius = '16px';
-    panel.style.boxShadow = '0 20px 40px rgba(0,0,0,0.15)';
+    panel.style.borderRadius = '18px';
+    panel.style.boxShadow = '0 20px 50px rgba(15, 23, 42, 0.18)';
     panel.style.marginBottom = '12px';
     panel.style.overflow = 'hidden';
     panel.style.display = 'none';
@@ -47,9 +61,44 @@ export async function GET(req: Request) {
     header.style.background = '#0f766e';
     header.style.color = '#ffffff';
     header.style.padding = '14px 16px';
-    header.style.fontSize = '14px';
-    header.style.fontWeight = '700';
-    header.textContent = 'LeadClaw Assistant';
+    header.style.display = 'flex';
+    header.style.alignItems = 'center';
+    header.style.justifyContent = 'space-between';
+
+    var headerTextWrap = document.createElement('div');
+
+    var headerTitle = document.createElement('div');
+    headerTitle.style.fontSize = '14px';
+    headerTitle.style.fontWeight = '700';
+    headerTitle.textContent = 'LeadClaw Assistant';
+
+    var headerSubtitle = document.createElement('div');
+    headerSubtitle.style.fontSize = '12px';
+    headerSubtitle.style.opacity = '0.9';
+    headerSubtitle.style.marginTop = '2px';
+    headerSubtitle.textContent = 'We usually reply quickly.';
+
+    headerTextWrap.appendChild(headerTitle);
+    headerTextWrap.appendChild(headerSubtitle);
+
+    var closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.setAttribute('aria-label', 'Close widget');
+    closeBtn.textContent = '×';
+    closeBtn.style.background = 'transparent';
+    closeBtn.style.color = '#ffffff';
+    closeBtn.style.border = '0';
+    closeBtn.style.fontSize = '20px';
+    closeBtn.style.lineHeight = '1';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.padding = '0 0 2px 8px';
+    closeBtn.onclick = function () {
+      panelOpen = false;
+      panel.style.display = 'none';
+    };
+
+    header.appendChild(headerTextWrap);
+    header.appendChild(closeBtn);
 
     var body = document.createElement('div');
     body.style.padding = '16px';
@@ -59,75 +108,145 @@ export async function GET(req: Request) {
 
     var title = document.createElement('div');
     title.style.fontWeight = '700';
-    title.style.marginBottom = '8px';
-    title.textContent = 'Submit an enquiry';
+    title.style.marginBottom = '6px';
+    title.textContent = 'Request a callback';
+
+    var intro = document.createElement('div');
+    intro.style.fontSize = '13px';
+    intro.style.color = '#475569';
+    intro.style.marginBottom = '12px';
+    intro.textContent =
+      'Share your details and the clinic team can follow up with you.';
 
     var form = document.createElement('form');
-    form.onsubmit = function (e) {
-      e.preventDefault();
-      var name = (nameField.value || '').trim();
-      var email = (emailField.value || '').trim();
-      if (!name || !email) {
-        alert('Please enter both name and email.');
-        return;
-      }
-
-      // Submit lead to the backend
-      fetch('/api/widget/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, token })
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.ok) {
-            alert('Thank you! Your enquiry has been submitted.');
-            nameField.value = '';
-            emailField.value = '';
-          } else {
-            alert('Something went wrong. Please try again later.');
-          }
-        })
-        .catch(() => {
-          alert('Error submitting the enquiry. Please try again.');
-        });
-    };
 
     var nameField = document.createElement('input');
     nameField.placeholder = 'Your name';
+    nameField.autocomplete = 'name';
     nameField.style.marginBottom = '10px';
-    nameField.style.padding = '8px';
+    nameField.style.padding = '10px 12px';
     nameField.style.width = '100%';
-    nameField.style.border = '1px solid #e2e8f0';
-    nameField.style.borderRadius = '8px';
+    nameField.style.boxSizing = 'border-box';
+    nameField.style.border = '1px solid #cbd5e1';
+    nameField.style.borderRadius = '10px';
     nameField.style.fontSize = '14px';
+    nameField.style.outline = 'none';
 
     var emailField = document.createElement('input');
     emailField.placeholder = 'Your email';
     emailField.type = 'email';
+    emailField.autocomplete = 'email';
     emailField.style.marginBottom = '10px';
-    emailField.style.padding = '8px';
+    emailField.style.padding = '10px 12px';
     emailField.style.width = '100%';
-    emailField.style.border = '1px solid #e2e8f0';
-    emailField.style.borderRadius = '8px';
+    emailField.style.boxSizing = 'border-box';
+    emailField.style.border = '1px solid #cbd5e1';
+    emailField.style.borderRadius = '10px';
     emailField.style.fontSize = '14px';
+    emailField.style.outline = 'none';
+
+    var phoneField = document.createElement('input');
+    phoneField.placeholder = 'Phone (optional)';
+    phoneField.type = 'tel';
+    phoneField.autocomplete = 'tel';
+    phoneField.style.marginBottom = '10px';
+    phoneField.style.padding = '10px 12px';
+    phoneField.style.width = '100%';
+    phoneField.style.boxSizing = 'border-box';
+    phoneField.style.border = '1px solid #cbd5e1';
+    phoneField.style.borderRadius = '10px';
+    phoneField.style.fontSize = '14px';
+    phoneField.style.outline = 'none';
+
+    var status = document.createElement('div');
+    status.style.minHeight = '18px';
+    status.style.fontSize = '12px';
+    status.style.marginBottom = '10px';
+    status.style.color = '#475569';
 
     var submitButton = document.createElement('button');
-    submitButton.textContent = 'Submit Enquiry';
+    submitButton.textContent = 'Send enquiry';
     submitButton.type = 'submit';
     submitButton.style.background = '#0f766e';
     submitButton.style.color = '#fff';
     submitButton.style.border = '0';
-    submitButton.style.borderRadius = '8px';
-    submitButton.style.padding = '10px';
+    submitButton.style.borderRadius = '10px';
+    submitButton.style.padding = '11px 14px';
     submitButton.style.fontSize = '14px';
+    submitButton.style.fontWeight = '600';
     submitButton.style.cursor = 'pointer';
+    submitButton.style.width = '100%';
+
+    function setStatus(message, color) {
+      status.textContent = message || '';
+      status.style.color = color || '#475569';
+    }
+
+    function setSubmitting(value) {
+      submitting = value;
+      submitButton.disabled = value;
+      submitButton.style.opacity = value ? '0.7' : '1';
+      submitButton.style.cursor = value ? 'not-allowed' : 'pointer';
+      submitButton.textContent = value ? 'Sending...' : 'Send enquiry';
+    }
+
+    form.onsubmit = function (e) {
+      e.preventDefault();
+      if (submitting) return;
+
+      var name = (nameField.value || '').trim();
+      var email = (emailField.value || '').trim();
+      var phone = (phoneField.value || '').trim();
+
+      if (!name || !email) {
+        setStatus('Please enter both name and email.', '#b91c1c');
+        return;
+      }
+
+      setStatus('');
+      setSubmitting(true);
+
+      fetch(submitUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          phone: phone || undefined,
+          token: token
+        })
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (result.ok && result.data && result.data.ok) {
+            nameField.value = '';
+            emailField.value = '';
+            phoneField.value = '';
+            setStatus('Thanks — your enquiry has been sent.', '#166534');
+          } else {
+            setStatus('Something went wrong. Please try again later.', '#b91c1c');
+          }
+        })
+        .catch(function () {
+          setStatus('Error submitting the enquiry. Please try again.', '#b91c1c');
+        })
+        .finally(function () {
+          setSubmitting(false);
+        });
+    };
 
     form.appendChild(nameField);
     form.appendChild(emailField);
+    form.appendChild(phoneField);
+    form.appendChild(status);
     form.appendChild(submitButton);
 
     body.appendChild(title);
+    body.appendChild(intro);
     body.appendChild(form);
 
     panel.appendChild(header);

@@ -40,7 +40,7 @@ function normalizeAppUrl(input: string) {
 }
 
 function normalizeToken(input: string) {
-  return input.trim();
+  return input.trim().replace(/"/g, "&quot;");
 }
 
 export function buildWidgetSnippet(appUrl: string, token: string) {
@@ -49,7 +49,14 @@ export function buildWidgetSnippet(appUrl: string, token: string) {
 
   if (!base || !safeToken) return "";
 
-  return `<script defer src="${base}/api/widget/bootstrap.js" data-claw-token="${safeToken}"></script>`;
+  return [
+    "<script",
+    "  defer",
+    `  src="${base}/api/widget/bootstrap.js"`,
+    `  data-claw-token="${safeToken}"`,
+    '  crossorigin="anonymous"',
+    "></script>",
+  ].join("\n");
 }
 
 export function buildGtmSnippet(appUrl: string, token: string) {
@@ -58,7 +65,10 @@ export function buildGtmSnippet(appUrl: string, token: string) {
 
   if (!base || !safeToken) return "";
 
-  return `<script>window.clawWidgetToken="${safeToken}";</script>\n<script defer src="${base}/api/widget/bootstrap.js"></script>`;
+  return [
+    `<script>window.clawWidgetToken="${safeToken}";</script>`,
+    `<script defer src="${base}/api/widget/bootstrap.js" crossorigin="anonymous"></script>`,
+  ].join("\n");
 }
 
 export function buildWelcomeEmail(input: {
@@ -70,7 +80,28 @@ export function buildWelcomeEmail(input: {
 }) {
   return {
     subject: "Your AI assistant setup is ready (10-minute launch)",
-    body: `Hi ${input.clientName},\n\nYour assistant is ready for ${input.domain}.\n\nNext steps:\n1) Add this script to your site footer (all pages):\n${input.widgetSnippet}\n\n2) Complete your business settings:\n${input.settingsUrl}\n\n3) Run a quick test message in incognito/mobile.\n\nReply DONE when complete and we will verify it end-to-end.${input.supportEmail ? `\n\nSupport: ${input.supportEmail}` : ""}\n\n— Clawbot`,
+    body: `Hi ${input.clientName},
+
+Your assistant is ready for ${input.domain}.
+
+Next steps:
+1) Add this script to your site footer (all pages):
+${input.widgetSnippet}
+
+2) Complete your business settings:
+${input.settingsUrl}
+
+3) Run a quick test message in incognito/mobile.
+
+Reply DONE when complete and we will verify it end-to-end.${
+      input.supportEmail
+        ? `
+
+Support: ${input.supportEmail}`
+        : ""
+    }
+
+— Clawbot`,
   };
 }
 

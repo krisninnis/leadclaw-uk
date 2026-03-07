@@ -5,6 +5,7 @@ import PortalTrialCta from "@/components/portal-trial-cta";
 import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildWidgetSnippet } from "@/lib/onboarding";
+import PortalChat from "@/components/portal-chat";
 
 type PortalContext = {
   clientId: string;
@@ -72,6 +73,7 @@ export default async function PortalPage({
 
   let portalContext: PortalContext | null = null;
   let enquiries: EnquiryRow[] = [];
+  let leadsThisWeek = 0;
 
   if (admin && user.email) {
     const { data: client } = await admin
@@ -124,6 +126,17 @@ export default async function PortalPage({
           .limit(20);
 
         enquiries = enquiryRows || [];
+
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const { count } = await admin
+          .from("enquiries")
+          .select("*", { count: "exact", head: true })
+          .eq("clinic_id", portalContext.clinicId)
+          .gte("created_at", sevenDaysAgo.toISOString());
+
+        leadsThisWeek = count || 0;
       }
     }
   }
@@ -153,9 +166,9 @@ export default async function PortalPage({
 
         <div className="rounded-xl border bg-white p-4">
           <p className="text-sm text-slate-500">Leads this week</p>
-          <p className="text-xl font-semibold">—</p>
+          <p className="text-xl font-semibold">{leadsThisWeek}</p>
           <p className="mt-1 text-xs text-slate-500">
-            Live lead tracking not connected yet.
+            Real enquiries captured in the last 7 days.
           </p>
         </div>
 
@@ -197,11 +210,13 @@ export default async function PortalPage({
                 </p>
 
                 {snippetReady ? (
-                  <div className="overflow-x-auto rounded border bg-slate-50 p-3 text-xs">
-                    <div className="mb-1 font-medium">
+                  <div className="rounded border bg-slate-50 p-3">
+                    <div className="mb-2 text-sm font-medium text-slate-800">
                       Install snippet (paste before &lt;/body&gt;):
                     </div>
-                    <code>{widgetSnippet}</code>
+                    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-white p-3 text-xs text-slate-700">
+                      <code>{widgetSnippet}</code>
+                    </pre>
                   </div>
                 ) : (
                   <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
@@ -277,7 +292,7 @@ export default async function PortalPage({
         )}
       </div>
 
-      {/* <PortalChat /> */}
+      <PortalChat />
     </div>
   );
 }
