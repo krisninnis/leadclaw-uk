@@ -9,6 +9,7 @@ import LeadImporter from "@/components/lead-importer";
 import LeadsTable from "@/components/leads-table";
 import LeadCommandCenter from "@/components/lead-command-center";
 import OpsActivityLog from "@/components/ops-activity-log";
+import AdminSection from "@/components/admin-section";
 
 type AppRow = {
   id?: string;
@@ -375,15 +376,11 @@ export default async function AdminPage() {
           </p>
         </div>
 
-        <div className="rounded-xl border bg-white p-6">
-          <div className="mb-4">
-            <h3 className="text-xl font-semibold">Clinic Management</h3>
-            <p className="text-sm text-slate-600">
-              One row per onboarding client so you can see setup, widget,
-              subscription, and lead status in one place.
-            </p>
-          </div>
-
+        <AdminSection
+          title="Clinic Management"
+          description="One row per onboarding client so you can see setup, widget, subscription, and lead status in one place."
+          defaultOpen
+        >
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead>
@@ -474,11 +471,14 @@ export default async function AdminPage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </AdminSection>
 
         <div className="grid gap-6 xl:grid-cols-2">
-          <div className="rounded-xl border bg-white p-6">
-            <h3 className="mb-3 text-lg font-semibold">Recent enquiries</h3>
+          <AdminSection
+            title="Recent enquiries"
+            description="Latest inbound widget leads captured for clinic portals."
+            defaultOpen
+          >
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -510,12 +510,13 @@ export default async function AdminPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </AdminSection>
 
-          <div className="rounded-xl border bg-white p-6">
-            <h3 className="mb-3 text-lg font-semibold">
-              Recent onboarding sites
-            </h3>
+          <AdminSection
+            title="Recent onboarding sites"
+            description="Latest site setup records and whether they are linked correctly."
+            defaultOpen={false}
+          >
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
                 <thead>
@@ -543,12 +544,18 @@ export default async function AdminPage() {
                 </tbody>
               </table>
             </div>
-          </div>
+          </AdminSection>
         </div>
 
-        <div className="rounded-xl border bg-white p-4 text-sm">
-          Active/known subscriptions: <strong>{subCount || 0}</strong>
-        </div>
+        <AdminSection
+          title="Subscription snapshot"
+          description="Quick summary of billing records currently known to the system."
+          defaultOpen={false}
+        >
+          <div className="text-sm">
+            Active/known subscriptions: <strong>{subCount || 0}</strong>
+          </div>
+        </AdminSection>
       </section>
 
       <OpsSummary />
@@ -562,13 +569,43 @@ export default async function AdminPage() {
           </p>
         </div>
 
-        <LeadImporter />
-        <LeadsTable />
-        <LeadCommandCenter />
-        <OpsActivityLog />
+        <AdminSection
+          title="Lead importer"
+          description="Import scraped or sourced prospects into the sales pipeline."
+          defaultOpen={false}
+        >
+          <LeadImporter />
+        </AdminSection>
 
-        <div className="rounded-xl border bg-white p-6">
-          <h3 className="mb-3 text-lg font-semibold">Latest applications</h3>
+        <AdminSection
+          title="Lead queue"
+          description="Your scraped UK prospect database for outreach and tracking."
+          defaultOpen
+        >
+          <LeadsTable />
+        </AdminSection>
+
+        <AdminSection
+          title="Lead Command Center"
+          description="Track contacted, replied, interested, and follow-up states."
+          defaultOpen={false}
+        >
+          <LeadCommandCenter />
+        </AdminSection>
+
+        <AdminSection
+          title="Agent Activity Log"
+          description="Operational events from outreach, automations, and system actions."
+          defaultOpen={false}
+        >
+          <OpsActivityLog />
+        </AdminSection>
+
+        <AdminSection
+          title="Latest applications"
+          description="Recent clinics that applied directly to LeadClaw."
+          defaultOpen={false}
+        >
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b">
@@ -601,7 +638,7 @@ export default async function AdminPage() {
               )}
             </tbody>
           </table>
-        </div>
+        </AdminSection>
       </section>
     </div>
   );
