@@ -42,10 +42,10 @@ export default async function PortalPage({
 
   let subStatus = "No active subscription found";
   let rawSubscriptionStatus = "none";
-  let activePlan = "starter";
   let trialEnd: string | null = null;
   let hasActiveSubscription = false;
   let isTrialing = false;
+  let isTrialExpired = false;
 
   if (admin) {
     const { data } = await admin
@@ -58,16 +58,22 @@ export default async function PortalPage({
 
     if (data?.status) {
       rawSubscriptionStatus = String(data.status).toLowerCase();
+
       const planLabel = data.plan
         ? `${String(data.plan).toUpperCase()} • `
         : "";
+
       subStatus = `${planLabel}${data.status}`;
+      trialEnd = data.trial_end || null;
+
+      isTrialing = rawSubscriptionStatus === "trialing";
+      isTrialExpired =
+        rawSubscriptionStatus === "expired" ||
+        rawSubscriptionStatus === "canceled";
+
       hasActiveSubscription = ["trialing", "active", "past_due"].includes(
         rawSubscriptionStatus,
       );
-      isTrialing = rawSubscriptionStatus === "trialing";
-      activePlan = String(data.plan || "starter");
-      trialEnd = data.trial_end || null;
     }
   }
 
@@ -117,7 +123,7 @@ export default async function PortalPage({
         widgetToken,
       };
 
-      if (portalContext.clinicId) {
+      if (portalContext.clinicId && hasActiveSubscription) {
         const { data: enquiryRows } = await admin
           .from("enquiries")
           .select("id,name,email,phone")
@@ -148,6 +154,11 @@ export default async function PortalPage({
     : "";
   const snippetReady = widgetSnippet.trim().length > 0;
 
+  const canUsePortalFeatures = hasActiveSubscription;
+  const showTrialExpiredBox = isTrialExpired;
+  const showUpgradeBox =
+    !hasActiveSubscription || rawSubscriptionStatus === "past_due";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -166,9 +177,13 @@ export default async function PortalPage({
 
         <div className="rounded-xl border bg-white p-4">
           <p className="text-sm text-slate-500">Leads this week</p>
-          <p className="text-xl font-semibold">{leadsThisWeek}</p>
+          <p className="text-xl font-semibold">
+            {canUsePortalFeatures ? leadsThisWeek : "—"}
+          </p>
           <p className="mt-1 text-xs text-slate-500">
-            Real enquiries captured in the last 7 days.
+            {canUsePortalFeatures
+              ? "Real enquiries captured in the last 7 days."
+              : "Upgrade to unlock live lead tracking."}
           </p>
         </div>
 
@@ -187,61 +202,118 @@ export default async function PortalPage({
         </div>
       )}
 
-      {!hasActiveSubscription && <PortalTrialCta />}
+      {showTrialExpiredBox && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <h2 className="text-lg font-semibold text-amber-950">
+            Your trial has ended
+          </h2>
+          <p className="mt-2 text-sm text-amber-900">
+            {trialEnd
+              ? `Your free trial ended on ${new Date(trialEnd).toLocaleString()}.`
+              : "Your free trial has ended."}{" "}
+            Upgrade now to keep your widget live, continue receiving enquiries,
+            and keep portal access fully unlocked.
+          </p>
+          <div className="mt-4">
+            <PortalPlanUpgrade email={user.email} />
+          </div>
+        </div>
+      )}
 
-      {isTrialing && (
-        <>
-          <div className="space-y-3 rounded-xl border bg-white p-6">
-            <h2 className="text-lg font-semibold">Free Trial Setup Section</h2>
+      {!showTrialExpiredBox && !hasActiveSubscription && <PortalTrialCta />}
+
+      {showUpgradeBox && !showTrialExpiredBox && user.email && (
+        <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+          <h2 className="text-lg font-semibold text-sky-950">
+            Unlock your live assistant
+          </h2>
+          <p className="mt-2 text-sm text-sky-900">
+            Start or upgrade your package to activate your widget, open the lead
+            inbox, and keep your installation snippet available here.
+          </p>
+          <div className="mt-4">
+            <PortalPlanUpgrade email={user.email} />
+          </div>
+        </div>
+      )}
+
+      {canUsePortalFeatures && (
+        <div className="space-y-3 rounded-xl border bg-white p-6">
+          <h2 className="text-lg font-semibold">Install your widget</h2>
+
+          <p className="text-sm text-slate-600">
+            Add the script below to your website to activate your LeadClaw
+            assistant and start capturing enquiries.
+          </p>
+
+          {portalContext?.domain ? (
+            <p className="text-sm text-slate-700">
+              Site: <strong>{portalContext.domain}</strong> • Setup status:{" "}
+              <strong>{portalContext.siteStatus || "pending_install"}</strong>
+            </p>
+          ) : (
             <p className="text-sm text-slate-600">
+              Your setup package is preparing. Refresh in a few seconds.
+            </p>
+          )}
+
+          {snippetReady ? (
+            <>
+              <div className="rounded border bg-slate-50 p-3">
+                <div className="mb-2 text-sm font-medium text-slate-800">
+                  Install snippet (paste before &lt;/body&gt;):
+                </div>
+                <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-white p-3 text-xs text-slate-700">
+                  <code>{widgetSnippet}</code>
+                </pre>
+              </div>
+
+              <div className="rounded border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+                <p className="font-medium text-slate-900">
+                  Quick install instructions
+                </p>
+                <ol className="mt-2 list-decimal space-y-1 pl-5">
+                  <li>Open your website editor or codebase.</li>
+                  <li>
+                    Paste the script before the closing &lt;/body&gt; tag.
+                  </li>
+                  <li>Publish the site changes.</li>
+                  <li>
+                    Open your site in an incognito tab and test the widget.
+                  </li>
+                </ol>
+              </div>
+            </>
+          ) : (
+            <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+              Install package exists, but the widget snippet is not ready yet.
+            </div>
+          )}
+
+          {isTrialing && !isTrialExpired && (
+            <p className="text-xs text-slate-500">
               Trial status: <strong>{rawSubscriptionStatus}</strong>
               {trialEnd
                 ? ` • Trial ends: ${new Date(trialEnd).toLocaleString()}`
                 : ""}
             </p>
+          )}
 
-            {portalContext?.domain ? (
-              <>
-                <p className="text-sm text-slate-700">
-                  Site: <strong>{portalContext.domain}</strong> • Setup status:{" "}
-                  <strong>
-                    {portalContext.siteStatus || "pending_install"}
-                  </strong>
-                </p>
-
-                {snippetReady ? (
-                  <div className="rounded border bg-slate-50 p-3">
-                    <div className="mb-2 text-sm font-medium text-slate-800">
-                      Install snippet (paste before &lt;/body&gt;):
-                    </div>
-                    <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-white p-3 text-xs text-slate-700">
-                      <code>{widgetSnippet}</code>
-                    </pre>
-                  </div>
-                ) : (
-                  <div className="rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
-                    Install package exists, but the widget snippet is not ready
-                    yet.
-                  </div>
-                )}
-              </>
-            ) : (
-              <p className="text-sm text-slate-600">
-                Setup package is preparing. Refresh in a few seconds.
-              </p>
-            )}
-          </div>
-
-          <PortalPlanUpgrade email={user.email} />
-        </>
+          {!isTrialing && hasActiveSubscription && (
+            <p className="text-xs text-slate-500">
+              Your package is active and ready to use.
+            </p>
+          )}
+        </div>
       )}
 
-      {!isTrialing && hasActiveSubscription && (
+      {!canUsePortalFeatures && (
         <div className="rounded-xl border bg-white p-6">
-          <h2 className="text-lg font-semibold">Subscribed Package Section</h2>
-          <p className="text-sm text-slate-600">
-            You are on the <strong>{activePlan.toUpperCase()}</strong> package.
-            Manage usage and support from this portal.
+          <h2 className="text-lg font-semibold">Install your widget</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            Your install snippet is locked until you start or reactivate a plan.
+            Once active, this section will show your ready-to-paste website
+            code.
           </p>
         </div>
       )}
@@ -249,44 +321,51 @@ export default async function PortalPage({
       <div className="rounded-xl border bg-white p-6">
         <h2 className="mb-3 text-lg font-semibold">Lead inbox</h2>
 
-        {enquiries.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead>
-                <tr className="border-b text-slate-500">
-                  <th className="py-2 pr-4 font-medium">Name</th>
-                  <th className="py-2 pr-4 font-medium">Email</th>
-                  <th className="py-2 pr-4 font-medium">Phone</th>
-                </tr>
-              </thead>
-              <tbody>
-                {enquiries.map((enquiry) => (
-                  <tr key={enquiry.id} className="border-b last:border-0">
-                    <td className="py-3 pr-4 font-medium text-slate-900">
-                      {enquiry.name || "—"}
-                    </td>
-                    <td className="py-3 pr-4 text-slate-600">
-                      {enquiry.email || "—"}
-                    </td>
-                    <td className="py-3 pr-4 text-slate-600">
-                      {enquiry.phone || "—"}
-                    </td>
+        {canUsePortalFeatures ? (
+          enquiries.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b text-slate-500">
+                    <th className="py-2 pr-4 font-medium">Name</th>
+                    <th className="py-2 pr-4 font-medium">Email</th>
+                    <th className="py-2 pr-4 font-medium">Phone</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {enquiries.map((enquiry) => (
+                    <tr key={enquiry.id} className="border-b last:border-0">
+                      <td className="py-3 pr-4 font-medium text-slate-900">
+                        {enquiry.name || "—"}
+                      </td>
+                      <td className="py-3 pr-4 text-slate-600">
+                        {enquiry.email || "—"}
+                      </td>
+                      <td className="py-3 pr-4 text-slate-600">
+                        {enquiry.phone || "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="rounded-lg border border-dashed bg-slate-50 p-6 text-sm text-slate-600">
+              <p className="font-medium text-slate-800">
+                No live leads to show yet.
+              </p>
+              <p className="mt-2">
+                This inbox will populate after your widget is installed and
+                visitors start submitting enquiries.
+              </p>
+            </div>
+          )
         ) : (
           <div className="rounded-lg border border-dashed bg-slate-50 p-6 text-sm text-slate-600">
-            <p className="font-medium text-slate-800">
-              No live leads to show yet.
-            </p>
+            <p className="font-medium text-slate-800">Lead inbox locked</p>
             <p className="mt-2">
-              This inbox will populate after the widget and lead capture flow
-              are fully connected.
-            </p>
-            <p className="mt-1">
-              For now, use the setup section above to prepare installation.
+              Upgrade or reactivate your package to view live enquiries and keep
+              your assistant collecting new leads.
             </p>
           </div>
         )}
