@@ -13,17 +13,7 @@ export async function GET(req: Request) {
         ? currentScript.getAttribute('data-claw-token') || ''
         : '';
 
-    var scriptSrc =
-      currentScript && currentScript.src
-        ? currentScript.src
-        : '${appOrigin}/api/widget/bootstrap.js';
-
-    var appBase = '${appOrigin}';
-    try {
-      appBase = new URL(scriptSrc).origin;
-    } catch (_) {}
-
-    var submitUrl = appBase + '/api/widget/submit';
+    var submitUrl = '${appOrigin}/api/widget/submit';
 
     var token = String(window.clawWidgetToken || dataToken || '${token}')
       .trim();
