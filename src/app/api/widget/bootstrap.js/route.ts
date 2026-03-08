@@ -260,6 +260,11 @@ export async function GET(req: Request) {
       panelOpen = !panelOpen;
       panel.style.display = panelOpen ? 'block' : 'none';
     };
+    
+    setTimeout(function () {
+  panelOpen = true;
+  panel.style.display = 'block';
+}, 3000);
 
     root.appendChild(panel);
     root.appendChild(btn);
