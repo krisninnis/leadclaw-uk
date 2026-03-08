@@ -39,13 +39,14 @@ export default function DemoPage() {
           </h2>
 
           <p className="mb-4 text-sm text-slate-600">
-            Use the chat widget in the bottom corner to test how the AI
+            Use the chat widget in the bottom-right corner to test how the AI
             receptionist handles common clinic enquiries.
           </p>
 
           {widgetReady ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-              Demo widget loaded. Try the live chat bubble on this page.
+              Demo widget loaded. A chat bubble should appear in the
+              bottom-right corner of this page.
             </div>
           ) : (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
@@ -67,13 +68,20 @@ export default function DemoPage() {
       </div>
 
       {widgetReady ? (
-        <Script
-          id="leadclaw-demo-widget"
-          src={`${appUrl}/api/widget/bootstrap.js`}
-          strategy="afterInteractive"
-          data-claw-token={demoToken}
-          crossOrigin="anonymous"
-        />
+        <>
+          <Script
+            id="leadclaw-demo-token"
+            strategy="beforeInteractive"
+            dangerouslySetInnerHTML={{
+              __html: `window.clawWidgetToken = ${JSON.stringify(demoToken)};`,
+            }}
+          />
+          <Script
+            id="leadclaw-demo-widget"
+            src={`${appUrl}/api/widget/bootstrap.js`}
+            strategy="afterInteractive"
+          />
+        </>
       ) : null}
     </div>
   );
