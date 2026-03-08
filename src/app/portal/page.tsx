@@ -38,6 +38,8 @@ export default async function PortalPage({
 
   const params = (await searchParams) || {};
   const trialStarted = params.trial === "started";
+  const checkoutSuccess = params.checkout === "success";
+  const setupReady = params.setup === "ready";
 
   const admin = createAdminClient();
 
@@ -191,6 +193,35 @@ export default async function PortalPage({
         <LogoutButton />
       </div>
 
+      {checkoutSuccess && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+          ✅ Checkout complete. Your account is active and your setup is ready
+          below.
+          {setupReady ? " Your install section has been prepared." : ""}
+        </div>
+      )}
+
+      {trialStarted && (
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+          ✅ Free trial started. Your setup section is now active below.
+        </div>
+      )}
+
+      {rawSubscriptionStatus === "past_due" && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
+          <h2 className="text-lg font-semibold text-amber-950">
+            Payment issue detected
+          </h2>
+          <p className="mt-2 text-sm text-amber-900">
+            Your package is still accessible right now, but there is a billing
+            issue that needs attention to avoid interruption.
+          </p>
+          <div className="mt-4">
+            <PortalPlanUpgrade email={user.email} />
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded-xl border bg-white p-4">
           <p className="text-sm text-slate-500">Subscription</p>
@@ -254,12 +285,6 @@ export default async function PortalPage({
         </div>
       </div>
 
-      {trialStarted && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-          ✅ Free trial started. Your setup section is now active below.
-        </div>
-      )}
-
       {showTrialExpiredBox && (
         <div className="rounded-xl border border-amber-300 bg-amber-50 p-4">
           <h2 className="text-lg font-semibold text-amber-950">
@@ -280,22 +305,25 @@ export default async function PortalPage({
 
       {!showTrialExpiredBox && !hasActiveSubscription && <PortalTrialCta />}
 
-      {showUpgradeBox && !showTrialExpiredBox && user.email && (
-        <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
-          <h2 className="text-lg font-semibold text-sky-950">
-            Unlock your live assistant
-          </h2>
-          <p className="mt-2 text-sm text-sky-900">
-            Start or upgrade your package to activate your widget, open the lead
-            inbox, and keep your installation snippet available here.
-          </p>
-          <div className="mt-4">
-            <PortalPlanUpgrade email={user.email} />
+      {showUpgradeBox &&
+        !showTrialExpiredBox &&
+        rawSubscriptionStatus !== "past_due" &&
+        user.email && (
+          <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
+            <h2 className="text-lg font-semibold text-sky-950">
+              Unlock your live assistant
+            </h2>
+            <p className="mt-2 text-sm text-sky-900">
+              Start or upgrade your package to activate your widget, open the
+              lead inbox, and keep your installation snippet available here.
+            </p>
+            <div className="mt-4">
+              <PortalPlanUpgrade email={user.email} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {canUsePortalFeatures && (
+      {canUsePortalFeatures ? (
         <div className="space-y-3 rounded-xl border bg-white p-6">
           <h2 className="text-lg font-semibold">Install your widget</h2>
 
@@ -363,9 +391,7 @@ export default async function PortalPage({
             </p>
           )}
         </div>
-      )}
-
-      {!canUsePortalFeatures && (
+      ) : (
         <div className="rounded-xl border bg-white p-6">
           <h2 className="text-lg font-semibold">Install your widget</h2>
           <p className="mt-2 text-sm text-slate-600">
