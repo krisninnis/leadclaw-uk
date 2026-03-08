@@ -39,17 +39,35 @@ function normalizeAppUrl(input: string) {
   }
 }
 
-function normalizeToken(input: string) {
-  return input.trim().replace(/"/g, "&quot;");
+function escapeHtmlAttr(input: string) {
+  return input
+    .trim()
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function escapeJsString(input: string) {
+  return input
+    .trim()
+    .replace(/\\/g, "\\\\")
+    .replace(/"/g, '\\"')
+    .replace(/'/g, "\\'")
+    .replace(/\r/g, "")
+    .replace(/\n/g, "\\n")
+    .replace(/</g, "\\x3C")
+    .replace(/>/g, "\\x3E");
 }
 
 export function buildWidgetSnippet(appUrl: string, token: string) {
   const base = normalizeAppUrl(appUrl);
-  const safeToken = normalizeToken(token);
+  const safeToken = escapeHtmlAttr(token);
 
   if (!base || !safeToken) return "";
 
   return [
+    "<!-- LeadClaw Widget -->",
     "<script",
     "  defer",
     `  src="${base}/api/widget/bootstrap.js"`,
@@ -61,13 +79,22 @@ export function buildWidgetSnippet(appUrl: string, token: string) {
 
 export function buildGtmSnippet(appUrl: string, token: string) {
   const base = normalizeAppUrl(appUrl);
-  const safeToken = normalizeToken(token);
+  const safeToken = escapeJsString(token);
 
   if (!base || !safeToken) return "";
 
   return [
-    `<script>window.clawWidgetToken="${safeToken}";</script>`,
-    `<script defer src="${base}/api/widget/bootstrap.js" crossorigin="anonymous"></script>`,
+    "<!-- LeadClaw Widget (GTM) -->",
+    "<script>",
+    "(function () {",
+    `  window.clawWidgetToken = "${safeToken}";`,
+    '  var s = document.createElement("script");',
+    `  s.src = "${base}/api/widget/bootstrap.js";`,
+    "  s.defer = true;",
+    '  s.crossOrigin = "anonymous";',
+    "  document.head.appendChild(s);",
+    "})();",
+    "</script>",
   ].join("\n");
 }
 

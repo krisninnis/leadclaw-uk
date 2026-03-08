@@ -60,13 +60,13 @@ export async function GET(req: Request) {
     var headerTitle = document.createElement('div');
     headerTitle.style.fontSize = '14px';
     headerTitle.style.fontWeight = '700';
-    headerTitle.textContent = 'LeadClaw Assistant';
+    headerTitle.textContent = 'LeadClaw';
 
     var headerSubtitle = document.createElement('div');
     headerSubtitle.style.fontSize = '12px';
     headerSubtitle.style.opacity = '0.9';
     headerSubtitle.style.marginTop = '2px';
-    headerSubtitle.textContent = 'We usually reply quickly.';
+    headerSubtitle.textContent = 'Send an enquiry and the clinic can follow up.';
 
     headerTextWrap.appendChild(headerTitle);
     headerTextWrap.appendChild(headerSubtitle);
@@ -203,7 +203,9 @@ export async function GET(req: Request) {
           name: name,
           email: email,
           phone: phone || undefined,
-          token: token
+          token: token,
+          page_url: window.location.href,
+          referrer: document.referrer || undefined
         })
       })
         .then(function (res) {
@@ -244,8 +246,8 @@ export async function GET(req: Request) {
 
     var btn = document.createElement('button');
     btn.type = 'button';
-    btn.setAttribute('aria-label', 'Open LeadClaw assistant');
-    btn.textContent = 'Chat with us';
+    btn.setAttribute('aria-label', 'Open LeadClaw enquiry form');
+    btn.textContent = 'Request a callback';
     btn.style.background = '#0f766e';
     btn.style.color = '#ffffff';
     btn.style.border = '0';
@@ -260,11 +262,11 @@ export async function GET(req: Request) {
       panelOpen = !panelOpen;
       panel.style.display = panelOpen ? 'block' : 'none';
     };
-    
+
     setTimeout(function () {
-  panelOpen = true;
-  panel.style.display = 'block';
-}, 3000);
+      panelOpen = true;
+      panel.style.display = 'block';
+    }, 3000);
 
     root.appendChild(panel);
     root.appendChild(btn);

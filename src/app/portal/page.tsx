@@ -414,6 +414,7 @@ export default async function PortalPage({
                     <th className="py-2 pr-4 font-medium">Name</th>
                     <th className="py-2 pr-4 font-medium">Email</th>
                     <th className="py-2 pr-4 font-medium">Phone</th>
+                    <th className="py-2 pr-4 font-medium">Received</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -427,6 +428,11 @@ export default async function PortalPage({
                       </td>
                       <td className="py-3 pr-4 text-slate-600">
                         {enquiry.phone || "—"}
+                      </td>
+                      <td className="py-3 pr-4 text-slate-600">
+                        {enquiry.created_at
+                          ? new Date(enquiry.created_at).toLocaleString()
+                          : "—"}
                       </td>
                     </tr>
                   ))}
