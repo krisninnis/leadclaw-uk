@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import LogoutButton from "@/components/logout-button";
 import PortalTrialCta from "@/components/portal-trial-cta";
@@ -16,13 +17,75 @@ type PortalContext = {
   widgetToken: string | null;
 };
 
+type EnquiryStatus = "new" | "contacted" | "booked" | "lost";
+
 type EnquiryRow = {
   id: string;
   name: string | null;
   email: string | null;
   phone: string | null;
+  status: string | null;
   created_at: string | null;
 };
+
+const ENQUIRY_STATUS_OPTIONS: EnquiryStatus[] = [
+  "new",
+  "contacted",
+  "booked",
+  "lost",
+];
+
+function normalizeEnquiryStatus(
+  value: string | null | undefined,
+): EnquiryStatus {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  if (normalized === "contacted") return "contacted";
+  if (normalized === "booked") return "booked";
+  if (normalized === "lost") return "lost";
+  return "new";
+}
+
+function statusBadgeClasses(status: EnquiryStatus) {
+  switch (status) {
+    case "contacted":
+      return "border-sky-200 bg-sky-50 text-sky-700";
+    case "booked":
+      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    case "lost":
+      return "border-rose-200 bg-rose-50 text-rose-700";
+    case "new":
+    default:
+      return "border-amber-200 bg-amber-50 text-amber-700";
+  }
+}
+
+async function updateEnquiryStatus(formData: FormData) {
+  "use server";
+
+  const enquiryId = String(formData.get("enquiryId") || "").trim();
+  const nextStatus = normalizeEnquiryStatus(
+    String(formData.get("status") || "").trim(),
+  );
+
+  if (!enquiryId) return;
+
+  const admin = createAdminClient();
+  if (!admin) return;
+
+  const { error } = await admin
+    .from("enquiries")
+    .update({ status: nextStatus })
+    .eq("id", enquiryId);
+
+  if (error) {
+    console.error("[portal] failed to update enquiry status", error);
+  }
+
+  revalidatePath("/portal");
+}
 
 export default async function PortalPage({
   searchParams,
@@ -131,7 +194,7 @@ export default async function PortalPage({
       if (portalContext.clinicId && hasActiveSubscription) {
         const { data: enquiryRows } = await admin
           .from("enquiries")
-          .select("id,name,email,phone,created_at")
+          .select("id,name,email,phone,status,created_at")
           .eq("clinic_id", portalContext.clinicId)
           .order("created_at", { ascending: false })
           .limit(20);
@@ -187,7 +250,7 @@ export default async function PortalPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Client Portal (MVP)</h1>
+          <h1 className="text-3xl font-bold">Client Portal</h1>
           <p className="text-sm text-slate-600">Signed in as {user.email}</p>
         </div>
         <LogoutButton />
@@ -245,7 +308,7 @@ export default async function PortalPage({
           <p className="text-xl font-semibold">{widgetStatus}</p>
           <p className="mt-1 text-xs text-slate-500">
             {canUsePortalFeatures
-              ? "Current setup state of your website assistant."
+              ? "Current setup state of your website enquiry widget."
               : "Activate a package to unlock installation."}
           </p>
         </div>
@@ -311,7 +374,7 @@ export default async function PortalPage({
         user.email && (
           <div className="rounded-xl border border-sky-200 bg-sky-50 p-4">
             <h2 className="text-lg font-semibold text-sky-950">
-              Unlock your live assistant
+              Unlock your live enquiry widget
             </h2>
             <p className="mt-2 text-sm text-sky-900">
               Start or upgrade your package to activate your widget, open the
@@ -329,7 +392,7 @@ export default async function PortalPage({
 
           <p className="text-sm text-slate-600">
             Add the script below to your website to activate your LeadClaw
-            assistant and start capturing enquiries.
+            enquiry widget and start capturing leads.
           </p>
 
           {portalContext?.domain ? (
@@ -414,28 +477,67 @@ export default async function PortalPage({
                     <th className="py-2 pr-4 font-medium">Name</th>
                     <th className="py-2 pr-4 font-medium">Email</th>
                     <th className="py-2 pr-4 font-medium">Phone</th>
+                    <th className="py-2 pr-4 font-medium">Status</th>
                     <th className="py-2 pr-4 font-medium">Received</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {enquiries.map((enquiry) => (
-                    <tr key={enquiry.id} className="border-b last:border-0">
-                      <td className="py-3 pr-4 font-medium text-slate-900">
-                        {enquiry.name || "—"}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-600">
-                        {enquiry.email || "—"}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-600">
-                        {enquiry.phone || "—"}
-                      </td>
-                      <td className="py-3 pr-4 text-slate-600">
-                        {enquiry.created_at
-                          ? new Date(enquiry.created_at).toLocaleString()
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))}
+                  {enquiries.map((enquiry) => {
+                    const status = normalizeEnquiryStatus(enquiry.status);
+
+                    return (
+                      <tr key={enquiry.id} className="border-b last:border-0">
+                        <td className="py-3 pr-4 font-medium text-slate-900">
+                          {enquiry.name || "—"}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-600">
+                          {enquiry.email || "—"}
+                        </td>
+                        <td className="py-3 pr-4 text-slate-600">
+                          {enquiry.phone || "—"}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <div className="flex flex-col gap-2">
+                            <span
+                              className={`inline-flex w-fit rounded-full border px-2 py-1 text-xs font-medium capitalize ${statusBadgeClasses(
+                                status,
+                              )}`}
+                            >
+                              {status}
+                            </span>
+
+                            <form action={updateEnquiryStatus}>
+                              <input
+                                type="hidden"
+                                name="enquiryId"
+                                value={enquiry.id}
+                              />
+                              <select
+                                name="status"
+                                defaultValue={status}
+                                onChange={(e) =>
+                                  e.currentTarget.form?.requestSubmit()
+                                }
+                                className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
+                              >
+                                {ENQUIRY_STATUS_OPTIONS.map((option) => (
+                                  <option key={option} value={option}>
+                                    {option.charAt(0).toUpperCase() +
+                                      option.slice(1)}
+                                  </option>
+                                ))}
+                              </select>
+                            </form>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-4 text-slate-600">
+                          {enquiry.created_at
+                            ? new Date(enquiry.created_at).toLocaleString()
+                            : "—"}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -455,7 +557,7 @@ export default async function PortalPage({
             <p className="font-medium text-slate-800">Lead inbox locked</p>
             <p className="mt-2">
               Upgrade or reactivate your package to view live enquiries and keep
-              your assistant collecting new leads.
+              your widget collecting new leads.
             </p>
           </div>
         )}

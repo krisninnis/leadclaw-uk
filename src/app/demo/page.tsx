@@ -11,25 +11,25 @@ export default function DemoPage() {
       <div className="space-y-8">
         <div className="space-y-4">
           <h1 className="text-4xl font-bold text-slate-950">
-            Try the AI Receptionist Live
+            See LeadClaw capture a real clinic enquiry
           </h1>
 
           <p className="max-w-3xl text-lg text-slate-600">
-            Send a message below to see how LeadClaw captures enquiries and
-            responds instantly to clinic visitors.
+            This demo shows how LeadClaw captures website enquiries and sends
+            them into a simple clinic lead inbox — even when your team is busy
+            or out of hours.
           </p>
         </div>
 
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <p className="mb-4 text-sm font-medium text-slate-500">
-            Example questions you can ask:
+            Try submitting a test enquiry like:
           </p>
 
           <ul className="list-disc space-y-2 pl-6 text-sm text-slate-700">
-            <li>How much is Botox?</li>
-            <li>Do you offer teeth whitening?</li>
-            <li>Can I book a consultation?</li>
-            <li>Where are you located?</li>
+            <li>Name: Sarah Jones</li>
+            <li>Email: sarah@example.com</li>
+            <li>Phone: 07123 456789</li>
           </ul>
         </div>
 
@@ -39,22 +39,58 @@ export default function DemoPage() {
           </h2>
 
           <p className="mb-4 text-sm text-slate-600">
-            Use the chat widget in the bottom-right corner to test how the AI
-            receptionist handles common clinic enquiries.
+            Use the enquiry widget in the bottom-right corner of this page to
+            test the live capture flow.
           </p>
 
           {widgetReady ? (
             <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-              Demo widget loaded. A chat bubble should appear in the
+              Demo widget loaded. An enquiry widget should appear in the
               bottom-right corner of this page.
             </div>
           ) : (
             <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
               Demo widget token is not configured yet. Add
               <strong> NEXT_PUBLIC_DEMO_WIDGET_TOKEN</strong> to your Vercel
-              environment variables to enable the live receptionist demo here.
+              environment variables to enable the live demo here.
             </div>
           )}
+        </div>
+
+        <div className="rounded-2xl border bg-slate-50 p-6 shadow-sm">
+          <h2 className="mb-3 text-xl font-semibold text-slate-950">
+            What LeadClaw does
+          </h2>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div>
+              <h3 className="font-medium text-slate-900">
+                1. Capture enquiries
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Visitors submit their details through a simple website widget.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-medium text-slate-900">
+                2. Store every lead
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Each enquiry is saved and linked to the correct clinic account.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="font-medium text-slate-900">
+                3. Show it in portal
+              </h3>
+              <p className="mt-1 text-sm text-slate-600">
+                Clinics can view new website leads instantly inside their lead
+                inbox.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="pt-2 text-center">

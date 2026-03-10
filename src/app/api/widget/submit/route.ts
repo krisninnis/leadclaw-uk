@@ -23,6 +23,15 @@ function buildCorsHeaders(origin?: string | null) {
   };
 }
 
+function escapeHtml(input: string) {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export async function OPTIONS(req: Request) {
   const origin = req.headers.get("origin");
 
@@ -48,6 +57,10 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const parsed = schema.parse(body);
+
+    const safeName = parsed.name.trim();
+    const safeEmail = parsed.email.trim().toLowerCase();
+    const safePhone = parsed.phone?.trim() || null;
 
     const { data: tokenRow, error: tokenError } = await admin
       .from("widget_tokens")
@@ -98,9 +111,9 @@ export async function POST(req: Request) {
 
     const enquiryPayload = {
       clinic_id: site.clinic_id,
-      name: parsed.name.trim(),
-      email: parsed.email.trim().toLowerCase(),
-      phone: parsed.phone?.trim() || null,
+      name: safeName,
+      email: safeEmail,
+      phone: safePhone,
     };
 
     const { error: insertError } = await admin
@@ -116,10 +129,13 @@ export async function POST(req: Request) {
       );
     }
 
-    if (site.onboarding_client_id && resend) {
+    let clinicName = "our clinic";
+    let clinicContactEmail: string | null = null;
+
+    if (site.onboarding_client_id) {
       const { data: client, error: clientError } = await admin
         .from("onboarding_clients")
-        .select("contact_email,company_name")
+        .select("contact_email,company_name,business_name,client_name")
         .eq("id", site.onboarding_client_id)
         .limit(1)
         .maybeSingle();
@@ -128,19 +144,26 @@ export async function POST(req: Request) {
         console.error("[widget.submit] client lookup failed", clientError);
       }
 
-      if (client?.contact_email) {
+      clinicContactEmail = client?.contact_email || null;
+      clinicName =
+        client?.company_name?.trim() ||
+        client?.business_name?.trim() ||
+        client?.client_name?.trim() ||
+        "our clinic";
+
+      if (clinicContactEmail && resend) {
         try {
           const sendResult = await resend.emails.send({
             from: "LeadClaw <onboarding@resend.dev>",
-            to: client.contact_email,
+            to: clinicContactEmail,
             subject: "New website enquiry received",
             html: `
               <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.5; color: #0f172a;">
                 <h2 style="margin-bottom: 12px;">New Enquiry Received</h2>
                 <p style="margin-bottom: 16px;">
                   You have received a new website enquiry${
-                    client.company_name
-                      ? ` for <strong>${client.company_name}</strong>`
+                    clinicName
+                      ? ` for <strong>${escapeHtml(clinicName)}</strong>`
                       : ""
                   }.
                 </p>
@@ -148,15 +171,15 @@ export async function POST(req: Request) {
                 <table style="border-collapse: collapse; margin-bottom: 16px;">
                   <tr>
                     <td style="padding: 6px 12px 6px 0;"><strong>Name:</strong></td>
-                    <td style="padding: 6px 0;">${parsed.name.trim()}</td>
+                    <td style="padding: 6px 0;">${escapeHtml(safeName)}</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 12px 6px 0;"><strong>Email:</strong></td>
-                    <td style="padding: 6px 0;">${parsed.email.trim().toLowerCase()}</td>
+                    <td style="padding: 6px 0;">${escapeHtml(safeEmail)}</td>
                   </tr>
                   <tr>
                     <td style="padding: 6px 12px 6px 0;"><strong>Phone:</strong></td>
-                    <td style="padding: 6px 0;">${parsed.phone?.trim() || "Not provided"}</td>
+                    <td style="padding: 6px 0;">${escapeHtml(safePhone || "Not provided")}</td>
                   </tr>
                 </table>
 
@@ -171,15 +194,59 @@ export async function POST(req: Request) {
         } catch (emailError) {
           console.error("[widget.submit] lead notification failed", emailError);
         }
-      } else {
+      } else if (!clinicContactEmail) {
         console.warn(
           "[widget.submit] no contact_email found for onboarding client",
           site.onboarding_client_id,
         );
       }
-    } else if (!resend) {
+    }
+
+    if (resend) {
+      try {
+        const autoReplyResult = await resend.emails.send({
+          from: "LeadClaw <onboarding@resend.dev>",
+          to: safeEmail,
+          subject: `Thanks for contacting ${clinicName}`,
+          html: `
+            <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.5; color: #0f172a;">
+              <p>Hi ${escapeHtml(safeName)},</p>
+
+              <p>Thanks for contacting <strong>${escapeHtml(clinicName)}</strong>.</p>
+
+              <p>
+                We've received your enquiry and a member of the team will be in touch shortly.
+              </p>
+
+              <p>
+                If your enquiry is urgent, please contact the clinic directly.
+              </p>
+
+              <p style="margin-top: 20px;">
+                Best regards,<br />
+                ${escapeHtml(clinicName)}
+              </p>
+            </div>
+          `,
+          text: `Hi ${safeName},
+
+Thanks for contacting ${clinicName}.
+
+We've received your enquiry and a member of the team will be in touch shortly.
+
+If your enquiry is urgent, please contact the clinic directly.
+
+Best regards,
+${clinicName}`,
+        });
+
+        console.log("[widget.submit] auto reply sent", autoReplyResult);
+      } catch (autoReplyError) {
+        console.error("[widget.submit] auto reply failed", autoReplyError);
+      }
+    } else {
       console.warn(
-        "[widget.submit] RESEND_API_KEY missing; notification skipped",
+        "[widget.submit] RESEND_API_KEY missing; notification and auto reply skipped",
       );
     }
 

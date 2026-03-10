@@ -7,23 +7,43 @@ const tiers = [
     key: "starter",
     name: "Starter",
     price: "£99/mo",
-    points: ["Bot hosting", "Lead capture", "Email support"],
+    description:
+      "For clinics that want to capture website enquiries and stop missing leads.",
+    points: [
+      "Website enquiry widget",
+      "Clinic lead inbox",
+      "Portal dashboard",
+      "Email notifications",
+      "Email support",
+    ],
   },
   {
     key: "growth",
     name: "Growth",
     price: "£249/mo",
+    description:
+      "For clinics that want better follow-up and more value from every enquiry.",
     points: [
       "Everything in Starter",
       "Follow-up automations",
-      "Monthly optimization",
+      "Lead recovery tools",
+      "Monthly optimisation support",
+      "Growth-focused support",
     ],
   },
   {
     key: "pro",
     name: "Pro",
     price: "£499/mo",
-    points: ["Everything in Growth", "Multi-channel setup", "Priority support"],
+    description:
+      "For clinics that want a more hands-on growth and optimisation setup.",
+    points: [
+      "Everything in Growth",
+      "Multi-location or advanced setup",
+      "Priority support",
+      "Higher-touch onboarding",
+      "Ongoing optimisation support",
+    ],
   },
 ];
 
@@ -51,14 +71,28 @@ export default function PricingPage() {
   }
 
   return (
-    <div>
-      <h1 className="mb-6 text-3xl font-bold">Pricing</h1>
-      <p className="mb-4 text-slate-600">
-        Start with a 7-day free trial. If no payment method is added before the
-        trial ends, the subscription will not continue.
-      </p>
+    <div className="space-y-8">
+      <div>
+        <h1 className="mb-4 text-3xl font-bold">Pricing</h1>
+        <p className="max-w-3xl text-slate-600">
+          LeadClaw helps clinics capture missed website enquiries and see them
+          instantly in a simple lead inbox. Start with a 7-day free trial. If no
+          payment method is added before the trial ends, the subscription will
+          not continue.
+        </p>
+      </div>
 
-      <div className="mb-8 max-w-md">
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+        <h2 className="mb-2 text-lg font-semibold">
+          What every plan helps you do
+        </h2>
+        <p className="text-sm text-slate-700">
+          Capture website enquiries, stop missing leads when your team is busy
+          or out of hours, and follow up faster from one simple portal.
+        </p>
+      </div>
+
+      <div className="max-w-md">
         <label className="mb-1 block text-sm font-medium">
           Email (used for checkout if you are not logged in)
         </label>
@@ -79,11 +113,14 @@ export default function PricingPage() {
           >
             <h2 className="text-xl font-semibold">{tier.name}</h2>
             <p className="my-3 text-2xl font-bold">{tier.price}</p>
+            <p className="mb-4 text-sm text-slate-600">{tier.description}</p>
+
             <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
               {tier.points.map((p) => (
                 <li key={p}>{p}</li>
               ))}
             </ul>
+
             <button
               onClick={() => startCheckout(tier.key)}
               className="mt-5 w-full rounded-lg bg-slate-900 px-4 py-2 text-white"
@@ -94,7 +131,7 @@ export default function PricingPage() {
         ))}
       </div>
 
-      {status && <p className="mt-4 text-sm text-slate-700">{status}</p>}
+      {status && <p className="text-sm text-slate-700">{status}</p>}
     </div>
   );
 }

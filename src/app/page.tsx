@@ -1,36 +1,66 @@
-import Link from 'next/link'
-import Section from '@/components/section'
-import NewsletterSignup from '@/components/newsletter-signup'
+import Link from "next/link";
+import Section from "@/components/section";
+import NewsletterSignup from "@/components/newsletter-signup";
 
 export default function Home() {
   return (
     <div className="space-y-8">
       <section className="rounded-2xl bg-slate-900 p-10 text-white">
-        <p className="mb-2 text-sm uppercase tracking-wider text-slate-300">UK Aesthetic Clinics</p>
-        <h1 className="text-4xl font-bold">No calls. No pressure. 7-day free AI front-desk trial.</h1>
-        <p className="mt-4 max-w-3xl text-slate-200">
-          We install a discreet AI enquiry assistant that captures Botox, whitening, and spray-tan leads 24/7.
-          No credit card for trial. Start paying only when satisfied.
+        <p className="mb-2 text-sm uppercase tracking-wider text-slate-300">
+          Built for UK Aesthetic Clinics
         </p>
+
+        <h1 className="text-4xl font-bold">
+          Never miss another clinic enquiry.
+        </h1>
+
+        <p className="mt-4 max-w-3xl text-slate-200">
+          LeadClaw installs a simple enquiry widget on your website that
+          captures patient enquiries and shows them instantly in your clinic
+          lead inbox — even when your team is busy or out of hours.
+        </p>
+
         <div className="mt-6 flex gap-3">
-          <Link href="/apply" className="rounded-lg bg-white px-4 py-2 font-medium text-slate-900">Start free trial</Link>
-          <Link href="/pricing" className="rounded-lg border border-slate-500 px-4 py-2">See pricing</Link>
+          <Link
+            href="/apply"
+            className="rounded-lg bg-white px-4 py-2 font-medium text-slate-900"
+          >
+            Start free trial
+          </Link>
+
+          <Link
+            href="/pricing"
+            className="rounded-lg border border-slate-500 px-4 py-2"
+          >
+            See pricing
+          </Link>
         </div>
       </section>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Section title="Lead capture">
-          <p>Replies in under 60 seconds, qualifies treatment intent, captures contact details.</p>
+        <Section title="Capture enquiries instantly">
+          <p>
+            Add a small widget to your website and capture enquiries from
+            potential patients 24/7.
+          </p>
         </Section>
-        <Section title="Portal + analytics">
-          <p>Client dashboard with lead inbox, statuses, trial progress, and simple performance metrics.</p>
+
+        <Section title="See every lead in one place">
+          <p>
+            Every enquiry appears instantly in your LeadClaw portal so your team
+            can follow up quickly.
+          </p>
         </Section>
-        <Section title="Compliance-first">
-          <p>Clear trial waiver, cooling-off period language, and cancellation-friendly monthly terms.</p>
+
+        <Section title="Built for aesthetic clinics">
+          <p>
+            Designed for Botox, whitening, skin, and beauty clinics that want to
+            stop missing potential clients.
+          </p>
         </Section>
       </div>
 
       <NewsletterSignup />
     </div>
-  )
+  );
 }
