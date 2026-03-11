@@ -2,6 +2,16 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
+    const auth = req.headers.get("x-agent-secret");
+    const expected = process.env.AGENT_SECRET;
+
+    if (!expected || auth !== expected) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { command } = body;
 
@@ -17,13 +27,13 @@ export async function POST(req: Request) {
     return NextResponse.json({
       success: true,
       message: "Command received",
-      command
+      command,
     });
-
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Invalid request" },
       { status: 500 }
     );
   }
-}
+}	
+
