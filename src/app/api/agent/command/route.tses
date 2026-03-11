@@ -1,0 +1,13 @@
+
+      success: true,
+      message: "Command received",
+      command,
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid request" },
+      { status: 500 }
+    );
+  }
+}	
+
