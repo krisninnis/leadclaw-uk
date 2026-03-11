@@ -14,6 +14,7 @@ export async function GET(req: Request) {
         : '';
 
     var submitUrl = '${appOrigin}/api/widget/submit';
+    var pingUrl = '${appOrigin}/api/widget/ping';
 
     var token = String(window.clawWidgetToken || dataToken || '${token}')
       .trim();
@@ -24,6 +25,25 @@ export async function GET(req: Request) {
     }
 
     if (document.getElementById('claw-widget-root')) return;
+
+    function sendPing() {
+      try {
+        fetch(pingUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: token,
+            domain: window.location.hostname || window.location.host || 'unknown'
+          })
+        }).catch(function () {
+          // ping failures should never break the widget
+        });
+      } catch (e) {
+        // ignore ping errors
+      }
+    }
+
+    sendPing();
 
     var root = document.createElement('div');
     root.id = 'claw-widget-root';
@@ -66,7 +86,7 @@ export async function GET(req: Request) {
     headerSubtitle.style.fontSize = '12px';
     headerSubtitle.style.opacity = '0.9';
     headerSubtitle.style.marginTop = '2px';
-    headerSubtitle.textContent = 'Send an enquiry and the clinic can follow up.';
+    headerSubtitle.textContent = 'Ask a question or leave your details for a callback.';
 
     headerTextWrap.appendChild(headerTitle);
     headerTextWrap.appendChild(headerSubtitle);
@@ -99,15 +119,14 @@ export async function GET(req: Request) {
     var title = document.createElement('div');
     title.style.fontWeight = '700';
     title.style.marginBottom = '6px';
-    title.textContent = 'Request a callback';
+    title.textContent = 'How can the clinic help?';
 
     var intro = document.createElement('div');
     intro.style.fontSize = '13px';
     intro.style.color = '#475569';
     intro.style.marginBottom = '12px';
     intro.textContent =
-      'Share your details and the clinic team can follow up with you.';
-
+  'Leave your details and the clinic team can get back to you as soon as possible.';
     var form = document.createElement('form');
 
     var nameField = document.createElement('input');
@@ -155,7 +174,7 @@ export async function GET(req: Request) {
     status.style.color = '#475569';
 
     var submitButton = document.createElement('button');
-    submitButton.textContent = 'Send enquiry';
+    submitButton.textContent = 'Send my enquiry';
     submitButton.type = 'submit';
     submitButton.style.background = '#0f766e';
     submitButton.style.color = '#fff';
@@ -177,7 +196,7 @@ export async function GET(req: Request) {
       submitButton.disabled = value;
       submitButton.style.opacity = value ? '0.7' : '1';
       submitButton.style.cursor = value ? 'not-allowed' : 'pointer';
-      submitButton.textContent = value ? 'Sending...' : 'Send enquiry';
+      submitButton.textContent = value ? 'Sending...' : 'Send my enquiry';
     }
 
     form.onsubmit = function (e) {
@@ -218,7 +237,7 @@ export async function GET(req: Request) {
             nameField.value = '';
             emailField.value = '';
             phoneField.value = '';
-            setStatus('Thanks — your enquiry has been sent.', '#166534');
+            setStatus('Thanks — your enquiry has been received. The clinic team can follow up shortly.', '#166534');
           } else {
             setStatus('Something went wrong. Please try again later.', '#b91c1c');
           }
@@ -247,7 +266,7 @@ export async function GET(req: Request) {
     var btn = document.createElement('button');
     btn.type = 'button';
     btn.setAttribute('aria-label', 'Open LeadClaw enquiry form');
-    btn.textContent = 'Request a callback';
+    btn.textContent = 'Ask the clinic';
     btn.style.background = '#0f766e';
     btn.style.color = '#ffffff';
     btn.style.border = '0';

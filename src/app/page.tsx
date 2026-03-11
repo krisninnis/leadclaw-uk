@@ -7,17 +7,18 @@ export default function Home() {
     <div className="space-y-8">
       <section className="rounded-2xl bg-slate-900 p-10 text-white">
         <p className="mb-2 text-sm uppercase tracking-wider text-slate-300">
-          Built for UK Aesthetic Clinics
+          Built for UK aesthetic clinics
         </p>
 
         <h1 className="text-4xl font-bold">
-          Never miss another clinic enquiry.
+          Capture more website enquiries without adding more admin.
         </h1>
 
         <p className="mt-4 max-w-3xl text-slate-200">
-          LeadClaw installs a simple enquiry widget on your website that
-          captures patient enquiries and shows them instantly in your clinic
-          lead inbox — even when your team is busy or out of hours.
+          LeadClaw adds a simple enquiry widget to your website so potential
+          patients can get in touch even when your team is busy or out of hours.
+          Every enquiry appears instantly in your clinic portal so your staff
+          can follow up quickly.
         </p>
 
         <div className="mt-6 flex gap-3">
@@ -38,24 +39,24 @@ export default function Home() {
       </section>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Section title="Capture enquiries instantly">
+        <Section title="Capture enquiries 24/7">
           <p>
-            Add a small widget to your website and capture enquiries from
-            potential patients 24/7.
+            Add a lightweight widget to your website so visitors can leave their
+            details whenever they are ready to enquire.
           </p>
         </Section>
 
-        <Section title="See every lead in one place">
+        <Section title="See every lead in one portal">
           <p>
-            Every enquiry appears instantly in your LeadClaw portal so your team
-            can follow up quickly.
+            Every enquiry is stored in your LeadClaw portal, helping your team
+            keep track of new, contacted, booked, and lost leads.
           </p>
         </Section>
 
-        <Section title="Built for aesthetic clinics">
+        <Section title="Built for clinic teams">
           <p>
-            Designed for Botox, whitening, skin, and beauty clinics that want to
-            stop missing potential clients.
+            Designed for aesthetic, skin, whitening, and beauty clinics that
+            want a simple way to stop missing website opportunities.
           </p>
         </Section>
       </div>

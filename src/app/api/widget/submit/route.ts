@@ -150,8 +150,14 @@ export async function POST(req: Request) {
         client?.business_name?.trim() ||
         client?.client_name?.trim() ||
         "our clinic";
+    }
 
-      if (clinicContactEmail && resend) {
+    if (!resend) {
+      console.warn(
+        "[widget.submit] RESEND_API_KEY missing; notification and auto reply skipped",
+      );
+    } else {
+      if (clinicContactEmail) {
         try {
           const sendResult = await resend.emails.send({
             from: "LeadClaw <onboarding@resend.dev>",
@@ -161,11 +167,9 @@ export async function POST(req: Request) {
               <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.5; color: #0f172a;">
                 <h2 style="margin-bottom: 12px;">New Enquiry Received</h2>
                 <p style="margin-bottom: 16px;">
-                  You have received a new website enquiry${
-                    clinicName
-                      ? ` for <strong>${escapeHtml(clinicName)}</strong>`
-                      : ""
-                  }.
+                  You have received a new website enquiry for <strong>${escapeHtml(
+                    clinicName,
+                  )}</strong>.
                 </p>
 
                 <table style="border-collapse: collapse; margin-bottom: 16px;">
@@ -179,7 +183,9 @@ export async function POST(req: Request) {
                   </tr>
                   <tr>
                     <td style="padding: 6px 12px 6px 0;"><strong>Phone:</strong></td>
-                    <td style="padding: 6px 0;">${escapeHtml(safePhone || "Not provided")}</td>
+                    <td style="padding: 6px 0;">${escapeHtml(
+                      safePhone || "Not provided",
+                    )}</td>
                   </tr>
                 </table>
 
@@ -188,21 +194,30 @@ export async function POST(req: Request) {
                 </p>
               </div>
             `,
+            text: `New website enquiry received
+
+Clinic: ${clinicName}
+Name: ${safeName}
+Email: ${safeEmail}
+Phone: ${safePhone || "Not provided"}
+
+Log into your LeadClaw portal to view the lead.`,
           });
 
-          console.log("[widget.submit] lead notification sent", sendResult);
+          console.log("[widget.submit] clinic notification sent", sendResult);
         } catch (emailError) {
-          console.error("[widget.submit] lead notification failed", emailError);
+          console.error(
+            "[widget.submit] clinic notification failed",
+            emailError,
+          );
         }
-      } else if (!clinicContactEmail) {
+      } else {
         console.warn(
           "[widget.submit] no contact_email found for onboarding client",
           site.onboarding_client_id,
         );
       }
-    }
 
-    if (resend) {
       try {
         const autoReplyResult = await resend.emails.send({
           from: "LeadClaw <onboarding@resend.dev>",
@@ -215,7 +230,7 @@ export async function POST(req: Request) {
               <p>Thanks for contacting <strong>${escapeHtml(clinicName)}</strong>.</p>
 
               <p>
-                We've received your enquiry and a member of the team will be in touch shortly.
+                We've received your enquiry and a member of the clinic team can follow up shortly.
               </p>
 
               <p>
@@ -232,7 +247,7 @@ export async function POST(req: Request) {
 
 Thanks for contacting ${clinicName}.
 
-We've received your enquiry and a member of the team will be in touch shortly.
+We've received your enquiry and a member of the clinic team can follow up shortly.
 
 If your enquiry is urgent, please contact the clinic directly.
 
@@ -244,13 +259,17 @@ ${clinicName}`,
       } catch (autoReplyError) {
         console.error("[widget.submit] auto reply failed", autoReplyError);
       }
-    } else {
-      console.warn(
-        "[widget.submit] RESEND_API_KEY missing; notification and auto reply skipped",
-      );
     }
 
-    return NextResponse.json({ ok: true }, { headers: corsHeaders });
+    return NextResponse.json(
+      {
+        ok: true,
+        stored: true,
+        notifiedClinic: Boolean(clinicContactEmail && resend),
+        autoReplySent: Boolean(resend),
+      },
+      { headers: corsHeaders },
+    );
   } catch (err: unknown) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(

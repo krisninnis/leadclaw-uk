@@ -11,13 +11,13 @@ export default function DemoPage() {
       <div className="space-y-8">
         <div className="space-y-4">
           <h1 className="text-4xl font-bold text-slate-950">
-            See LeadClaw capture a real clinic enquiry
+            See LeadClaw capture a real website enquiry
           </h1>
 
           <p className="max-w-3xl text-lg text-slate-600">
-            This demo shows how LeadClaw captures website enquiries and sends
-            them into a simple clinic lead inbox — even when your team is busy
-            or out of hours.
+            This demo shows how LeadClaw captures enquiries from a clinic
+            website and sends them into a simple lead inbox so staff can follow
+            up quickly.
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export default function DemoPage() {
                 1. Capture enquiries
               </h3>
               <p className="mt-1 text-sm text-slate-600">
-                Visitors submit their details through a simple website widget.
+                Visitors leave their details through a simple website widget.
               </p>
             </div>
 
@@ -83,11 +83,11 @@ export default function DemoPage() {
 
             <div>
               <h3 className="font-medium text-slate-900">
-                3. Show it in portal
+                3. Show it in the portal
               </h3>
               <p className="mt-1 text-sm text-slate-600">
-                Clinics can view new website leads instantly inside their lead
-                inbox.
+                Clinic teams can view, manage, and track new leads inside their
+                LeadClaw portal.
               </p>
             </div>
           </div>
@@ -98,7 +98,7 @@ export default function DemoPage() {
             href="/pricing"
             className="inline-flex rounded-lg bg-black px-6 py-3 text-white transition hover:opacity-90"
           >
-            Start Free Trial
+            Start free trial
           </a>
         </div>
       </div>

@@ -8,11 +8,11 @@ const tiers = [
     name: "Starter",
     price: "£99/mo",
     description:
-      "For clinics that want to capture website enquiries and stop missing leads.",
+      "For clinics that want a simple way to capture website enquiries and stop missing leads.",
     points: [
       "Website enquiry widget",
       "Clinic lead inbox",
-      "Portal dashboard",
+      "Lead status tracking",
       "Email notifications",
       "Email support",
     ],
@@ -22,7 +22,7 @@ const tiers = [
     name: "Growth",
     price: "£249/mo",
     description:
-      "For clinics that want better follow-up and more value from every enquiry.",
+      "For clinics that want stronger follow-up and better visibility across incoming leads.",
     points: [
       "Everything in Starter",
       "Follow-up automations",
@@ -36,10 +36,10 @@ const tiers = [
     name: "Pro",
     price: "£499/mo",
     description:
-      "For clinics that want a more hands-on growth and optimisation setup.",
+      "For clinics that want a more hands-on setup, support, and ongoing optimisation.",
     points: [
       "Everything in Growth",
-      "Multi-location or advanced setup",
+      "Advanced or multi-location setup",
       "Priority support",
       "Higher-touch onboarding",
       "Ongoing optimisation support",
@@ -75,20 +75,21 @@ export default function PricingPage() {
       <div>
         <h1 className="mb-4 text-3xl font-bold">Pricing</h1>
         <p className="max-w-3xl text-slate-600">
-          LeadClaw helps clinics capture missed website enquiries and see them
-          instantly in a simple lead inbox. Start with a 7-day free trial. If no
-          payment method is added before the trial ends, the subscription will
-          not continue.
+          LeadClaw helps clinics capture missed website enquiries, keep them in
+          one simple portal, and follow up faster. Start with a 7-day free
+          trial. If no payment method is added before the trial ends, the
+          subscription will not continue.
         </p>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
         <h2 className="mb-2 text-lg font-semibold">
-          What every plan helps you do
+          What LeadClaw helps you do
         </h2>
         <p className="text-sm text-slate-700">
-          Capture website enquiries, stop missing leads when your team is busy
-          or out of hours, and follow up faster from one simple portal.
+          Capture website enquiries, reduce missed opportunities when your team
+          is busy or out of hours, and manage every lead from one simple clinic
+          portal.
         </p>
       </div>
 

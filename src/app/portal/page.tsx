@@ -7,6 +7,7 @@ import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildWidgetSnippet } from "@/lib/onboarding";
 import PortalChat from "@/components/portal-chat";
+import InstallSnippetCard from "@/components/install-snippet-card";
 
 type PortalContext = {
   clientId: string;
@@ -15,6 +16,8 @@ type PortalContext = {
   siteStatus: string | null;
   clinicId: string | null;
   widgetToken: string | null;
+  widgetLastSeenAt: string | null;
+  widgetLastSeenDomain: string | null;
 };
 
 type EnquiryStatus = "new" | "contacted" | "booked" | "lost";
@@ -168,11 +171,13 @@ export default async function PortalPage({
         .maybeSingle();
 
       let widgetToken: string | null = null;
+      let widgetLastSeenAt: string | null = null;
+      let widgetLastSeenDomain: string | null = null;
 
       if (site?.id) {
         const { data: tokenRow } = await admin
           .from("widget_tokens")
-          .select("token")
+          .select("token,last_seen_at,last_seen_domain")
           .eq("onboarding_site_id", site.id)
           .eq("status", "active")
           .order("created_at", { ascending: false })
@@ -180,6 +185,8 @@ export default async function PortalPage({
           .maybeSingle();
 
         widgetToken = tokenRow?.token || null;
+        widgetLastSeenAt = tokenRow?.last_seen_at || null;
+        widgetLastSeenDomain = tokenRow?.last_seen_domain || null;
       }
 
       portalContext = {
@@ -189,6 +196,8 @@ export default async function PortalPage({
         siteStatus: site?.status || null,
         clinicId: site?.clinic_id || null,
         widgetToken,
+        widgetLastSeenAt,
+        widgetLastSeenDomain,
       };
 
       if (portalContext.clinicId && hasActiveSubscription) {
@@ -236,9 +245,11 @@ export default async function PortalPage({
   const showUpgradeBox =
     !hasActiveSubscription || rawSubscriptionStatus === "past_due";
 
+  const widgetDetected = Boolean(portalContext?.widgetLastSeenAt);
+
   const widgetStatus = !canUsePortalFeatures
     ? "Locked"
-    : portalContext?.siteStatus === "handover_ready"
+    : widgetDetected
       ? "Live"
       : portalContext?.siteStatus === "pending_install"
         ? "Pending install"
@@ -308,7 +319,9 @@ export default async function PortalPage({
           <p className="text-xl font-semibold">{widgetStatus}</p>
           <p className="mt-1 text-xs text-slate-500">
             {canUsePortalFeatures
-              ? "Current setup state of your website enquiry widget."
+              ? widgetDetected
+                ? "Your widget has been detected on a live website."
+                : "Install your widget to start capturing enquiries."
               : "Activate a package to unlock installation."}
           </p>
         </div>
@@ -406,16 +419,37 @@ export default async function PortalPage({
             </p>
           )}
 
+          {widgetDetected && (
+            <div className="rounded border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+              <p className="font-medium">Widget detected live</p>
+              <p className="mt-1">
+                Last seen:{" "}
+                <strong>
+                  {portalContext?.widgetLastSeenAt
+                    ? new Date(portalContext.widgetLastSeenAt).toLocaleString()
+                    : "—"}
+                </strong>
+              </p>
+              <p className="mt-1">
+                Domain:{" "}
+                <strong>{portalContext?.widgetLastSeenDomain || "—"}</strong>
+              </p>
+            </div>
+          )}
+
+          {!widgetDetected && snippetReady && (
+            <div className="rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+              <p className="font-medium">Widget not detected yet</p>
+              <p className="mt-1">
+                Install the snippet, publish your website, then refresh this
+                page after visiting your site.
+              </p>
+            </div>
+          )}
+
           {snippetReady ? (
             <>
-              <div className="rounded border bg-slate-50 p-3">
-                <div className="mb-2 text-sm font-medium text-slate-800">
-                  Install snippet (paste before &lt;/body&gt;):
-                </div>
-                <pre className="overflow-x-auto whitespace-pre-wrap break-words rounded bg-white p-3 text-xs text-slate-700">
-                  <code>{widgetSnippet}</code>
-                </pre>
-              </div>
+              <InstallSnippetCard widgetSnippet={widgetSnippet} />
 
               <div className="rounded border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
                 <p className="font-medium text-slate-900">
@@ -428,7 +462,8 @@ export default async function PortalPage({
                   </li>
                   <li>Publish the site changes.</li>
                   <li>
-                    Open your site in an incognito tab and test the widget.
+                    Visit your live website, then return here and refresh to
+                    confirm the widget has been detected.
                   </li>
                 </ol>
               </div>
@@ -515,9 +550,6 @@ export default async function PortalPage({
                               <select
                                 name="status"
                                 defaultValue={status}
-                                onChange={(e) =>
-                                  e.currentTarget.form?.requestSubmit()
-                                }
                                 className="rounded border border-slate-300 bg-white px-2 py-1 text-xs text-slate-700"
                               >
                                 {ENQUIRY_STATUS_OPTIONS.map((option) => (
@@ -527,6 +559,12 @@ export default async function PortalPage({
                                   </option>
                                 ))}
                               </select>
+                              <button
+                                type="submit"
+                                className="rounded bg-slate-900 px-2 py-1 text-xs font-medium text-white"
+                              >
+                                Update
+                              </button>
                             </form>
                           </div>
                         </td>
