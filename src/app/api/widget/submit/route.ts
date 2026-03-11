@@ -135,19 +135,17 @@ export async function POST(req: Request) {
     if (site.onboarding_client_id) {
       const { data: client, error: clientError } = await admin
         .from("onboarding_clients")
-        .select("contact_email,company_name,business_name,client_name")
+        .select("contact_email,business_name,client_name")
         .eq("id", site.onboarding_client_id)
         .limit(1)
         .maybeSingle();
-      console.log("[widget.submit] client lookup result", client);
 
       if (clientError) {
         console.error("[widget.submit] client lookup failed", clientError);
       }
 
-      clinicContactEmail = client?.contact_email || null;
+      clinicContactEmail = client?.contact_email?.trim() || null;
       clinicName =
-        client?.company_name?.trim() ||
         client?.business_name?.trim() ||
         client?.client_name?.trim() ||
         "our clinic";
