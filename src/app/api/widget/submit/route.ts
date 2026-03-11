@@ -139,6 +139,7 @@ export async function POST(req: Request) {
         .eq("id", site.onboarding_client_id)
         .limit(1)
         .maybeSingle();
+      console.log("[widget.submit] client lookup result", client);
 
       if (clientError) {
         console.error("[widget.submit] client lookup failed", clientError);
