@@ -159,7 +159,7 @@ export async function POST(req: Request) {
       if (clinicContactEmail) {
         try {
           const sendResult = await resend.emails.send({
-            from: "LeadClaw <onboarding@resend.dev>",
+            from: "LeadClaw <hello@leadclaw.uk>",
             to: clinicContactEmail,
             subject: "New website enquiry received",
             html: `
@@ -219,7 +219,7 @@ Log into your LeadClaw portal to view the lead.`,
 
       try {
         const autoReplyResult = await resend.emails.send({
-          from: "LeadClaw <onboarding@resend.dev>",
+          from: "LeadClaw <hello@leadclaw.uk>",
           to: safeEmail,
           subject: `Thanks for contacting ${clinicName}`,
           html: `
