@@ -1,4 +1,3 @@
-
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -61,4 +60,4 @@ export async function POST(req: Request) {
       { status: 500 }
     );
   }
-}CTRL + D
+}
