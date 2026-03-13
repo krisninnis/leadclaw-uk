@@ -1,5 +1,15 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 
+function scoreLead(lead: any, clicked: boolean) {
+  if (clicked) return { label: "HOT", color: "bg-red-100 text-red-700" };
+
+  if (lead.google_rating >= 4.5 || lead.score >= 80) {
+    return { label: "WARM", color: "bg-yellow-100 text-yellow-700" };
+  }
+
+  return { label: "COLD", color: "bg-slate-100 text-slate-600" };
+}
+
 export default async function OutreachDashboard() {
   const admin = createAdminClient();
 
@@ -28,14 +38,14 @@ export default async function OutreachDashboard() {
 
   const { data: leads } = await admin
     .from("leads")
-    .select("id, company_name, city, contact_email, contact_phone, website")
-    .in("id", Array.from(hotLeadIds));
+    .select(
+      "id, company_name, city, contact_email, contact_phone, website, google_rating, score",
+    )
+    .limit(100);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-16">
       <h1 className="mb-8 text-3xl font-bold">LeadClaw Outreach Dashboard</h1>
-
-      {/* KPI cards */}
 
       <div className="grid gap-6 md:grid-cols-4 mb-12">
         <div className="rounded-xl border bg-white p-6 shadow-sm">
@@ -59,38 +69,47 @@ export default async function OutreachDashboard() {
         </div>
       </div>
 
-      {/* HOT LEADS */}
-
       <div className="rounded-xl border bg-white shadow-sm">
         <div className="border-b px-6 py-4">
-          <h2 className="text-lg font-semibold">🔥 Hot Leads</h2>
+          <h2 className="text-lg font-semibold">Lead Opportunities</h2>
           <p className="text-sm text-slate-500">
-            Clinics that clicked your demo
+            Ranked outreach opportunities
           </p>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-slate-600">
-              <tr>
-                <th className="px-6 py-3">Clinic</th>
-                <th className="px-6 py-3">City</th>
-                <th className="px-6 py-3">Contact</th>
-                <th className="px-6 py-3">Actions</th>
-              </tr>
-            </thead>
+        <table className="w-full text-sm">
+          <thead className="bg-slate-50 text-left text-slate-600">
+            <tr>
+              <th className="px-6 py-3">Clinic</th>
+              <th className="px-6 py-3">City</th>
+              <th className="px-6 py-3">Rating</th>
+              <th className="px-6 py-3">Score</th>
+              <th className="px-6 py-3">Opportunity</th>
+              <th className="px-6 py-3">Actions</th>
+            </tr>
+          </thead>
 
-            <tbody>
-              {leads?.map((lead) => (
-                <tr key={lead.id} className="border-t bg-red-50/40">
-                  <td className="px-6 py-3 font-semibold">
-                    {lead.company_name || "-"}
-                  </td>
+          <tbody>
+            {leads?.map((lead) => {
+              const clicked = hotLeadIds.has(lead.id);
+              const opportunity = scoreLead(lead, clicked);
 
-                  <td className="px-6 py-3">{lead.city || "-"}</td>
+              return (
+                <tr key={lead.id} className="border-t">
+                  <td className="px-6 py-3 font-medium">{lead.company_name}</td>
+
+                  <td className="px-6 py-3">{lead.city}</td>
+
+                  <td className="px-6 py-3">{lead.google_rating || "-"}</td>
+
+                  <td className="px-6 py-3">{lead.score || "-"}</td>
 
                   <td className="px-6 py-3">
-                    {lead.contact_email || lead.contact_phone || "-"}
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${opportunity.color}`}
+                    >
+                      {opportunity.label}
+                    </span>
                   </td>
 
                   <td className="px-6 py-3 space-x-4">
@@ -123,21 +142,10 @@ export default async function OutreachDashboard() {
                     )}
                   </td>
                 </tr>
-              ))}
-
-              {!leads?.length && (
-                <tr>
-                  <td
-                    colSpan={4}
-                    className="px-6 py-10 text-center text-slate-500"
-                  >
-                    No hot leads yet
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              );
+            })}
+          </tbody>
+        </table>
       </div>
     </div>
   );
