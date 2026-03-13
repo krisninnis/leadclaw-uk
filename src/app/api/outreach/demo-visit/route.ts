@@ -33,15 +33,23 @@ export async function POST(req: Request) {
     }
 
     if (leadId) {
-      const existingNotes = (
-        await admin
-          .from("leads")
-          .select("notes")
-          .eq("id", leadId)
-          .limit(1)
-          .maybeSingle()
-      ).data?.notes;
+      const { data: leadRow, error: leadLookupError } = await admin
+        .from("leads")
+        .select("notes")
+        .eq("id", leadId)
+        .limit(1)
+        .maybeSingle();
 
+      if (leadLookupError) {
+        console.error("[demo-visit] lead lookup failed", leadLookupError);
+
+        return NextResponse.json(
+          { ok: false, error: "lead_lookup_failed" },
+          { status: 500 },
+        );
+      }
+
+      const existingNotes = leadRow?.notes;
       const safeNotes = String(existingNotes || "").trim();
       const clickTag = `demo_visit_source=${source || "unknown"}`;
       const visitTag = `demo_visit_at=${visitedAt}`;
@@ -51,7 +59,7 @@ export async function POST(req: Request) {
         .filter(Boolean)
         .join(" | ");
 
-      await admin
+      const { error: leadUpdateError } = await admin
         .from("leads")
         .update({
           notes: nextNotes,
@@ -59,6 +67,40 @@ export async function POST(req: Request) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", leadId);
+
+      if (leadUpdateError) {
+        console.error("[demo-visit] lead update failed", leadUpdateError);
+
+        return NextResponse.json(
+          { ok: false, error: "lead_update_failed" },
+          { status: 500 },
+        );
+      }
+
+      const { error: eventInsertError } = await admin
+        .from("outreach_events")
+        .insert({
+          lead_id: leadId,
+          channel: "outreach",
+          event_type: "demo_visit",
+          payload: {
+            source: source || "unknown",
+            page,
+            visitedAt,
+          },
+        });
+
+      if (eventInsertError) {
+        console.error(
+          "[demo-visit] outreach event insert failed",
+          eventInsertError,
+        );
+
+        return NextResponse.json(
+          { ok: false, error: "event_insert_failed" },
+          { status: 500 },
+        );
+      }
     }
 
     return NextResponse.json({
@@ -66,6 +108,7 @@ export async function POST(req: Request) {
       tracked: true,
       leadId,
       source,
+      eventType: "demo_visit",
     });
   } catch (error) {
     console.error("[demo-visit] failed", error);
