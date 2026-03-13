@@ -14,6 +14,10 @@ const links = [
   { href: "/admin", label: "Admin", icon: "🛠️" },
 ];
 
+const adminLinks = [
+  { href: "/admin/outreach", label: "Outreach Dashboard", icon: "📊" },
+];
+
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname.startsWith(href);
@@ -21,6 +25,7 @@ function isActive(pathname: string, href: string) {
 
 export default function Nav() {
   const pathname = usePathname();
+  const inAdmin = pathname.startsWith("/admin");
 
   return (
     <>
@@ -50,11 +55,37 @@ export default function Nav() {
                     : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                 }`}
               >
-                <span aria-hidden>{link.icon}</span>
+                <span>{link.icon}</span>
                 <span>{link.label}</span>
               </Link>
             );
           })}
+
+          {inAdmin && (
+            <>
+              <div className="mt-6 border-t border-slate-200 pt-4 text-xs font-semibold uppercase text-slate-400">
+                Admin Tools
+              </div>
+
+              {adminLinks.map((link) => {
+                const active = isActive(pathname, link.href);
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+                      active
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
+                    }`}
+                  >
+                    <span>{link.icon}</span>
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </>
+          )}
         </nav>
       </aside>
 
