@@ -1,10 +1,25 @@
 import Script from "next/script";
 
-export default function DemoPage() {
+export default async function DemoPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = (await searchParams) || {};
+  const source = typeof params.source === "string" ? params.source.trim() : "";
+  const lead = typeof params.lead === "string" ? params.lead.trim() : "";
+
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
   const demoToken = process.env.NEXT_PUBLIC_DEMO_WIDGET_TOKEN?.trim() || "";
   const widgetReady = demoToken.length > 0;
+
+  const trackingPayload = {
+    source,
+    lead,
+    page: "/demo",
+    visitedAt: new Date().toISOString(),
+  };
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-16">
@@ -102,6 +117,22 @@ export default function DemoPage() {
           </a>
         </div>
       </div>
+
+      {(source || lead) && (
+        <Script
+          id="leadclaw-demo-visit-tracker"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              fetch("/api/outreach/demo-visit", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(${JSON.stringify(trackingPayload)})
+              }).catch(() => {});
+            `,
+          }}
+        />
+      )}
 
       {widgetReady ? (
         <>
