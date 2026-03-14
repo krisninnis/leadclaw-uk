@@ -11,8 +11,14 @@ jobs:
 
     steps:
       - name: Trigger outreach run
+        env:
+          OUTREACH_BASE_URL: ${{ secrets.OUTREACH_BASE_URL }}
+          OUTREACH_RUN_TOKEN: ${{ secrets.OUTREACH_RUN_TOKEN }}
         run: |
-          curl --fail --show-error --silent \
-            -X POST "${{ secrets.OUTREACH_BASE_URL }}/api/outreach/run" \
-            -H "Authorization: Bearer ${{ secrets.OUTREACH_RUN_TOKEN }}" \
-            -H "Content-Type: application/json"
+          RESPONSE=$(curl --fail --show-error --silent \
+            -X POST "${OUTREACH_BASE_URL}/api/outreach/run" \
+            -H "Authorization: Bearer ${OUTREACH_RUN_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          echo "Outreach API response:"
+          echo "$RESPONSE"
