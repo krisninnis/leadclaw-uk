@@ -24,7 +24,7 @@ function isActive(pathname: string, href: string) {
 }
 
 export default function Nav() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const inAdmin = pathname.startsWith("/admin");
 
   return (
