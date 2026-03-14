@@ -1,0 +1,18 @@
+name: Outreach Runner
+
+on:
+  schedule:
+    - cron: "15 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-outreach:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger outreach run
+        run: |
+          curl --fail --show-error --silent \
+            -X POST "${{ secrets.OUTREACH_BASE_URL }}/api/outreach/run" \
+            -H "Authorization: Bearer ${{ secrets.OUTREACH_RUN_TOKEN }}" \
+            -H "Content-Type: application/json"
