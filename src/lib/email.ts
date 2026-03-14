@@ -1,5 +1,3 @@
-
-export function generateEmailContent(email, subject) {
-    return \Subject: \\nTo: \\;
+export function generateEmailContent(email: string, subject: string): string {
+  return `Subject: ${subject}\nTo: ${email}`;
 }
-

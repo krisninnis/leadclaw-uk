@@ -1,9 +1,9 @@
-import { generateEmailContent } from "../lib/email"; // Replace with actual function
+import { generateEmailContent } from "../lib/email";
 
 describe("generateEmailContent", () => {
   it("should generate the correct email content", () => {
     const result = generateEmailContent("test@example.com", "Welcome");
-    expect(result).toContain("Welcome to LeadClaw");
-    expect(result).toContain("test@example.com");
+    expect(result).toContain("Subject: Welcome");
+    expect(result).toContain("To: test@example.com");
   });
 });
