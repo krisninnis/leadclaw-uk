@@ -3,7 +3,7 @@
 ## Automation OS for UK Beauty & Aesthetic Clinics
 
 LeadClaw is a vertical SaaS platform built for UK aesthetic and beauty clinics.  
-It combines AI reception, retention automation, lead generation, onboarding automation, and subscription billing into one operational system.
+It combines automated enquiry capture, retention automation, lead generation, onboarding automation, and subscription billing into one operational system.
 
 **Live Platform:** https://leadclaw.uk
 
@@ -11,9 +11,9 @@ It combines AI reception, retention automation, lead generation, onboarding auto
 
 # 🚀 What LeadClaw Does
 
-LeadClaw replaces manual follow-ups, missed enquiries, and admin overload with structured automation:
+LeadClaw reduces missed enquiries, manual follow-ups, and admin overload with structured automation:
 
-- 24/7 AI enquiry capture
+- Automated website enquiry capture
 - Trial → paid subscription automation
 - Retention lifecycle workflows
 - Lead scoring + outreach engine
@@ -26,76 +26,43 @@ LeadClaw replaces manual follow-ups, missed enquiries, and admin overload with s
 
 # 🏗 System Architecture
 
-## Frontend
+LeadClaw is made up of two main parts:
 
-- Next.js (App Router)
-- Marketing site
-- Pricing page
-- Client Portal
-- Admin Dashboard
-- SEO landing pages
+1. **SaaS application**
+   - Next.js
+   - Supabase
+   - Stripe
+   - Admin analytics dashboard
+   - Website widget / enquiry capture
+   - Outreach tracking
 
-## Backend (API Routes)
+2. **Lead generation pipeline**
+   - Python
+   - Google Places API
+   - Enrichment scripts
+   - Deduplication
+   - Outreach trigger
 
-- `/api/stripe/*`
-- `/api/retention/*`
-- `/api/onboarding/*`
-- `/api/outreach/*`
-- `/api/newsletter/*`
-- `/api/admin/*`
-- `/api/ops/*`
+## System Flow
 
-## Database
+```mermaid
+flowchart TD
+    A[Google Places API] --> B[Lead scraper pipeline]
+    B --> C[Email enrichment]
+    C --> D[Lead dedupe]
+    D --> E[Supabase leads table]
+    E --> F[Outreach automation]
+    F --> G[Outreach events table]
+    G --> H[Admin analytics dashboard]
 
-- Supabase (Postgres)
-- Row Level Security (RLS)
-- Auth via Magic Link
-- Service role for webhook + automation writes
+    I[Website widget] --> J[Enquiries table]
+    J --> K[Clinic notification email]
+    J --> H
 
-## Billing
+    L[Stripe checkout] --> M[Subscriptions]
+    M --> N[Portal access / billing state]
+    N --> H
 
-- Stripe Checkout
-- 7-day free trial
-- Subscription persistence
-- Customer billing portal
-- Webhook-driven state sync
-
-## Email
-
-- Resend API
-- Retention sequences
-- Trial lifecycle emails
-- Outreach campaigns
-- Suppression + unsubscribe support
-
-## Deployment
-
-- Vercel (Production + Preview)
-- Environment-specific Stripe configuration
-- Token-protected automation endpoints
-
----
-
-# 🌍 Environment Strategy (Critical)
-
-Stripe environments must match deployment environments.
-
-| Environment | Stripe Mode | Keys Used     |
-| ----------- | ----------- | ------------- |
-| Production  | Live        | `sk_live_...` |
-| Preview     | Test        | `sk_test_...` |
-| Development | Test        | `sk_test_...` |
-
-Never mix test prices with live keys.
-
-Production domain:  
-`https://leadclaw.uk`
-
----
-
-# 💻 Local Development
-
-```bash
-npm install
-npm run dev
+    O[GitHub Actions / local scheduler] --> B
+    P[Vercel deployment] --> H
 ```
