@@ -9,6 +9,10 @@ begin;
 
 create extension if not exists pgcrypto;
 
+-- -------------------------------------------------------------------
+-- agent_commands
+-- Referenced by src/app/api/agent/command/route.ts
+-- -------------------------------------------------------------------
 create table if not exists public.agent_commands (
   id uuid primary key default gen_random_uuid(),
   command text not null,
@@ -52,6 +56,10 @@ before update on public.agent_commands
 for each row
 execute function public.set_updated_at();
 
+-- -------------------------------------------------------------------
+-- billing_notifications
+-- Used by billing / trial reminder jobs
+-- -------------------------------------------------------------------
 create table if not exists public.billing_notifications (
   id uuid primary key default gen_random_uuid(),
   subscription_id uuid not null references public.subscriptions(id) on delete cascade,
@@ -91,6 +99,11 @@ create unique index if not exists ux_billing_notifications_subscription_stage
 create index if not exists idx_billing_notifications_status_created_at
   on public.billing_notifications (status, created_at desc);
 
+-- -------------------------------------------------------------------
+-- Performance indexes for common product queries
+-- -------------------------------------------------------------------
+
+-- leads: admin lists, outreach queue views, recent leads, score sorting
 create index if not exists idx_leads_status_score_created_at
   on public.leads (status, score desc, created_at desc);
 
@@ -100,15 +113,18 @@ create index if not exists idx_leads_created_at
 create index if not exists idx_leads_clinic_id_created_at
   on public.leads (clinic_id, created_at desc);
 
+-- outreach_events: dashboard metrics and lead timelines
 create index if not exists idx_outreach_events_channel_type_created_at
   on public.outreach_events (channel, event_type, created_at desc);
 
 create index if not exists idx_outreach_events_lead_id_created_at
   on public.outreach_events (lead_id, created_at desc);
 
+-- enquiries: clinic portal and widget/admin views
 create index if not exists idx_enquiries_clinic_created_at
   on public.enquiries (clinic_id, created_at desc);
 
+-- subscriptions: portal/billing checks and cron jobs
 create index if not exists idx_subscriptions_user_updated_at
   on public.subscriptions (user_id, updated_at desc);
 
