@@ -3,6 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { isSuppressed, sendEmail } from "@/lib/email";
 
+export const runtime = "nodejs";
+export const maxDuration = 60;
+
 const BLOCKED_EMAIL_SUBSTRINGS = [
   "example.com",
   "wix.com",
@@ -50,20 +53,28 @@ const BLOCKED_PREFIXES = [
 
 const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function inferBusinessContext(company: string) {
   const c = company.toLowerCase();
+
   if (c.includes("nail")) {
     return { label: "nail salon", pain: "missed booking calls and DMs" };
   }
+
   if (c.includes("skin") || c.includes("aesthetic") || c.includes("cosmetic")) {
     return {
       label: "aesthetic clinic",
       pain: "missed high-intent treatment enquiries",
     };
   }
+
   if (c.includes("lash") || c.includes("brow")) {
     return { label: "lash & brow studio", pain: "missed appointment requests" };
   }
+
   return { label: "beauty clinic", pain: "missed enquiries" };
 }
 
@@ -176,12 +187,11 @@ function renderHtml(text: string, email?: string | null) {
   `;
 }
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
 function normalizeEmail(raw: unknown) {
   const base = String(raw || "")
     .trim()
     .toLowerCase();
+
   if (!base) return "";
 
   const cleaned = base
@@ -207,31 +217,41 @@ function isBadEmail(email: string) {
   if (BLOCKED_PREFIXES.some((p) => email.startsWith(p))) return true;
   if (BLOCKED_EMAIL_SUBSTRINGS.some((d) => email.includes(d))) return true;
   if (email.includes("u003c") || email.includes("u003e")) return true;
+
   if (
     email.includes(".png") ||
     email.includes(".jpg") ||
     email.includes(".jpeg")
-  )
+  ) {
     return true;
+  }
+
   if (
     email.includes(".svg") ||
     email.includes(".webp") ||
     email.includes(".gif")
-  )
+  ) {
     return true;
+  }
+
   if (
     email.includes(".css") ||
     email.includes(".js") ||
     email.includes(".woff")
-  )
+  ) {
     return true;
+  }
+
   if (email.includes("@2x") || email.includes("@3x")) return true;
+
   if (
     email.includes("logo") ||
     email.includes("icon") ||
     email.includes("banner")
-  )
+  ) {
     return true;
+  }
+
   return false;
 }
 
@@ -254,6 +274,7 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient();
+
   if (!admin) {
     return NextResponse.json(
       { ok: false, error: "supabase_not_configured" },
@@ -408,6 +429,7 @@ export async function POST(req: Request) {
 
     if (!result.ok) {
       const err = String(result.error || "send_failed");
+
       skipped.push({ id: lead.id, email, reason: err });
 
       await admin.from("outreach_events").insert({
@@ -420,15 +442,13 @@ export async function POST(req: Request) {
       if (
         err.includes(
           "You can only send testing emails to your own email address",
-        )
+        ) ||
+        err.includes("sender_not_verified")
       ) {
         senderNotReady = true;
       }
 
-      if (err.includes("rate_limit_exceeded")) {
-        await sleep(700);
-      }
-
+      await sleep(600);
       continue;
     }
 

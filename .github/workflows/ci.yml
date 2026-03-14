@@ -1,27 +1,46 @@
-name: CI Workflow
+name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
-  build:
+  web:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up Node.js
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4
         with:
-          node-version: "24.x" # Updated Node.js version to 24
+          node-version: 24
+          cache: npm
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run tests
-        run: npm run test
+        run: npm test
+
+      - name: Build app
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key
+          SUPABASE_SERVICE_ROLE_KEY: test-service-role-key
+          STRIPE_SECRET_KEY: sk_test_dummy
+          STRIPE_WEBHOOK_SECRET: whsec_dummy
+          STRIPE_PRICE_STARTER: price_dummy_starter
+          STRIPE_PRICE_GROWTH: price_dummy_growth
+          STRIPE_PRICE_PRO: price_dummy_pro
+          RESEND_API_KEY: re_dummy
+          RESEND_FROM_EMAIL: LeadClaw <contact@leadclaw.uk>
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+          OUTREACH_RUN_TOKEN: test-token
+          OUTREACH_DAILY_CAP: 20
+        run: npm run build
