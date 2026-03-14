@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 type AuthedUser = {
   id: string;
@@ -54,8 +55,22 @@ export async function requireAdmin(): Promise<
 
   const adminEmails = getAdminEmails();
   const email = authed.user.email?.toLowerCase() ?? "";
+  const emailIsAdmin = !!email && adminEmails.includes(email);
 
-  if (!email || !adminEmails.includes(email)) {
+  let roleIsAdmin = false;
+
+  const admin = createAdminClient();
+  if (admin) {
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("role")
+      .eq("id", authed.user.id)
+      .maybeSingle();
+
+    roleIsAdmin = profile?.role === "admin";
+  }
+
+  if (!emailIsAdmin && !roleIsAdmin) {
     return {
       ok: false,
       response: jsonError("forbidden", 403),
