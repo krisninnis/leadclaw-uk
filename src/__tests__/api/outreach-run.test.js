@@ -160,11 +160,12 @@ describe("POST /api/outreach/run", () => {
       ok: true,
       sentCount: 1,
       skippedCount: 0,
+
       sent: [
         {
           id: "lead_1",
           email: "owner@brightclinic.co.uk",
-          subject: "Quick idea for Bright Clinic",
+          subject: "Quick question for Bright Clinic",
         },
       ],
       skipped: [],

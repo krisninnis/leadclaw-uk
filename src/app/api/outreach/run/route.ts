@@ -101,12 +101,15 @@ function renderInitialMessage(lead: {
   if (v === 0) {
     return `Hi ${company} team,
 
-Quick one — I noticed you’re a ${ctx.label}${city ? ` in ${city}` : ""}. We help clinics reduce ${ctx.pain} with a lightweight AI front desk (7-day free trial, no rebuild).
+Quick one — noticed you’re a ${ctx.label}${city ? ` in ${city}` : ""}.
 
-Want me to send a 2-minute setup walkthrough tailored to your current process?
+If some enquiries get missed when the team is busy, we can help capture those automatically through your website.
+
+Want me to send a 2-minute example for ${company}?
 
 Best,
-LeadClaw AI
+Kris
+LeadClaw
 
 Reply "no" to opt out.`;
   }
@@ -114,24 +117,28 @@ Reply "no" to opt out.`;
   if (v === 1) {
     return `Hi ${company} team,
 
-Most ${ctx.label}s lose enquiries when the team is busy. We plug in a simple AI responder that captures and qualifies leads automatically${city ? ` across ${city}` : ""}.
+Just a quick note — we help ${ctx.label}s${city ? ` in ${city}` : ""} respond faster when calls, forms, or messages come in at busy times.
 
-Happy to share a quick personalised demo for your business if useful.
+Would it help if I sent over a very short example of how that could work for ${company}?
 
 Best,
-LeadClaw AI
+Kris
+LeadClaw
 
 Reply "no" to opt out.`;
   }
 
   return `Hi ${company} team,
 
-Saw your business and thought this might help: we set up an AI front desk that answers common questions, captures missed leads, and nudges rebookings for clinics like yours${city ? ` in ${city}` : ""}.
+Saw your business and thought I’d reach out.
 
-If you want, I can send the 2-minute install steps.
+We help clinics avoid losing website enquiries when staff are tied up or it's out of hours.
+
+Want me to send a short example tailored to ${company}?
 
 Best,
-LeadClaw AI
+Kris
+LeadClaw
 
 Reply "no" to opt out.`;
 }
@@ -139,16 +146,15 @@ Reply "no" to opt out.`;
 function renderFollowUp1(lead: { company_name: string }) {
   return `Hi ${lead.company_name} team,
 
-Just checking if you saw my previous message.
+Just checking if you saw my last note.
 
-A lot of clinics are surprised how many enquiries get missed when staff are busy or after hours.
+If you'd like, I can send over a very short example of how LeadClaw helps clinics capture more website enquiries when the team is busy.
 
-LeadClaw adds a simple AI front desk to your site so those missed enquiries get captured automatically.
-
-Happy to send a quick example if useful.
+Worth sending it over?
 
 Best,
-LeadClaw AI
+Kris
+LeadClaw
 
 Reply "no" to opt out.`;
 }
@@ -158,12 +164,13 @@ function renderFollowUp2(lead: { company_name: string }) {
 
 Final quick note from me.
 
-If improving website enquiry capture is something you're looking at this year, I’d be happy to send a short walkthrough.
+If improving enquiry response times is on your radar, I’m happy to send a short example tailored to your clinic.
 
 If not, no worries at all.
 
 Best,
-LeadClaw AI
+Kris
+LeadClaw
 
 Reply "no" to opt out.`;
 }
@@ -388,7 +395,8 @@ export async function POST(req: Request) {
     const elapsedDays = daysSince(lead.last_contacted_at);
 
     let subject =
-      lead.outreach_subject?.trim() || `Quick idea for ${lead.company_name}`;
+      lead.outreach_subject?.trim() ||
+      `Quick question for ${lead.company_name}`;
     let text = "";
     let nextStage = followUpStage;
 
