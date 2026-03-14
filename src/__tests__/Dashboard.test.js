@@ -1,5 +1,6 @@
+// src/__tests__/Dashboard.test.js
 import { render, screen } from "@testing-library/react";
-import Dashboard from "../components/Dashboard"; // Your actual component
+import Dashboard from "../components/Dashboard"; // Ensure the path is correct
 
 test("renders dashboard", () => {
   render(<Dashboard />);
