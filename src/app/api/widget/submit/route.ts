@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
   token: z.string().min(10),
@@ -44,6 +45,31 @@ export async function OPTIONS(req: Request) {
 export async function POST(req: Request) {
   const origin = req.headers.get("origin");
   const corsHeaders = buildCorsHeaders(origin);
+
+  const ip = getClientIp(req);
+  const limit = rateLimit({
+    windowMs: 60_000,
+    max: 10,
+    key: `widget-submit:${ip}`,
+  });
+
+  if (!limit.ok) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "rate_limit_exceeded",
+      },
+      {
+        status: 429,
+        headers: {
+          ...corsHeaders,
+          "Retry-After": String(
+            Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000)),
+          ),
+        },
+      },
+    );
+  }
 
   const admin = createAdminClient();
 
