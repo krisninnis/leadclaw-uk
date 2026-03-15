@@ -6,44 +6,24 @@ const tiers = [
   {
     key: "starter",
     name: "Starter",
-    price: "£99/mo",
-    description:
-      "For clinics that want a simple way to capture website enquiries and stop missing leads.",
-    points: [
-      "Website enquiry widget",
-      "Clinic lead inbox",
-      "Lead status tracking",
-      "Email notifications",
-      "Email support",
-    ],
+    price: "£39/mo",
+    points: ["Bot hosting", "Lead capture", "Email support"],
   },
   {
     key: "growth",
     name: "Growth",
-    price: "£249/mo",
-    description:
-      "For clinics that want stronger follow-up and better visibility across incoming leads.",
+    price: "£99/mo",
     points: [
       "Everything in Starter",
       "Follow-up automations",
-      "Lead recovery tools",
-      "Monthly optimisation support",
-      "Growth-focused support",
+      "Monthly optimization",
     ],
   },
   {
     key: "pro",
     name: "Pro",
-    price: "£499/mo",
-    description:
-      "For clinics that want a more hands-on setup, support, and ongoing optimisation.",
-    points: [
-      "Everything in Growth",
-      "Advanced or multi-location setup",
-      "Priority support",
-      "Higher-touch onboarding",
-      "Ongoing optimisation support",
-    ],
+    price: "£249/mo",
+    points: ["Everything in Growth", "Multi-channel setup", "Priority support"],
   },
 ];
 
@@ -63,7 +43,7 @@ export default function PricingPage() {
     const data = await res.json();
 
     if (!res.ok || !data.url) {
-      setStatus(data.error || "Stripe is not fully configured yet.");
+      setStatus(data.error || "Stripe not fully configured yet.");
       return;
     }
 
@@ -71,31 +51,16 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="mb-4 text-3xl font-bold">Pricing</h1>
-        <p className="max-w-3xl text-slate-600">
-          LeadClaw helps clinics capture missed website enquiries, keep them in
-          one simple portal, and follow up faster. Start with a 7-day free
-          trial. If no payment method is added before the trial ends, the
-          subscription will not continue.
-        </p>
-      </div>
+    <div>
+      <h1 className="mb-6 text-3xl font-bold">Pricing</h1>
+      <p className="mb-4 text-slate-600">
+        7-day free trial. No automatic rollover — client must explicitly
+        continue after trial.
+      </p>
 
-      <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
-        <h2 className="mb-2 text-lg font-semibold">
-          What LeadClaw helps you do
-        </h2>
-        <p className="text-sm text-slate-700">
-          Capture website enquiries, reduce missed opportunities when your team
-          is busy or out of hours, and manage every lead from one simple clinic
-          portal.
-        </p>
-      </div>
-
-      <div className="max-w-md">
+      <div className="mb-8 max-w-md">
         <label className="mb-1 block text-sm font-medium">
-          Email (used for checkout if you are not logged in)
+          Email (for checkout)
         </label>
         <input
           type="email"
@@ -114,7 +79,6 @@ export default function PricingPage() {
           >
             <h2 className="text-xl font-semibold">{tier.name}</h2>
             <p className="my-3 text-2xl font-bold">{tier.price}</p>
-            <p className="mb-4 text-sm text-slate-600">{tier.description}</p>
 
             <ul className="list-disc space-y-2 pl-5 text-sm text-slate-700">
               {tier.points.map((p) => (
@@ -132,7 +96,7 @@ export default function PricingPage() {
         ))}
       </div>
 
-      {status && <p className="text-sm text-slate-700">{status}</p>}
+      {status && <p className="mt-4 text-sm text-slate-700">{status}</p>}
     </div>
   );
 }
