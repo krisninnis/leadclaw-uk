@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const tiers = [
   {
@@ -30,14 +30,26 @@ const tiers = [
 export default function PricingPage() {
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const emailInputRef = useRef<HTMLInputElement | null>(null);
 
   async function startCheckout(plan: string) {
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail) {
+      setEmailError("Please enter your email before starting the free trial.");
+      setStatus("");
+      emailInputRef.current?.focus();
+      return;
+    }
+
+    setEmailError("");
     setStatus("Creating secure checkout...");
 
     const res = await fetch("/api/stripe/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ plan, email }),
+      body: JSON.stringify({ plan, email: trimmedEmail }),
     });
 
     const data = await res.json();
@@ -63,12 +75,22 @@ export default function PricingPage() {
           Email (for checkout)
         </label>
         <input
+          ref={emailInputRef}
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (emailError) setEmailError("");
+          }}
           placeholder="you@clinic.com"
-          className="w-full rounded-lg border border-slate-300 p-2"
+          className={`w-full rounded-lg border p-2 ${
+            emailError ? "border-red-500" : "border-slate-300"
+          }`}
+          aria-invalid={emailError ? "true" : "false"}
         />
+        {emailError && (
+          <p className="mt-2 text-sm text-red-600">{emailError}</p>
+        )}
       </div>
 
       <div className="grid gap-5 md:grid-cols-3">
