@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export default async function DemoPage({
   searchParams,
@@ -9,6 +10,26 @@ export default async function DemoPage({
   const source = typeof params.source === "string" ? params.source.trim() : "";
   const lead = typeof params.lead === "string" ? params.lead.trim() : "";
 
+  const admin = createAdminClient();
+
+  let clinicName = "your clinic";
+  let clinicCity = "";
+  let clinicWebsite = "";
+
+  if (admin && lead) {
+    const { data: leadRow } = await admin
+      .from("leads")
+      .select("company_name, city, website")
+      .eq("id", lead)
+      .maybeSingle();
+
+    if (leadRow) {
+      clinicName = leadRow.company_name || clinicName;
+      clinicCity = leadRow.city || "";
+      clinicWebsite = leadRow.website || "";
+    }
+  }
+
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
   const demoToken = process.env.NEXT_PUBLIC_DEMO_WIDGET_TOKEN?.trim() || "";
@@ -18,6 +39,11 @@ export default async function DemoPage({
     source,
     lead,
     page: "/demo",
+    clinicName,
+    clinicCity,
+    clinicWebsite,
+    personalisedDemo: Boolean(lead),
+    widgetReady,
     visitedAt: new Date().toISOString(),
   };
 
@@ -26,15 +52,39 @@ export default async function DemoPage({
       <div className="space-y-8">
         <div className="space-y-4">
           <h1 className="text-4xl font-bold text-slate-950">
-            See LeadClaw capture a real website enquiry
+            Your AI front desk for {clinicName}
           </h1>
 
           <p className="max-w-3xl text-lg text-slate-600">
-            This demo shows how LeadClaw captures enquiries from a clinic
-            website and sends them into a simple lead inbox so staff can follow
-            up quickly.
+            {clinicCity
+              ? `This demo is tailored for ${clinicName} in ${clinicCity}.`
+              : `This demo is tailored for ${clinicName}.`}{" "}
+            Use the widget to see how LeadClaw can capture website enquiries and
+            turn them into leads your team can follow up quickly.
           </p>
+
+          {clinicWebsite ? (
+            <p className="text-sm text-slate-500">Website: {clinicWebsite}</p>
+          ) : null}
         </div>
+
+        {lead ? (
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+            <p className="text-sm font-medium text-blue-700">
+              Demo prepared for {clinicName}
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+              See how LeadClaw could work on your website
+            </h2>
+            <p className="mt-2 max-w-3xl text-sm text-slate-700">
+              This page is personalised using the details we found for{" "}
+              <strong>{clinicName}</strong>
+              {clinicCity ? ` in ${clinicCity}` : ""}. The goal is to show how
+              an AI front desk could capture enquiries when your team is busy or
+              out of hours.
+            </p>
+          </div>
+        ) : null}
 
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <p className="mb-4 text-sm font-medium text-slate-500">
@@ -55,7 +105,8 @@ export default async function DemoPage({
 
           <p className="mb-4 text-sm text-slate-600">
             Use the enquiry widget in the bottom-right corner of this page to
-            test the live capture flow.
+            see how LeadClaw could capture enquiries for {clinicName}
+            {clinicCity ? ` in ${clinicCity}` : ""}.
           </p>
 
           {widgetReady ? (
@@ -113,7 +164,7 @@ export default async function DemoPage({
             href="/pricing"
             className="inline-flex rounded-lg bg-black px-6 py-3 text-white transition hover:opacity-90"
           >
-            Start free trial
+            Start a free trial for {clinicName}
           </a>
         </div>
       </div>

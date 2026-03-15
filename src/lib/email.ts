@@ -14,6 +14,12 @@ export type SendEmailInput = {
   tags?: EmailTag[];
 };
 
+export type FounderAlertInput = {
+  title: string;
+  lines: Array<{ label: string; value: string | null | undefined }>;
+  tags?: EmailTag[];
+};
+
 export async function isSuppressed(email: string): Promise<boolean> {
   const normalized = email.trim().toLowerCase();
   const admin = createAdminClient();
@@ -86,4 +92,55 @@ export async function sendEmail(
       error: error instanceof Error ? error.message : "send_failed",
     };
   }
+}
+
+export async function sendFounderAlertEmail(
+  input: FounderAlertInput,
+): Promise<{ ok: true; id: string | null } | { ok: false; error: string }> {
+  const founderEmail =
+    process.env.FOUNDER_ALERT_EMAIL?.trim() || "krisninnis@gmail.com";
+
+  const safeLines = input.lines.filter(
+    (line) =>
+      line.value !== null &&
+      line.value !== undefined &&
+      String(line.value).trim() !== "",
+  );
+
+  const html = `
+    <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
+      <h2 style="margin-bottom:16px;">${input.title}</h2>
+      <table style="border-collapse:collapse;width:100%;max-width:640px;">
+        <tbody>
+          ${safeLines
+            .map(
+              (line) => `
+                <tr>
+                  <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:600;width:180px;background:#f8fafc;">
+                    ${line.label}
+                  </td>
+                  <td style="padding:8px 12px;border:1px solid #e2e8f0;">
+                    ${String(line.value)}
+                  </td>
+                </tr>
+              `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  const text = [
+    input.title,
+    ...safeLines.map((line) => `${line.label}: ${line.value}`),
+  ].join("\n");
+
+  return sendEmail({
+    to: founderEmail,
+    subject: input.title,
+    html,
+    text,
+    tags: input.tags,
+  });
 }
