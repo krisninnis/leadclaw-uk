@@ -15,6 +15,8 @@ jobs:
           OUTREACH_BASE_URL: ${{ secrets.OUTREACH_BASE_URL }}
           OUTREACH_RUN_TOKEN: ${{ secrets.OUTREACH_RUN_TOKEN }}
         run: |
+          set -e
+
           RESPONSE=$(curl --fail --show-error --silent \
             -X POST "${OUTREACH_BASE_URL}/api/outreach/run" \
             -H "Authorization: Bearer ${OUTREACH_RUN_TOKEN}" \
@@ -22,3 +24,8 @@ jobs:
 
           echo "Outreach API response:"
           echo "$RESPONSE"
+
+          echo "$RESPONSE" | grep '"ok":true' > /dev/null || {
+            echo "❌ Outreach API returned failure"
+            exit 1
+          }

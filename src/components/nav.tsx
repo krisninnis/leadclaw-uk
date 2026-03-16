@@ -1,107 +1,141 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const links = [
-  { href: "/", label: "Home", icon: "🏠" },
-  { href: "/pricing", label: "Pricing", icon: "💳" },
-  { href: "/demo", label: "Demo", icon: "🧪" },
-  { href: "/apply", label: "Apply", icon: "📝" },
-  { href: "/portal", label: "Portal", icon: "💬" },
-  { href: "/contact", label: "Contact", icon: "📨" },
-  { href: "/help", label: "Help", icon: "❓" },
-  { href: "/admin", label: "Admin", icon: "🛠️" },
+  { href: "/", label: "Home", icon: "⌂" },
+  { href: "/pricing", label: "Pricing", icon: "£" },
+  { href: "/demo", label: "Demo", icon: "▶" },
+  { href: "/contact", label: "Contact", icon: "✉" },
+  { href: "/login", label: "Login", icon: "•" },
 ];
 
-const adminLinks = [
-  { href: "/admin/outreach", label: "Outreach Dashboard", icon: "📊" },
-];
-
-function isActive(pathname: string, href: string) {
+function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
-  return pathname.startsWith(href);
+  return pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export default function Nav() {
   const pathname = usePathname() ?? "";
-  const inAdmin = pathname.startsWith("/admin");
 
   return (
     <>
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-72 border-r border-slate-200 bg-white/90 backdrop-blur md:flex md:flex-col">
-        <div className="border-b border-slate-200 px-6 py-5">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-80 border-r border-border bg-[linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.9))] backdrop-blur-xl md:flex">
+        <div className="flex h-full w-full flex-col p-5">
           <Link
             href="/"
-            className="text-lg font-semibold tracking-tight text-slate-900"
+            className="group flex flex-col items-center gap-3 text-center"
           >
-            LeadClaw AI
-          </Link>
-          <p className="mt-1 text-xs text-slate-500">
-            Automation OS for UK clinics
-          </p>
-        </div>
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-white shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
+              <Image
+                src="/brand/icons/leadclaw-logo-dark.png"
+                alt="LeadClaw"
+                width={44}
+                height={44}
+                className="h-auto w-auto object-contain"
+                priority
+              />
+            </div>
 
-        <nav className="flex-1 space-y-2 px-4 py-4">
-          {links.map((link) => {
-            const active = isActive(pathname, link.href);
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
-                  active
-                    ? "bg-slate-900 text-white shadow-sm"
-                    : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                }`}
-              >
-                <span>{link.icon}</span>
-                <span>{link.label}</span>
-              </Link>
-            );
-          })}
-
-          {inAdmin && (
-            <>
-              <div className="mt-6 border-t border-slate-200 pt-4 text-xs font-semibold uppercase text-slate-400">
-                Admin Tools
+            <div className="leading-tight">
+              <div className="text-base font-semibold tracking-tight text-foreground">
+                LeadClaw
               </div>
+              <div className="text-xs text-muted">
+                AI front desk for clinics
+              </div>
+            </div>
+          </Link>
 
-              {adminLinks.map((link) => {
-                const active = isActive(pathname, link.href);
+          <div className="mt-8">
+            <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted-2">
+              Navigation
+            </p>
+
+            <nav className="mt-3 flex flex-col gap-3">
+              {links.map((link) => {
+                const active = isActivePath(pathname, link.href);
+
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition ${
+                    className={[
+                      "group flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
                       active
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "text-slate-700 hover:bg-slate-100 hover:text-slate-900"
-                    }`}
+                        ? "bg-brand-soft text-foreground shadow-sm ring-1 ring-brand/10"
+                        : "text-muted hover:bg-surface-2 hover:text-foreground hover:shadow-sm",
+                    ].join(" ")}
                   >
-                    <span>{link.icon}</span>
+                    <span
+                      className={[
+                        "flex h-10 w-10 items-center justify-center rounded-xl border text-sm shadow-sm transition-all duration-200",
+                        active
+                          ? "border-brand/20 bg-white text-brand-strong"
+                          : "border-border bg-white text-foreground group-hover:border-border-strong",
+                      ].join(" ")}
+                    >
+                      {link.icon}
+                    </span>
+
                     <span>{link.label}</span>
+
+                    {active ? (
+                      <span className="ml-auto h-2.5 w-2.5 rounded-full bg-brand" />
+                    ) : null}
                   </Link>
                 );
               })}
-            </>
-          )}
-        </nav>
+            </nav>
+          </div>
+
+          <div className="mt-8 rounded-[24px] border border-border bg-white/80 p-4 shadow-sm">
+            <p className="text-sm font-semibold text-foreground">
+              Recover more missed enquiries
+            </p>
+            <p className="mt-2 text-xs leading-6 text-muted">
+              Give your clinic an AI front desk that captures website interest
+              and turns it into follow-up-ready leads.
+            </p>
+          </div>
+
+          <div className="mt-auto space-y-3">
+            <Link href="/login" className="button-secondary w-full">
+              Sign in
+            </Link>
+            <Link href="/pricing" className="button-primary w-full">
+              Start free trial
+            </Link>
+          </div>
+        </div>
       </aside>
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 backdrop-blur md:hidden">
-        <div className="mx-auto grid max-w-xl grid-cols-7">
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/92 backdrop-blur-xl md:hidden">
+        <div className="grid grid-cols-5">
           {links.map((link) => {
-            const active = isActive(pathname, link.href);
+            const active = isActivePath(pathname, link.href);
+
             return (
               <Link
-                key={link.href}
+                key={`${link.href}-mobile`}
                 href={link.href}
-                className={`flex flex-col items-center gap-1 px-2 py-2 text-[11px] ${
-                  active ? "text-slate-900" : "text-slate-500"
-                }`}
+                className={[
+                  "flex flex-col items-center justify-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors",
+                  active
+                    ? "text-brand-strong"
+                    : "text-muted hover:text-foreground",
+                ].join(" ")}
               >
-                <span>{link.icon}</span>
+                <span
+                  className={[
+                    "flex h-8 w-8 items-center justify-center rounded-full text-base transition-all",
+                    active ? "bg-brand-soft" : "",
+                  ].join(" ")}
+                >
+                  {link.icon}
+                </span>
                 <span>{link.label}</span>
               </Link>
             );
