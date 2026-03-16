@@ -19,13 +19,15 @@ export default function PricingCta() {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/checkout?plan=growth" className="button-primary">
-                Start Growth plan
+              <Link href="/free-trial?plan=growth" className="button-primary">
+                Start 7-day free trial
               </Link>
               <Link href="/contact" className="button-secondary">
                 Need help choosing?
               </Link>
             </div>
+
+            <p className="mt-4 text-xs text-muted-2">No credit card required</p>
           </div>
         </div>
       </div>

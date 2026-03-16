@@ -1,10 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
 
-export async function POST() {
+type PlanSlug = "starter" | "growth" | "pro";
+
+function normalizePlan(value: unknown): PlanSlug {
+  if (typeof value !== "string") return "growth";
+
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === "starter") return "starter";
+  if (normalized === "pro") return "pro";
+  return "growth";
+}
+
+export async function POST(req: NextRequest) {
+  const body = await req.json().catch(() => ({}));
+  const selectedPlan = normalizePlan(body?.plan);
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -45,7 +60,7 @@ export async function POST() {
     stripe_customer_id: null,
     stripe_subscription_id: trialSubscriptionId,
     stripe_price_id: null,
-    plan: "starter",
+    plan: selectedPlan,
     status: "trialing",
     trial_end: trialEnd.toISOString(),
     current_period_end: null,
@@ -76,17 +91,22 @@ export async function POST() {
       category: "onboarding",
       message:
         "Trial started but onboarding auto-provision encountered an issue",
-      meta: { email, error: e instanceof Error ? e.message : "unknown" },
+      meta: {
+        email,
+        plan: selectedPlan,
+        error: e instanceof Error ? e.message : "unknown",
+      },
     });
   }
 
   await logSystemEvent({
     level: "info",
     category: "billing_trial",
-    message: `No-card trial started for ${email}`,
+    message: `No-card ${selectedPlan} trial started for ${email}`,
     meta: {
       userId: user.id,
       email,
+      plan: selectedPlan,
       trialEnd: trialEnd.toISOString(),
       siteId: provisionResult?.siteId || null,
       clinicId: provisionResult?.clinicId || null,
@@ -95,6 +115,7 @@ export async function POST() {
 
   return NextResponse.json({
     ok: true,
+    plan: selectedPlan,
     trialEnd: trialEnd.toISOString(),
     siteId: provisionResult?.siteId || null,
     clinicId: provisionResult?.clinicId || null,

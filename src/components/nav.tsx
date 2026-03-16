@@ -1,24 +1,87 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 
-const links = [
-  { href: "/", label: "Home", icon: "⌂" },
-  { href: "/pricing", label: "Pricing", icon: "£" },
-  { href: "/demo", label: "Demo", icon: "▶" },
-  { href: "/contact", label: "Contact", icon: "✉" },
-  { href: "/login", label: "Login", icon: "•" },
-];
+type NavLink = {
+  href: string;
+  label: string;
+  icon: string;
+};
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !anonKey) return null;
+
+  return createSupabaseClient(url, anonKey);
+}
+
 export default function Nav() {
   const pathname = usePathname() ?? "";
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      setAuthReady(true);
+      return;
+    }
+
+    let mounted = true;
+
+    supabase.auth.getUser().then(({ data }) => {
+      if (!mounted) return;
+      setUserEmail(data.user?.email?.toLowerCase() ?? null);
+      setAuthReady(true);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
+      setUserEmail(session?.user?.email?.toLowerCase() ?? null);
+      setAuthReady(true);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const adminEmails = useMemo(
+    () =>
+      ["kris@leadclaw.uk", "krisninnis@gmail.com"].map((email) =>
+        email.toLowerCase(),
+      ),
+    [],
+  );
+
+  const isSignedIn = Boolean(userEmail);
+  const isAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
+
+  const links: NavLink[] = [
+    { href: "/", label: "Home", icon: "⌂" },
+    { href: "/pricing", label: "Pricing", icon: "£" },
+    { href: "/demo", label: "Demo", icon: "▶" },
+    { href: "/contact", label: "Contact", icon: "✉" },
+    ...(isSignedIn
+      ? [{ href: "/portal", label: "Portal", icon: "◫" }]
+      : [{ href: "/login", label: "Login", icon: "•" }]),
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "★" }] : []),
+  ];
 
   return (
     <>
@@ -102,18 +165,34 @@ export default function Nav() {
           </div>
 
           <div className="mt-auto space-y-3">
-            <Link href="/login" className="button-secondary w-full">
-              Sign in
+            {isSignedIn ? (
+              <Link href="/portal" className="button-secondary w-full">
+                Open portal
+              </Link>
+            ) : (
+              <Link href="/login" className="button-secondary w-full">
+                Sign in
+              </Link>
+            )}
+
+            <Link
+              href="/free-trial?plan=growth"
+              className="button-primary w-full"
+            >
+              Start 7-day free trial
             </Link>
-            <Link href="/pricing" className="button-primary w-full">
-              Start free trial
-            </Link>
+
+            {authReady && isAdmin ? (
+              <Link href="/admin" className="button-secondary w-full">
+                Admin portal
+              </Link>
+            ) : null}
           </div>
         </div>
       </aside>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/92 backdrop-blur-xl md:hidden">
-        <div className="grid grid-cols-5">
+        <div className={`grid ${isAdmin ? "grid-cols-6" : "grid-cols-5"}`}>
           {links.map((link) => {
             const active = isActivePath(pathname, link.href);
 
