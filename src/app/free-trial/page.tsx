@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, Suspense, useMemo, useState } from "react";
+import { FormEvent, Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -97,6 +97,11 @@ function FreeTrialContent() {
     [searchParams],
   );
 
+  const incomingEmail = useMemo(
+    () => (searchParams?.get("email") ?? "").trim().toLowerCase(),
+    [searchParams],
+  );
+
   const plan = planConfig[selectedPlan];
 
   const [clinicName, setClinicName] = useState("");
@@ -107,6 +112,12 @@ function FreeTrialContent() {
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
 
+  useEffect(() => {
+    if (incomingEmail) {
+      setEmail(incomingEmail);
+    }
+  }, [incomingEmail]);
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setLoading(true);
@@ -115,7 +126,7 @@ function FreeTrialContent() {
     const intake = {
       clinicName: clinicName.trim(),
       contactName: contactName.trim(),
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       website: website.trim(),
       phone: phone.trim(),
       plan: selectedPlan,
@@ -170,7 +181,7 @@ function FreeTrialContent() {
 
     const next = `/portal?startTrial=1&trial=started&setup=ready&plan=${selectedPlan}`;
     const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
           next,
@@ -210,15 +221,28 @@ function FreeTrialContent() {
                   can change it below before starting your trial.
                 </p>
 
+                {incomingEmail ? (
+                  <div className="mt-4 rounded-[20px] border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900">
+                    We couldn&apos;t find an active account for{" "}
+                    <strong>{incomingEmail}</strong>, so we&apos;ve taken you to
+                    the free trial setup.
+                  </div>
+                ) : null}
+
                 <div className="mt-6 flex flex-wrap gap-3">
                   {(["starter", "growth", "pro"] as PlanSlug[]).map((slug) => {
                     const item = planConfig[slug];
                     const active = slug === selectedPlan;
+                    const baseHref = incomingEmail
+                      ? `/free-trial?plan=${slug}&email=${encodeURIComponent(
+                          incomingEmail,
+                        )}`
+                      : `/free-trial?plan=${slug}`;
 
                     return (
                       <Link
                         key={slug}
-                        href={`/free-trial?plan=${slug}`}
+                        href={baseHref}
                         className={[
                           "inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition",
                           active
@@ -241,8 +265,8 @@ function FreeTrialContent() {
                       No credit card required
                     </p>
                     <p className="mt-2 text-sm text-muted">
-                      Start your trial first and decide after you’ve seen the
-                      workflow in action.
+                      Start your trial first and decide after you&apos;ve seen
+                      the workflow in action.
                     </p>
                   </div>
 
@@ -251,8 +275,8 @@ function FreeTrialContent() {
                       Setup designed to be lightweight
                     </p>
                     <p className="mt-2 text-sm text-muted">
-                      We’ll guide you through the core details needed to prepare
-                      your widget and portal access.
+                      We&apos;ll guide you through the core details needed to
+                      prepare your widget and portal access.
                     </p>
                   </div>
                 </div>
@@ -322,8 +346,8 @@ function FreeTrialContent() {
                     Start your 7-day free trial in under 2 minutes
                   </h2>
                   <p className="mt-4 text-base leading-7 text-muted">
-                    Enter your clinic details and we’ll use your selected plan
-                    to begin preparing your LeadClaw setup.
+                    Enter your clinic details and we&apos;ll use your selected
+                    plan to begin preparing your LeadClaw setup.
                   </p>
 
                   <div className="mt-6 rounded-[24px] border border-border bg-white p-5">

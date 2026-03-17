@@ -3,7 +3,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import LogoutButton from "@/components/logout-button";
-import PortalTrialCta from "@/components/portal-trial-cta";
 import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import PortalChat from "@/components/portal-chat";
 import { Badge, SectionHeading, StatCard } from "@/components/ui";
@@ -190,16 +189,10 @@ export default async function PortalPage({
   }
 
   const widgetDetected = Boolean(widgetLastSeenAt);
-  const widgetStatus = !hasActiveSubscription
-    ? "Paused"
-    : widgetDetected
-      ? "Live"
-      : "Needs install";
+  const widgetStatus = widgetDetected ? "Live" : "Needs install";
 
   const currentPlanTone = getPlanTone(subStatus);
   const showTrialExpiredBox = isTrialExpired;
-  const showUpgradeBox =
-    !hasActiveSubscription || rawSubscriptionStatus === "past_due";
 
   return (
     <div className="space-y-6">
@@ -269,21 +262,6 @@ export default async function PortalPage({
         </div>
       )}
 
-      {!hasActiveSubscription && !showTrialExpiredBox && (
-        <div className="rounded-[24px] border border-rose-200 bg-rose-50 p-5">
-          <h2 className="text-lg font-semibold text-rose-950">
-            Your LeadClaw service is currently paused
-          </h2>
-          <p className="mt-2 text-sm leading-7 text-rose-900">
-            Your widget and live lead capture are not active right now.
-            Reactivate your subscription to turn the product back on.
-          </p>
-          <div className="mt-4">
-            <PortalPlanUpgrade email={user.email} />
-          </div>
-        </div>
-      )}
-
       {showTrialExpiredBox && (
         <div className="rounded-[24px] border border-amber-300 bg-amber-50 p-5">
           <h2 className="text-lg font-semibold text-amber-950">
@@ -300,26 +278,6 @@ export default async function PortalPage({
           </div>
         </div>
       )}
-
-      {!showTrialExpiredBox && !hasActiveSubscription && <PortalTrialCta />}
-
-      {showUpgradeBox &&
-        !showTrialExpiredBox &&
-        rawSubscriptionStatus !== "past_due" &&
-        user.email && (
-          <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-5">
-            <h2 className="text-lg font-semibold text-sky-950">
-              Unlock your full clinic workspace
-            </h2>
-            <p className="mt-2 text-sm leading-7 text-sky-900">
-              Activate a package to restore live lead capture, install tools,
-              billing controls, and clinic workflow access.
-            </p>
-            <div className="mt-4">
-              <PortalPlanUpgrade email={user.email} />
-            </div>
-          </div>
-        )}
 
       <section>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -339,27 +297,21 @@ export default async function PortalPage({
             label="Widget status"
             value={widgetStatus}
             hint={
-              hasActiveSubscription
-                ? widgetDetected
-                  ? "The widget has been seen on a live website."
-                  : "Install your widget to begin capturing enquiries."
-                : "Reactivate to restore the website widget."
+              widgetDetected
+                ? "The widget has been seen on a live website."
+                : "Install your widget to begin capturing enquiries."
             }
           />
 
           <StatCard
             label="Leads this week"
-            value={hasActiveSubscription ? String(leadsThisWeek) : "—"}
-            hint={
-              hasActiveSubscription
-                ? "New enquiries captured in the last 7 days."
-                : "Lead capture resumes when your subscription is active."
-            }
+            value={String(leadsThisWeek)}
+            hint="New enquiries captured in the last 7 days."
           />
 
           <StatCard
             label="Total leads"
-            value={hasActiveSubscription ? String(totalLeads) : "—"}
+            value={String(totalLeads)}
             hint="All enquiries captured for your clinic."
           />
         </div>
@@ -375,60 +327,50 @@ export default async function PortalPage({
               maxWidth="md"
             />
 
-            {hasActiveSubscription ? (
-              recentEnquiries.length > 0 ? (
-                <div className="mt-6 space-y-3">
-                  {recentEnquiries.map((enquiry) => (
-                    <div
-                      key={enquiry.id}
-                      className="rounded-[22px] border border-border bg-white p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="font-medium text-foreground">
-                            {enquiry.name || "Unnamed enquiry"}
-                          </p>
-                          <p className="mt-1 text-sm text-muted">
-                            Received {formatDateTime(enquiry.created_at)}
-                          </p>
-                        </div>
-
-                        <span className="rounded-full border border-border bg-surface-2 px-3 py-1 text-xs font-medium text-muted">
-                          {String(enquiry.status || "new")}
-                        </span>
+            {recentEnquiries.length > 0 ? (
+              <div className="mt-6 space-y-3">
+                {recentEnquiries.map((enquiry) => (
+                  <div
+                    key={enquiry.id}
+                    className="rounded-[22px] border border-border bg-white p-4"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-medium text-foreground">
+                          {enquiry.name || "Unnamed enquiry"}
+                        </p>
+                        <p className="mt-1 text-sm text-muted">
+                          Received {formatDateTime(enquiry.created_at)}
+                        </p>
                       </div>
-                    </div>
-                  ))}
 
-                  <div className="pt-2">
-                    <Link href="/portal/leads" className="button-secondary">
-                      Open full lead inbox
-                    </Link>
+                      <span className="rounded-full border border-border bg-surface-2 px-3 py-1 text-xs font-medium text-muted">
+                        {String(enquiry.status || "new")}
+                      </span>
+                    </div>
                   </div>
+                ))}
+
+                <div className="pt-2">
+                  <Link href="/portal/leads" className="button-secondary">
+                    Open full lead inbox
+                  </Link>
                 </div>
-              ) : (
-                <div className="mt-6 rounded-[24px] border border-dashed border-border bg-surface-2 p-6 text-sm text-muted">
-                  <p className="font-medium text-foreground">
-                    No live leads to show yet
-                  </p>
-                  <p className="mt-2 leading-7">
-                    Once your widget is installed and visitors submit enquiries,
-                    your lead inbox will start filling up.
-                  </p>
-                  <div className="mt-4">
-                    <Link href="/portal/install" className="button-secondary">
-                      Go to install
-                    </Link>
-                  </div>
-                </div>
-              )
+              </div>
             ) : (
               <div className="mt-6 rounded-[24px] border border-dashed border-border bg-surface-2 p-6 text-sm text-muted">
-                <p className="font-medium text-foreground">Lead inbox locked</p>
-                <p className="mt-2 leading-7">
-                  Reactivate your package to restore lead capture and full inbox
-                  access.
+                <p className="font-medium text-foreground">
+                  No live leads to show yet
                 </p>
+                <p className="mt-2 leading-7">
+                  Once your widget is installed and visitors submit enquiries,
+                  your lead inbox will start filling up.
+                </p>
+                <div className="mt-4">
+                  <Link href="/portal/install" className="button-secondary">
+                    Go to install
+                  </Link>
+                </div>
               </div>
             )}
           </div>
@@ -495,21 +437,19 @@ export default async function PortalPage({
                   <p className="mt-2 text-sm text-muted">
                     New leads awaiting contact:{" "}
                     <span className="font-semibold text-foreground">
-                      {hasActiveSubscription ? newLeadsCount : "—"}
+                      {newLeadsCount}
                     </span>
                   </p>
                   <p className="mt-1 text-sm text-muted">
                     Booked leads:{" "}
                     <span className="font-semibold text-foreground">
-                      {hasActiveSubscription ? bookedLeadsCount : "—"}
+                      {bookedLeadsCount}
                     </span>
                   </p>
                   <p className="mt-1 text-sm text-muted">
                     Last lead received:{" "}
                     <span className="font-semibold text-foreground">
-                      {hasActiveSubscription
-                        ? formatDateTime(lastLeadReceived)
-                        : "—"}
+                      {formatDateTime(lastLeadReceived)}
                     </span>
                   </p>
                 </div>
