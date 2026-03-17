@@ -96,6 +96,33 @@ async function safeCount(
   }
 }
 
+function titleCase(value: string | null | undefined) {
+  if (!value) return "—";
+  return value.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+}
+
+function subscriptionTone(status: string | null) {
+  const normalized = String(status || "").toLowerCase();
+
+  if (normalized === "active") {
+    return "bg-emerald-100 text-emerald-700";
+  }
+
+  if (normalized === "trialing") {
+    return "bg-sky-100 text-sky-700";
+  }
+
+  if (normalized === "past_due") {
+    return "bg-amber-100 text-amber-700";
+  }
+
+  if (normalized === "canceled" || normalized === "expired") {
+    return "bg-rose-100 text-rose-700";
+  }
+
+  return "bg-slate-100 text-slate-700";
+}
+
 export default async function AdminPage() {
   const supabase = await createClient();
   const {
@@ -148,7 +175,9 @@ export default async function AdminPage() {
             .map((l) => JSON.parse(l))
         : [];
       applications = rows.slice(-20).reverse();
-    } catch {}
+    } catch {
+      applications = [];
+    }
   }
 
   const [
@@ -182,7 +211,9 @@ export default async function AdminPage() {
         .limit(10);
 
       recentEnquiries = (data as EnquiryRow[]) || [];
-    } catch {}
+    } catch {
+      recentEnquiries = [];
+    }
 
     try {
       const { data } = await admin
@@ -192,7 +223,9 @@ export default async function AdminPage() {
         .limit(10);
 
       recentSites = (data as OnboardingSiteRow[]) || [];
-    } catch {}
+    } catch {
+      recentSites = [];
+    }
 
     try {
       const [clientsRes, sitesRes, tokensRes, subsRes, enquiriesRes] =
@@ -308,18 +341,73 @@ export default async function AdminPage() {
     }
   }
 
+  const activeSubscriptions = clinicManagementRows.filter(
+    (row) => String(row.subscriptionStatus || "").toLowerCase() === "active",
+  ).length;
+
+  const trialingSubscriptions = clinicManagementRows.filter(
+    (row) => String(row.subscriptionStatus || "").toLowerCase() === "trialing",
+  ).length;
+
+  const pastDueSubscriptions = clinicManagementRows.filter(
+    (row) => String(row.subscriptionStatus || "").toLowerCase() === "past_due",
+  ).length;
+
+  const linkedClinics = clinicManagementRows.filter(
+    (row) => !!row.clinicId,
+  ).length;
+
+  const liveWidgets = clinicManagementRows.filter(
+    (row) => row.widgetTokenActive,
+  ).length;
+
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard (MVP)</h1>
-          <p className="text-sm text-slate-600">Data source: {source}</p>
-        </div>
-        <LogoutButton />
-      </div>
+      <section className="page-hero">
+        <div className="card-premium p-6 md:p-8">
+          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div className="badge-soft">
+                <span className="h-2 w-2 rounded-full bg-brand" />
+                LeadClaw admin
+              </div>
 
-      <div className="rounded-xl border bg-white p-6">
-        <h2 className="mb-4 text-xl font-semibold">Admin Command Centre</h2>
+              <h1 className="mt-4 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
+                Kris Ninnis — LeadClaw command centre
+              </h1>
+
+              <p className="mt-4 max-w-3xl text-lg leading-8 text-muted">
+                Manage clinics, onboarding, subscriptions, widget installs,
+                enquiries, outreach operations, and internal activity from one
+                workspace.
+              </p>
+
+              <div className="mt-4 flex flex-wrap gap-3 text-sm text-muted">
+                <span>
+                  Signed in as{" "}
+                  <span className="font-medium text-foreground">
+                    {user.email}
+                  </span>
+                </span>
+                <span>•</span>
+                <span>Data source: {source}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <a href="/admin/outreach" className="button-secondary">
+                Outreach dashboard
+              </a>
+              <LogoutButton />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="rounded-[24px] border bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-xl font-semibold text-foreground">
+          Business overview
+        </h2>
 
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-xl border bg-slate-50 p-4">
@@ -343,6 +431,26 @@ export default async function AdminPage() {
           </div>
 
           <div className="rounded-xl border bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Trialing clinics</p>
+            <p className="text-2xl font-semibold">{trialingSubscriptions}</p>
+          </div>
+
+          <div className="rounded-xl border bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Active clinics</p>
+            <p className="text-2xl font-semibold">{activeSubscriptions}</p>
+          </div>
+
+          <div className="rounded-xl border bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Past due</p>
+            <p className="text-2xl font-semibold">{pastDueSubscriptions}</p>
+          </div>
+
+          <div className="rounded-xl border bg-slate-50 p-4">
+            <p className="text-sm text-slate-500">Live widgets</p>
+            <p className="text-2xl font-semibold">{liveWidgets}</p>
+          </div>
+
+          <div className="rounded-xl border bg-slate-50 p-4">
             <p className="text-sm text-slate-500">Onboarding clients</p>
             <p className="text-2xl font-semibold">{onboardingClientCount}</p>
           </div>
@@ -353,8 +461,8 @@ export default async function AdminPage() {
           </div>
 
           <div className="rounded-xl border bg-slate-50 p-4">
-            <p className="text-sm text-slate-500">Widget tokens</p>
-            <p className="text-2xl font-semibold">{widgetTokenCount}</p>
+            <p className="text-sm text-slate-500">Linked clinics</p>
+            <p className="text-2xl font-semibold">{linkedClinics}</p>
           </div>
 
           <div className="rounded-xl border bg-slate-50 p-4">
@@ -369,15 +477,17 @@ export default async function AdminPage() {
 
       <section className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold">Client Operations</h2>
-          <p className="text-sm text-slate-600">
-            Manage real clinic accounts, onboarding status, widget setup, and
-            inbound enquiries.
+          <h2 className="text-2xl font-semibold text-foreground">
+            Client operations
+          </h2>
+          <p className="text-sm text-muted">
+            Manage real clinic accounts, onboarding progress, widget setup,
+            subscriptions, and inbound enquiries.
           </p>
         </div>
 
         <AdminSection
-          title="Clinic Management"
+          title="Clinic management"
           description="One row per onboarding client so you can see setup, widget, subscription, and lead status in one place."
           defaultOpen
         >
@@ -406,22 +516,26 @@ export default async function AdminPage() {
                         {row.businessName || row.clientName}
                       </div>
                       <div className="text-xs text-slate-500">
-                        onboarding: {row.onboardingStatus}
+                        onboarding: {titleCase(row.onboardingStatus)}
                       </div>
                     </td>
+
                     <td className="pr-4 text-slate-600">
                       {row.contactEmail || "—"}
                     </td>
+
                     <td className="pr-4 text-slate-600">{row.domain || "—"}</td>
+
                     <td className="pr-4">
                       {row.siteStatus ? (
                         <span className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-700">
-                          {row.siteStatus}
+                          {titleCase(row.siteStatus)}
                         </span>
                       ) : (
                         "—"
                       )}
                     </td>
+
                     <td className="pr-4">
                       {row.clinicId ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-700">
@@ -433,6 +547,7 @@ export default async function AdminPage() {
                         </span>
                       )}
                     </td>
+
                     <td className="pr-4">
                       {row.widgetTokenActive ? (
                         <span className="rounded-full bg-emerald-100 px-2 py-1 text-xs text-emerald-700">
@@ -444,13 +559,18 @@ export default async function AdminPage() {
                         </span>
                       )}
                     </td>
+
                     <td className="pr-4">
                       {row.subscriptionStatus ? (
                         <div>
-                          <div className="font-medium text-slate-900">
-                            {row.subscriptionStatus}
+                          <div
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${subscriptionTone(
+                              row.subscriptionStatus,
+                            )}`}
+                          >
+                            {titleCase(row.subscriptionStatus)}
                           </div>
-                          <div className="text-xs text-slate-500">
+                          <div className="mt-1 text-xs text-slate-500">
                             {row.subscriptionPlan || "plan unknown"}
                           </div>
                         </div>
@@ -458,9 +578,11 @@ export default async function AdminPage() {
                         "—"
                       )}
                     </td>
+
                     <td className="pr-4 font-medium">{row.enquiriesCount}</td>
                   </tr>
                 ))}
+
                 {clinicManagementRows.length === 0 && (
                   <tr>
                     <td className="py-3 text-slate-500" colSpan={8}>
@@ -500,6 +622,7 @@ export default async function AdminPage() {
                       </td>
                     </tr>
                   ))}
+
                   {recentEnquiries.length === 0 && (
                     <tr>
                       <td className="py-3 text-slate-500" colSpan={4}>
@@ -530,10 +653,11 @@ export default async function AdminPage() {
                   {recentSites.map((site) => (
                     <tr key={site.id} className="border-b last:border-0">
                       <td className="py-2">{site.domain}</td>
-                      <td>{site.status}</td>
+                      <td>{titleCase(site.status)}</td>
                       <td>{site.clinic_id ? "Yes" : "No"}</td>
                     </tr>
                   ))}
+
                   {recentSites.length === 0 && (
                     <tr>
                       <td className="py-3 text-slate-500" colSpan={3}>
@@ -552,8 +676,8 @@ export default async function AdminPage() {
           description="Quick summary of billing records currently known to the system."
           defaultOpen={false}
         >
-          <div className="text-sm">
-            Active/known subscriptions: <strong>{subCount || 0}</strong>
+          <div className="text-sm text-slate-700">
+            Active or known subscriptions: <strong>{subCount || 0}</strong>
           </div>
         </AdminSection>
       </section>
@@ -562,10 +686,12 @@ export default async function AdminPage() {
 
       <section className="space-y-6">
         <div>
-          <h2 className="text-2xl font-semibold">Sales Operations</h2>
-          <p className="text-sm text-slate-600">
-            Manage your scraped prospect database, outreach workflow, and
-            inbound applications to LeadClaw.
+          <h2 className="text-2xl font-semibold text-foreground">
+            Sales operations
+          </h2>
+          <p className="text-sm text-muted">
+            Manage scraped prospects, outreach workflow, applications, and
+            internal sales activity.
           </p>
         </div>
 
@@ -629,6 +755,7 @@ export default async function AdminPage() {
                   <td>{a.status}</td>
                 </tr>
               ))}
+
               {applications.length === 0 && (
                 <tr>
                   <td className="py-3 text-slate-500" colSpan={5}>

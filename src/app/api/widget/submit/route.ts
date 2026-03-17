@@ -3,6 +3,7 @@ import { z } from "zod";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
+import { canUseLeadClawProduct } from "@/lib/subscription-access";
 
 const schema = z.object({
   token: z.string().min(10),
@@ -165,6 +166,34 @@ export async function POST(req: Request) {
         .eq("id", site.onboarding_client_id)
         .limit(1)
         .maybeSingle();
+      let subscriptionStatus: string | null = null;
+
+      if (clinicContactEmail) {
+        const { data: subscription } = await admin
+          .from("subscriptions")
+          .select("status, updated_at")
+          .eq("email", clinicContactEmail)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        subscriptionStatus = subscription?.status || null;
+      }
+
+      if (!canUseLeadClawProduct(subscriptionStatus)) {
+        console.warn("[widget.submit] blocked due to inactive subscription", {
+          clinicContactEmail,
+          subscriptionStatus,
+        });
+
+        return NextResponse.json(
+          {
+            ok: false,
+            error: "subscription_inactive",
+          },
+          { status: 403, headers: corsHeaders },
+        );
+      }
 
       if (clientError) {
         console.error("[widget.submit] client lookup failed", clientError);

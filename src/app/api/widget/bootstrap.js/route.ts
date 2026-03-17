@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { canUseLeadClawProduct } from "@/lib/subscription-access";
 
 function escapeForScript(value: string) {
   return value
@@ -8,34 +9,30 @@ function escapeForScript(value: string) {
     .replace(/\$\{/g, "\\${");
 }
 
+function jsResponse(script: string) {
+  return new NextResponse(script, {
+    status: 200,
+    headers: {
+      "content-type": "application/javascript; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
+}
+
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token")?.trim();
 
   if (!token) {
-    return new NextResponse(
+    return jsResponse(
       `console.warn("[LeadClaw widget] Missing widget token.");`,
-      {
-        status: 200,
-        headers: {
-          "content-type": "application/javascript; charset=utf-8",
-          "cache-control": "no-store",
-        },
-      },
     );
   }
 
   const admin = createAdminClient();
 
   if (!admin) {
-    return new NextResponse(
+    return jsResponse(
       `console.warn("[LeadClaw widget] Admin client unavailable.");`,
-      {
-        status: 200,
-        headers: {
-          "content-type": "application/javascript; charset=utf-8",
-          "cache-control": "no-store",
-        },
-      },
     );
   }
 
@@ -50,7 +47,8 @@ export async function GET(req: NextRequest) {
           id,
           domain,
           clinic_id,
-          status
+          status,
+          onboarding_client_id
         )
       `,
     )
@@ -59,21 +57,82 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   if (!tokenRow || !tokenRow.onboarding_site_id) {
-    return new NextResponse(
+    return jsResponse(
       `console.warn("[LeadClaw widget] Invalid or inactive widget token.");`,
-      {
-        status: 200,
-        headers: {
-          "content-type": "application/javascript; charset=utf-8",
-          "cache-control": "no-store",
-        },
-      },
     );
   }
 
   const site = Array.isArray(tokenRow.onboarding_sites)
     ? tokenRow.onboarding_sites[0]
     : tokenRow.onboarding_sites;
+
+  if (!site) {
+    return jsResponse(`console.warn("[LeadClaw widget] Site not found.");`);
+  }
+
+  let clinicContactEmail: string | null = null;
+  let subscriptionStatus: string | null = null;
+
+  const onboardingClientId =
+    "onboarding_client_id" in site && site.onboarding_client_id
+      ? String(site.onboarding_client_id)
+      : "";
+
+  if (onboardingClientId) {
+    const { data: client, error: clientError } = await admin
+      .from("onboarding_clients")
+      .select("contact_email")
+      .eq("id", onboardingClientId)
+      .limit(1)
+      .maybeSingle();
+
+    if (clientError) {
+      console.error("[widget.bootstrap] client lookup failed", clientError);
+      return jsResponse(
+        `console.warn("[LeadClaw widget] Client lookup failed.");`,
+      );
+    }
+
+    clinicContactEmail = client?.contact_email?.trim().toLowerCase() || null;
+
+    if (clinicContactEmail) {
+      const { data: subscription, error: subscriptionError } = await admin
+        .from("subscriptions")
+        .select("status,updated_at")
+        .eq("email", clinicContactEmail)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (subscriptionError) {
+        console.error(
+          "[widget.bootstrap] subscription lookup failed",
+          subscriptionError,
+        );
+        return jsResponse(
+          `console.warn("[LeadClaw widget] Subscription lookup failed.");`,
+        );
+      }
+
+      subscriptionStatus = subscription?.status || null;
+    }
+  }
+
+  if (!canUseLeadClawProduct(subscriptionStatus)) {
+    console.warn("[widget.bootstrap] blocked due to inactive subscription", {
+      clinicContactEmail,
+      subscriptionStatus,
+      token,
+    });
+
+    const blockedScript = `
+(() => {
+  console.warn("[LeadClaw widget] subscription inactive");
+})();
+    `.trim();
+
+    return jsResponse(blockedScript);
+  }
 
   const clinicId = site?.clinic_id ? String(site.clinic_id) : "";
   const siteId = site?.id ? String(site.id) : "";
@@ -694,11 +753,5 @@ export async function GET(req: NextRequest) {
 })();
   `.trim();
 
-  return new NextResponse(script, {
-    status: 200,
-    headers: {
-      "content-type": "application/javascript; charset=utf-8",
-      "cache-control": "no-store",
-    },
-  });
+  return jsResponse(script);
 }
