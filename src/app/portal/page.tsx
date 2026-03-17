@@ -93,12 +93,21 @@ function getPlanTone(
 function getWidgetStatusTone(widgetStatus: string) {
   const lower = widgetStatus.toLowerCase();
 
-  if (lower === "live")
+  if (lower === "live") {
     return "border-emerald-200 bg-emerald-50 text-emerald-800";
-  if (lower === "pending install")
+  }
+
+  if (lower === "pending install") {
     return "border-amber-200 bg-amber-50 text-amber-800";
-  if (lower === "ready to install")
+  }
+
+  if (lower === "ready to install") {
     return "border-sky-200 bg-sky-50 text-sky-800";
+  }
+
+  if (lower === "paused") {
+    return "border-rose-200 bg-rose-50 text-rose-800";
+  }
 
   return "border-slate-200 bg-slate-50 text-slate-800";
 }
@@ -286,7 +295,7 @@ export default async function PortalPage({
   const widgetDetected = Boolean(portalContext?.widgetLastSeenAt);
 
   const widgetStatus = !canUsePortalFeatures
-    ? "Locked"
+    ? "Paused"
     : widgetDetected
       ? "Live"
       : portalContext?.siteStatus === "pending_install"
@@ -378,6 +387,22 @@ export default async function PortalPage({
         </div>
       )}
 
+      {!hasActiveSubscription && !showTrialExpiredBox && (
+        <div className="rounded-[24px] border border-rose-200 bg-rose-50 p-5">
+          <h2 className="text-lg font-semibold text-rose-950">
+            Your LeadClaw service is currently paused
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-rose-900">
+            Your website widget and live lead capture are not active right now.
+            Reactivate your subscription to turn the widget back on, unlock your
+            install code, and continue collecting new enquiries.
+          </p>
+          <div className="mt-4">
+            <PortalPlanUpgrade email={user.email} />
+          </div>
+        </div>
+      )}
+
       <section>
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
@@ -388,7 +413,7 @@ export default async function PortalPage({
                 ? `Trial ends ${formatDateTime(trialEnd)}`
                 : hasActiveSubscription
                   ? "Your package is currently usable."
-                  : "No active access yet."
+                  : "Your package is currently paused."
             }
           />
 
@@ -398,7 +423,7 @@ export default async function PortalPage({
             hint={
               canUsePortalFeatures
                 ? "Real enquiries captured in the last 7 days."
-                : "Upgrade to unlock live lead tracking."
+                : "Lead capture resumes when your subscription is active."
             }
           />
 
@@ -410,7 +435,7 @@ export default async function PortalPage({
                 ? widgetDetected
                   ? "Your widget has been detected on a live website."
                   : "Install your widget to start capturing enquiries."
-                : "Activate a package to unlock installation."
+                : "The widget is paused until your subscription is reactivated."
             }
           />
 
@@ -693,7 +718,7 @@ export default async function PortalPage({
                         ? widgetDetected
                           ? "Your widget has been detected on a live website."
                           : "Install and publish your snippet to start capturing leads."
-                        : "Activate a package to unlock installation."}
+                        : "Your widget is paused until your subscription is reactivated."}
                     </p>
                   </div>
                   <span
@@ -741,6 +766,17 @@ export default async function PortalPage({
                     <p className="mt-2 leading-7">
                       Install the snippet, publish your site, then refresh this
                       page after visiting your live website.
+                    </p>
+                  </div>
+                )}
+
+                {!canUsePortalFeatures && (
+                  <div className="rounded-[22px] border border-rose-200 bg-rose-50 p-5 text-sm text-rose-900">
+                    <p className="font-semibold">Widget paused</p>
+                    <p className="mt-2 leading-7">
+                      Your website widget is currently turned off because your
+                      subscription is not active. Reactivate your package to
+                      restore live capture on your website.
                     </p>
                   </div>
                 )}
@@ -845,13 +881,13 @@ export default async function PortalPage({
             <SectionHeading
               eyebrow="Install your widget"
               title="Snippet locked"
-              description="Start or reactivate a plan to unlock your website install code."
+              description="Reactivate your plan to unlock your website install code."
               maxWidth="lg"
             />
             <div className="mt-4 rounded-[24px] border border-dashed border-border bg-surface-2 p-6 text-sm text-muted">
-              Your install snippet is locked until you start or reactivate a
-              plan. Once active, this section will show your ready-to-paste
-              website code.
+              Your install snippet is locked because your subscription is not
+              active. Once reactivated, this section will show your
+              ready-to-paste website code again.
             </div>
           </div>
         )}
