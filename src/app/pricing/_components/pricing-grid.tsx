@@ -125,16 +125,18 @@ export default function PricingGrid() {
               </div>
 
               <div className="mt-8 text-center">
-                <Link
-                  href={`/free-trial?plan=${plan.slug}`}
-                  className={plan.buttonClass}
-                >
-                  Start 7-day free trial
+                <Link href="/pricing" className={plan.buttonClass}>
+                  Start paid plan
                 </Link>
 
-                <p className="mt-3 text-xs text-muted-2">
-                  No credit card required
-                </p>
+                <div className="mt-3">
+                  <Link
+                    href={`/free-trial?plan=${plan.slug}`}
+                    className="text-xs font-medium text-muted-2 underline underline-offset-4 transition hover:text-foreground"
+                  >
+                    Prefer to try first? Start a free trial
+                  </Link>
+                </div>
               </div>
             </article>
           ))}

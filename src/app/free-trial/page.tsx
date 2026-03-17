@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -25,7 +25,7 @@ const planConfig: Record<
   starter: {
     name: "Starter",
     mascot: "Fox",
-    priceLabel: "£49/month after trial",
+    priceLabel: "£39/month after trial",
     description:
       "A friendly starting point for clinics that want to begin capturing missed website enquiries.",
     badgeClass: "border-amber-200 bg-amber-100 text-amber-800",
@@ -63,7 +63,7 @@ const planConfig: Record<
   pro: {
     name: "Pro",
     mascot: "Dragon",
-    priceLabel: "£199/month after trial",
+    priceLabel: "£249/month after trial",
     description:
       "A premium plan for ambitious clinics that want the strongest LeadClaw setup and brand presentation.",
     badgeClass: "border-cyan-200 bg-cyan-100 text-cyan-800",
@@ -87,7 +87,7 @@ function normalizePlan(value: string | null): PlanSlug {
   return "growth";
 }
 
-export default function FreeTrialPage() {
+function FreeTrialContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -461,5 +461,34 @@ export default function FreeTrialPage() {
         </div>
       </section>
     </div>
+  );
+}
+
+function FreeTrialLoading() {
+  return (
+    <div className="space-y-0">
+      <section className="page-hero section-shell">
+        <div className="container-shell">
+          <div className="mx-auto max-w-3xl">
+            <div className="card-premium p-8 text-center">
+              <p className="text-sm font-semibold text-foreground">
+                Loading your trial options...
+              </p>
+              <p className="mt-2 text-sm text-muted">
+                Preparing the right LeadClaw plan for your clinic.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+export default function FreeTrialPage() {
+  return (
+    <Suspense fallback={<FreeTrialLoading />}>
+      <FreeTrialContent />
+    </Suspense>
   );
 }

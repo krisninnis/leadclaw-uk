@@ -27,7 +27,7 @@ export const plans: PricingPlan[] = [
   {
     name: "Starter",
     slug: "starter",
-    price: "£49",
+    price: "£39",
     period: "/month",
     description: "Friendly lead capture for smaller clinics getting started.",
     mascot: "Fox",
@@ -43,7 +43,7 @@ export const plans: PricingPlan[] = [
       "Simple setup",
       "Best for smaller clinics",
     ],
-    cta: "/checkout?plan=starter",
+    cta: "/free-trial?plan=starter",
   },
   {
     name: "Growth",
@@ -66,12 +66,12 @@ export const plans: PricingPlan[] = [
       "Better fit for active clinics",
       "Recommended plan",
     ],
-    cta: "/checkout?plan=growth",
+    cta: "/free-trial?plan=growth",
   },
   {
     name: "Pro",
     slug: "pro",
-    price: "£199",
+    price: "£249",
     period: "/month",
     description:
       "Flagship automation tier for ambitious clinics that want the strongest setup.",
@@ -88,7 +88,7 @@ export const plans: PricingPlan[] = [
       "Stronger premium branding fit",
       "Top-tier LeadClaw experience",
     ],
-    cta: "/checkout?plan=pro",
+    cta: "/free-trial?plan=pro",
   },
 ];
 

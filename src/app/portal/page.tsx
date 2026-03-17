@@ -343,18 +343,23 @@ export default async function PortalPage({
 
       {checkoutSuccess && (
         <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-sm">
-          <p className="font-semibold">Checkout complete</p>
+          <p className="font-semibold">Your paid plan is now active</p>
           <p className="mt-1">
-            Your account is active and your setup is ready below.
-            {setupReady ? " Your install section has been prepared." : ""}
+            LeadClaw is ready to use.
+            {setupReady
+              ? " Your install section has been prepared below."
+              : " You can continue with setup below."}
           </p>
         </div>
       )}
 
       {trialStarted && (
         <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-sm">
-          <p className="font-semibold">Free trial started</p>
-          <p className="mt-1">Your setup section is now active below.</p>
+          <p className="font-semibold">Your free trial is now active</p>
+          <p className="mt-1">
+            You can continue with setup below and start preparing your LeadClaw
+            install.
+          </p>
         </div>
       )}
 

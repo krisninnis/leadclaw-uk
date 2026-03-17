@@ -73,14 +73,14 @@ export default function Nav() {
   const isAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
 
   const links: NavLink[] = [
-    { href: "/", label: "Home", icon: "⌂" },
-    { href: "/pricing", label: "Pricing", icon: "£" },
-    { href: "/demo", label: "Demo", icon: "▶" },
-    { href: "/contact", label: "Contact", icon: "✉" },
+    { href: "/", label: "Home", icon: "🏠" },
+    { href: "/pricing", label: "Pricing", icon: "💳" },
+    { href: "/demo", label: "Demo", icon: "🧪" },
+    { href: "/contact", label: "Contact", icon: "📨" },
     ...(isSignedIn
-      ? [{ href: "/portal", label: "Portal", icon: "◫" }]
-      : [{ href: "/login", label: "Login", icon: "•" }]),
-    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "★" }] : []),
+      ? [{ href: "/portal", label: "Portal", icon: "💬" }]
+      : [{ href: "/login", label: "Login", icon: "🔐" }]),
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
   ];
 
   return (
