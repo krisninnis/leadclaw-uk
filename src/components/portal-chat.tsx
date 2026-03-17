@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Msg = {
   id: string;
@@ -9,11 +9,18 @@ type Msg = {
   created_at: string;
 };
 
+function formatMessageTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString();
+}
+
 export default function PortalChat() {
   const [messages, setMessages] = useState<Msg[]>([]);
   const [text, setText] = useState("");
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
 
   async function load() {
     try {
@@ -56,6 +63,12 @@ export default function PortalChat() {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages]);
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
 
@@ -91,48 +104,113 @@ export default function PortalChat() {
     }
   }
 
+  const sortedMessages = useMemo(
+    () =>
+      [...messages].sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+      ),
+    [messages],
+  );
+
   return (
-    <div className="rounded-xl border bg-white p-6">
-      <h2 className="mb-3 text-lg font-semibold">Support chat</h2>
+    <div className="card-premium p-6 md:p-8">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
+            Support chat
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+            Message LeadClaw support
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-muted">
+            Send setup questions, onboarding updates, or anything you need help
+            with inside your clinic workspace.
+          </p>
+        </div>
 
-      <div className="mb-3 max-h-64 space-y-2 overflow-y-auto rounded border p-3 text-sm">
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={m.sender === "client" ? "text-right" : "text-left"}
-          >
-            <span
-              className={
-                m.sender === "client"
-                  ? "inline-block rounded bg-slate-900 px-2 py-1 text-white"
-                  : "inline-block rounded bg-slate-100 px-2 py-1"
-              }
-            >
-              {m.message}
-            </span>
-          </div>
-        ))}
-
-        {!loading && messages.length === 0 && (
-          <p className="text-slate-500">No messages yet.</p>
-        )}
-
-        {loading && <p className="text-slate-500">Loading messages...</p>}
+        <div className="rounded-full border border-border bg-white px-4 py-2 text-sm font-medium text-muted shadow-sm">
+          {loading ? "Loading..." : `${sortedMessages.length} messages`}
+        </div>
       </div>
 
-      <form onSubmit={onSubmit} className="flex gap-2">
-        <input
+      <div
+        ref={scrollRef}
+        className="mt-6 max-h-[420px] space-y-4 overflow-y-auto rounded-[24px] border border-border bg-surface-2 p-4"
+      >
+        {sortedMessages.map((m) => {
+          const isClient = m.sender === "client";
+
+          return (
+            <div
+              key={m.id}
+              className={`flex ${isClient ? "justify-end" : "justify-start"}`}
+            >
+              <div
+                className={`max-w-[85%] rounded-[20px] px-4 py-3 shadow-sm ${
+                  isClient
+                    ? "bg-slate-900 text-white"
+                    : "border border-border bg-white text-foreground"
+                }`}
+              >
+                <p className="text-sm leading-7">{m.message}</p>
+                <p
+                  className={`mt-2 text-[11px] ${
+                    isClient ? "text-slate-300" : "text-muted"
+                  }`}
+                >
+                  {isClient ? "You" : "LeadClaw"} •{" "}
+                  {formatMessageTime(m.created_at)}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+
+        {!loading && sortedMessages.length === 0 && (
+          <div className="rounded-[20px] border border-dashed border-border bg-white p-5 text-sm text-muted">
+            <p className="font-medium text-foreground">No messages yet</p>
+            <p className="mt-2 leading-7">
+              Start the conversation below and your message will appear here.
+            </p>
+          </div>
+        )}
+
+        {loading && (
+          <div className="rounded-[20px] border border-dashed border-border bg-white p-5 text-sm text-muted">
+            Loading messages...
+          </div>
+        )}
+      </div>
+
+      <form onSubmit={onSubmit} className="mt-6 space-y-3">
+        <label
+          htmlFor="portal-support-message"
+          className="block text-sm font-medium text-foreground"
+        >
+          Your message
+        </label>
+
+        <textarea
+          id="portal-support-message"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          className="flex-1 rounded border p-2"
-          placeholder="Message support..."
+          className="min-h-[120px] w-full rounded-[20px] border border-border bg-white px-4 py-3 text-sm text-foreground outline-none transition focus:border-brand"
+          placeholder="Ask for help with setup, billing, your widget, leads, or onboarding..."
         />
-        <button className="rounded bg-slate-900 px-3 py-2 text-white">
-          Send
-        </button>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted">
+            Messages are shared inside your LeadClaw workspace.
+          </p>
+
+          <button type="submit" className="button-primary">
+            Send message
+          </button>
+        </div>
       </form>
 
-      {status && <p className="mt-2 text-xs text-slate-500">{status}</p>}
+      {status ? <p className="mt-3 text-xs text-muted">{status}</p> : null}
     </div>
   );
 }

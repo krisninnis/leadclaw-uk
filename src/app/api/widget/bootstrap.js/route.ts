@@ -9,30 +9,34 @@ function escapeForScript(value: string) {
     .replace(/\$\{/g, "\\${");
 }
 
-function jsResponse(script: string) {
-  return new NextResponse(script, {
-    status: 200,
-    headers: {
-      "content-type": "application/javascript; charset=utf-8",
-      "cache-control": "no-store",
-    },
-  });
-}
-
 export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get("token")?.trim();
 
   if (!token) {
-    return jsResponse(
+    return new NextResponse(
       `console.warn("[LeadClaw widget] Missing widget token.");`,
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/javascript; charset=utf-8",
+          "cache-control": "no-store",
+        },
+      },
     );
   }
 
   const admin = createAdminClient();
 
   if (!admin) {
-    return jsResponse(
+    return new NextResponse(
       `console.warn("[LeadClaw widget] Admin client unavailable.");`,
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/javascript; charset=utf-8",
+          "cache-control": "no-store",
+        },
+      },
     );
   }
 
@@ -57,8 +61,15 @@ export async function GET(req: NextRequest) {
     .maybeSingle();
 
   if (!tokenRow || !tokenRow.onboarding_site_id) {
-    return jsResponse(
+    return new NextResponse(
       `console.warn("[LeadClaw widget] Invalid or inactive widget token.");`,
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/javascript; charset=utf-8",
+          "cache-control": "no-store",
+        },
+      },
     );
   }
 
@@ -66,78 +77,56 @@ export async function GET(req: NextRequest) {
     ? tokenRow.onboarding_sites[0]
     : tokenRow.onboarding_sites;
 
-  if (!site) {
-    return jsResponse(`console.warn("[LeadClaw widget] Site not found.");`);
-  }
-
-  let clinicContactEmail: string | null = null;
-  let subscriptionStatus: string | null = null;
-
-  const onboardingClientId =
-    "onboarding_client_id" in site && site.onboarding_client_id
-      ? String(site.onboarding_client_id)
-      : "";
-
-  if (onboardingClientId) {
-    const { data: client, error: clientError } = await admin
-      .from("onboarding_clients")
-      .select("contact_email")
-      .eq("id", onboardingClientId)
-      .limit(1)
-      .maybeSingle();
-
-    if (clientError) {
-      console.error("[widget.bootstrap] client lookup failed", clientError);
-      return jsResponse(
-        `console.warn("[LeadClaw widget] Client lookup failed.");`,
-      );
-    }
-
-    clinicContactEmail = client?.contact_email?.trim().toLowerCase() || null;
-
-    if (clinicContactEmail) {
-      const { data: subscription, error: subscriptionError } = await admin
-        .from("subscriptions")
-        .select("status,updated_at")
-        .eq("email", clinicContactEmail)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (subscriptionError) {
-        console.error(
-          "[widget.bootstrap] subscription lookup failed",
-          subscriptionError,
-        );
-        return jsResponse(
-          `console.warn("[LeadClaw widget] Subscription lookup failed.");`,
-        );
-      }
-
-      subscriptionStatus = subscription?.status || null;
-    }
-  }
-
-  if (!canUseLeadClawProduct(subscriptionStatus)) {
-    console.warn("[widget.bootstrap] blocked due to inactive subscription", {
-      clinicContactEmail,
-      subscriptionStatus,
-      token,
-    });
-
-    const blockedScript = `
-(() => {
-  console.warn("[LeadClaw widget] subscription inactive");
-})();
-    `.trim();
-
-    return jsResponse(blockedScript);
-  }
-
   const clinicId = site?.clinic_id ? String(site.clinic_id) : "";
   const siteId = site?.id ? String(site.id) : "";
   const clinicDomain = site?.domain ? String(site.domain) : "";
   const siteStatus = site?.status ? String(site.status) : "pending_install";
+  const onboardingClientId = site?.onboarding_client_id
+    ? String(site.onboarding_client_id)
+    : "";
+
+  let contactEmail = "";
+
+  if (onboardingClientId) {
+    const { data: clientRow } = await admin
+      .from("onboarding_clients")
+      .select("contact_email")
+      .eq("id", onboardingClientId)
+      .maybeSingle();
+
+    contactEmail = String(clientRow?.contact_email || "")
+      .trim()
+      .toLowerCase();
+  }
+
+  let subscriptionStatus: string | null = null;
+
+  if (contactEmail) {
+    const { data: subscriptionRow } = await admin
+      .from("subscriptions")
+      .select("status")
+      .eq("email", contactEmail)
+      .order("updated_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    subscriptionStatus = subscriptionRow?.status || null;
+  }
+
+  const allowed = canUseLeadClawProduct(subscriptionStatus);
+
+  if (!allowed) {
+    return new NextResponse(
+      `console.warn("[LeadClaw widget] Subscription inactive. Widget blocked.");`,
+      {
+        status: 200,
+        headers: {
+          "content-type": "application/javascript; charset=utf-8",
+          "cache-control": "no-store",
+        },
+      },
+    );
+  }
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
@@ -174,16 +163,11 @@ export async function GET(req: NextRequest) {
 
   const style = document.createElement("style");
   style.textContent = \`
-    #leadclaw-widget-root {
-      all: initial;
-    }
-
-    .lcw-shell,
-    .lcw-shell * {
+    #leadclaw-widget-root { all: initial; }
+    .lcw-shell, .lcw-shell * {
       box-sizing: border-box;
       font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
-
     .lcw-shell {
       position: fixed;
       right: 20px;
@@ -191,7 +175,6 @@ export async function GET(req: NextRequest) {
       z-index: 2147483000;
       color: #0f172a;
     }
-
     .lcw-launcher {
       display: inline-flex;
       align-items: center;
@@ -208,12 +191,10 @@ export async function GET(req: NextRequest) {
       cursor: pointer;
       transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     }
-
     .lcw-launcher:hover {
       transform: translateY(-1px);
       box-shadow: 0 24px 48px rgba(6, 182, 212, 0.34);
     }
-
     .lcw-launcher-dot {
       width: 10px;
       height: 10px;
@@ -222,7 +203,6 @@ export async function GET(req: NextRequest) {
       box-shadow: 0 0 0 6px rgba(255,255,255,0.12);
       flex: 0 0 auto;
     }
-
     .lcw-panel {
       width: min(380px, calc(100vw - 24px));
       margin-top: 14px;
@@ -235,7 +215,6 @@ export async function GET(req: NextRequest) {
         0 20px 60px rgba(15, 23, 42, 0.18),
         0 8px 24px rgba(15, 23, 42, 0.08);
     }
-
     .lcw-header {
       padding: 18px 18px 16px;
       background:
@@ -244,7 +223,6 @@ export async function GET(req: NextRequest) {
         linear-gradient(180deg, #f8fdff, #f4f8fc);
       border-bottom: 1px solid #e6edf5;
     }
-
     .lcw-header-top {
       display: flex;
       align-items: center;
@@ -252,14 +230,12 @@ export async function GET(req: NextRequest) {
       gap: 12px;
       margin-bottom: 12px;
     }
-
     .lcw-brand {
       display: flex;
       align-items: center;
       gap: 12px;
       min-width: 0;
     }
-
     .lcw-avatar {
       width: 42px;
       height: 42px;
@@ -274,11 +250,7 @@ export async function GET(req: NextRequest) {
       border: 1px solid rgba(6, 182, 212, 0.14);
       flex: 0 0 auto;
     }
-
-    .lcw-brand-copy {
-      min-width: 0;
-    }
-
+    .lcw-brand-copy { min-width: 0; }
     .lcw-title {
       margin: 0;
       font-size: 15px;
@@ -286,14 +258,12 @@ export async function GET(req: NextRequest) {
       color: #0f172a;
       line-height: 1.2;
     }
-
     .lcw-subtitle {
       margin: 3px 0 0;
       font-size: 12px;
       color: #64748b;
       line-height: 1.4;
     }
-
     .lcw-close {
       appearance: none;
       border: 1px solid #dbe7ee;
@@ -308,12 +278,10 @@ export async function GET(req: NextRequest) {
       transition: background-color 0.2s ease, transform 0.2s ease;
       flex: 0 0 auto;
     }
-
     .lcw-close:hover {
       background: white;
       transform: translateY(-1px);
     }
-
     .lcw-message {
       border-radius: 20px;
       border-top-left-radius: 8px;
@@ -325,19 +293,16 @@ export async function GET(req: NextRequest) {
       line-height: 1.6;
       color: #0f172a;
     }
-
     .lcw-body {
       padding: 16px 18px 18px;
       background: linear-gradient(180deg, #fbfdff, #f8fbfe);
     }
-
     .lcw-intents {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
       margin: 14px 0 16px;
     }
-
     .lcw-chip {
       appearance: none;
       border: 1px solid #dbe7ee;
@@ -350,24 +315,20 @@ export async function GET(req: NextRequest) {
       cursor: pointer;
       transition: transform 0.18s ease, border-color 0.18s ease, background-color 0.18s ease;
     }
-
     .lcw-chip:hover {
       transform: translateY(-1px);
       border-color: #bcd8e6;
       background: #f8fcff;
     }
-
     .lcw-chip.is-active {
       background: #e6fbff;
       border-color: rgba(6, 182, 212, 0.22);
       color: #0b7ea4;
     }
-
     .lcw-form {
       display: grid;
       gap: 10px;
     }
-
     .lcw-label {
       display: block;
       font-size: 12px;
@@ -375,9 +336,7 @@ export async function GET(req: NextRequest) {
       color: #334155;
       margin-bottom: 6px;
     }
-
-    .lcw-input,
-    .lcw-textarea {
+    .lcw-input, .lcw-textarea {
       width: 100%;
       border: 1px solid #dbe7ee;
       background: rgba(255,255,255,0.96);
@@ -388,37 +347,27 @@ export async function GET(req: NextRequest) {
       font-size: 14px;
       transition: border-color 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
     }
-
-    .lcw-input::placeholder,
-    .lcw-textarea::placeholder {
-      color: #94a3b8;
-    }
-
-    .lcw-input:focus,
-    .lcw-textarea:focus {
+    .lcw-input::placeholder, .lcw-textarea::placeholder { color: #94a3b8; }
+    .lcw-input:focus, .lcw-textarea:focus {
       border-color: rgba(6, 182, 212, 0.5);
       box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.12);
       background: white;
     }
-
     .lcw-textarea {
       min-height: 92px;
       resize: vertical;
     }
-
     .lcw-help {
       font-size: 12px;
       line-height: 1.5;
       color: #64748b;
     }
-
     .lcw-actions {
       display: flex;
       gap: 10px;
       align-items: center;
       margin-top: 4px;
     }
-
     .lcw-submit {
       appearance: none;
       border: 0;
@@ -432,31 +381,26 @@ export async function GET(req: NextRequest) {
       box-shadow: 0 14px 26px rgba(6, 182, 212, 0.22);
       transition: transform 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
     }
-
     .lcw-submit:hover {
       transform: translateY(-1px);
       box-shadow: 0 20px 34px rgba(6, 182, 212, 0.28);
     }
-
     .lcw-submit:disabled {
       opacity: 0.68;
       cursor: wait;
       transform: none;
       box-shadow: 0 10px 20px rgba(6, 182, 212, 0.15);
     }
-
     .lcw-mini {
       font-size: 12px;
       color: #64748b;
       line-height: 1.5;
     }
-
     .lcw-success {
       display: grid;
       gap: 12px;
       padding: 2px 0 4px;
     }
-
     .lcw-success-badge {
       width: 48px;
       height: 48px;
@@ -470,21 +414,18 @@ export async function GET(req: NextRequest) {
       font-weight: 800;
       border: 1px solid #bbf7d0;
     }
-
     .lcw-success-title {
       font-size: 18px;
       font-weight: 800;
       color: #0f172a;
       margin: 0;
     }
-
     .lcw-success-copy {
       font-size: 14px;
       line-height: 1.6;
       color: #475569;
       margin: 0;
     }
-
     .lcw-footer {
       margin-top: 14px;
       padding-top: 12px;
@@ -493,19 +434,16 @@ export async function GET(req: NextRequest) {
       color: #94a3b8;
       text-align: center;
     }
-
     @media (max-width: 640px) {
       .lcw-shell {
         left: 12px;
         right: 12px;
         bottom: 12px;
       }
-
       .lcw-launcher {
         width: 100%;
         justify-content: center;
       }
-
       .lcw-panel {
         width: 100%;
       }
@@ -675,18 +613,6 @@ export async function GET(req: NextRequest) {
           }
 
           try {
-            await fetch(\`\${APP_URL}/api/widget/ping\`, {
-              method: "POST",
-              headers: {
-                "content-type": "application/json",
-              },
-              body: JSON.stringify({
-                token: TOKEN,
-                siteId: SITE_ID,
-                domain: window.location.hostname || CLINIC_DOMAIN || "",
-              }),
-            });
-
             const response = await fetch(\`\${APP_URL}/api/widget/submit\`, {
               method: "POST",
               headers: {
@@ -735,23 +661,15 @@ export async function GET(req: NextRequest) {
     root.appendChild(shell);
   }
 
-  fetch(\`\${APP_URL}/api/widget/ping\`, {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      token: TOKEN,
-      siteId: SITE_ID,
-      domain: window.location.hostname || CLINIC_DOMAIN || "",
-    }),
-  }).catch((error) => {
-    console.warn("[LeadClaw widget] ping failed", error);
-  });
-
   render();
 })();
   `.trim();
 
-  return jsResponse(script);
+  return new NextResponse(script, {
+    status: 200,
+    headers: {
+      "content-type": "application/javascript; charset=utf-8",
+      "cache-control": "no-store",
+    },
+  });
 }

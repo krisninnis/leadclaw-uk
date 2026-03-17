@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Nav from "@/components/nav";
-import AppFooter from "@/components/app-footer";
+import AppShell from "@/components/app-shell";
 
 export const metadata: Metadata = {
   title: "LeadClaw | AI front desk for aesthetic clinics",
@@ -19,12 +19,7 @@ export default function RootLayout({
     <html lang="en" data-scroll-behavior="smooth">
       <body className="min-h-screen bg-background text-foreground antialiased">
         <Nav />
-
-        <main className="mx-auto w-full max-w-[1400px] px-6 pb-28 pt-6 md:pl-[360px] md:pr-10 md:pt-8">
-          {children}
-        </main>
-
-        <AppFooter />
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

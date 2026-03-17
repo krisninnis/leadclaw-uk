@@ -10,6 +10,12 @@ const schema = z.object({
   name: z.string().min(1).max(120),
   email: z.string().email().max(255),
   phone: z.string().max(50).optional(),
+  message: z.string().min(1).max(4000).optional(),
+  intent: z.string().max(120).optional(),
+  pageUrl: z.string().max(1000).optional(),
+  pageTitle: z.string().max(300).optional(),
+  domain: z.string().max(255).optional(),
+  siteStatus: z.string().max(120).optional(),
 });
 
 const resend = process.env.RESEND_API_KEY
@@ -56,10 +62,7 @@ export async function POST(req: Request) {
 
   if (!limit.ok) {
     return NextResponse.json(
-      {
-        ok: false,
-        error: "rate_limit_exceeded",
-      },
+      { ok: false, error: "rate_limit_exceeded" },
       {
         status: 429,
         headers: {
@@ -88,6 +91,11 @@ export async function POST(req: Request) {
     const safeName = parsed.name.trim();
     const safeEmail = parsed.email.trim().toLowerCase();
     const safePhone = parsed.phone?.trim() || null;
+    const safeMessage = parsed.message?.trim() || null;
+    const safeIntent = parsed.intent?.trim() || null;
+    const safePageUrl = parsed.pageUrl?.trim() || null;
+    const safePageTitle = parsed.pageTitle?.trim() || null;
+    const safeDomain = parsed.domain?.trim().toLowerCase() || null;
 
     const { data: tokenRow, error: tokenError } = await admin
       .from("widget_tokens")
@@ -99,7 +107,6 @@ export async function POST(req: Request) {
 
     if (tokenError) {
       console.error("[widget.submit] token lookup failed", tokenError);
-
       return NextResponse.json(
         { ok: false, error: "token_lookup_failed" },
         { status: 500, headers: corsHeaders },
@@ -115,14 +122,13 @@ export async function POST(req: Request) {
 
     const { data: site, error: siteError } = await admin
       .from("onboarding_sites")
-      .select("clinic_id,onboarding_client_id")
+      .select("clinic_id,onboarding_client_id,domain")
       .eq("id", tokenRow.onboarding_site_id)
       .limit(1)
       .maybeSingle();
 
     if (siteError) {
       console.error("[widget.submit] site lookup failed", siteError);
-
       return NextResponse.json(
         { ok: false, error: "site_lookup_failed" },
         { status: 500, headers: corsHeaders },
@@ -136,26 +142,6 @@ export async function POST(req: Request) {
       );
     }
 
-    const enquiryPayload = {
-      clinic_id: site.clinic_id,
-      name: safeName,
-      email: safeEmail,
-      phone: safePhone,
-    };
-
-    const { error: insertError } = await admin
-      .from("enquiries")
-      .insert(enquiryPayload);
-
-    if (insertError) {
-      console.error("[widget.submit] enquiry insert failed", insertError);
-
-      return NextResponse.json(
-        { ok: false, error: "failed_to_store_enquiry" },
-        { status: 500, headers: corsHeaders },
-      );
-    }
-
     let clinicName = "our clinic";
     let clinicContactEmail: string | null = null;
 
@@ -166,44 +152,65 @@ export async function POST(req: Request) {
         .eq("id", site.onboarding_client_id)
         .limit(1)
         .maybeSingle();
-      let subscriptionStatus: string | null = null;
-
-      if (clinicContactEmail) {
-        const { data: subscription } = await admin
-          .from("subscriptions")
-          .select("status, updated_at")
-          .eq("email", clinicContactEmail)
-          .order("updated_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-
-        subscriptionStatus = subscription?.status || null;
-      }
-
-      if (!canUseLeadClawProduct(subscriptionStatus)) {
-        console.warn("[widget.submit] blocked due to inactive subscription", {
-          clinicContactEmail,
-          subscriptionStatus,
-        });
-
-        return NextResponse.json(
-          {
-            ok: false,
-            error: "subscription_inactive",
-          },
-          { status: 403, headers: corsHeaders },
-        );
-      }
 
       if (clientError) {
         console.error("[widget.submit] client lookup failed", clientError);
       }
 
-      clinicContactEmail = client?.contact_email?.trim() || null;
+      clinicContactEmail = client?.contact_email?.trim().toLowerCase() || null;
       clinicName =
         client?.business_name?.trim() ||
         client?.client_name?.trim() ||
         "our clinic";
+    }
+
+    const { data: subscriptionRow } = clinicContactEmail
+      ? await admin
+          .from("subscriptions")
+          .select("status,email")
+          .eq("email", clinicContactEmail)
+          .order("updated_at", { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : { data: null };
+
+    const subscriptionStatus = subscriptionRow?.status || null;
+    const allowed = canUseLeadClawProduct(subscriptionStatus);
+
+    if (!allowed) {
+      return NextResponse.json(
+        { ok: false, error: "subscription_inactive" },
+        { status: 403, headers: corsHeaders },
+      );
+    }
+
+    const enquiryPayload = {
+      clinic_id: site.clinic_id,
+      name: safeName,
+      email: safeEmail,
+      phone: safePhone,
+      message: safeMessage,
+      status: "new",
+      source: "widget",
+      meta: {
+        intent: safeIntent,
+        pageUrl: safePageUrl,
+        pageTitle: safePageTitle,
+        domain: safeDomain,
+        siteDomain: site.domain || null,
+      },
+    };
+
+    const { error: insertError } = await admin
+      .from("enquiries")
+      .insert(enquiryPayload);
+
+    if (insertError) {
+      console.error("[widget.submit] enquiry insert failed", insertError);
+      return NextResponse.json(
+        { ok: false, error: "failed_to_store_enquiry" },
+        { status: 500, headers: corsHeaders },
+      );
     }
 
     if (!resend) {
@@ -213,7 +220,7 @@ export async function POST(req: Request) {
     } else {
       if (clinicContactEmail) {
         try {
-          const sendResult = await resend.emails.send({
+          await resend.emails.send({
             from: "LeadClaw <hello@leadclaw.uk>",
             to: clinicContactEmail,
             subject: "New website enquiry received",
@@ -241,6 +248,18 @@ export async function POST(req: Request) {
                       safePhone || "Not provided",
                     )}</td>
                   </tr>
+                  <tr>
+                    <td style="padding: 6px 12px 6px 0;"><strong>Intent:</strong></td>
+                    <td style="padding: 6px 0;">${escapeHtml(
+                      safeIntent || "General enquiry",
+                    )}</td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 6px 12px 6px 0; vertical-align: top;"><strong>Message:</strong></td>
+                    <td style="padding: 6px 0;">${escapeHtml(
+                      safeMessage || "No message provided",
+                    )}</td>
+                  </tr>
                 </table>
 
                 <p style="margin-top: 16px;">
@@ -254,43 +273,30 @@ Clinic: ${clinicName}
 Name: ${safeName}
 Email: ${safeEmail}
 Phone: ${safePhone || "Not provided"}
+Intent: ${safeIntent || "General enquiry"}
+Message: ${safeMessage || "No message provided"}
 
 Log into your LeadClaw portal to view the lead.`,
           });
-
-          console.log("[widget.submit] clinic notification sent", sendResult);
         } catch (emailError) {
           console.error(
             "[widget.submit] clinic notification failed",
             emailError,
           );
         }
-      } else {
-        console.warn(
-          "[widget.submit] no contact_email found for onboarding client",
-          site.onboarding_client_id,
-        );
       }
 
       try {
-        const autoReplyResult = await resend.emails.send({
+        await resend.emails.send({
           from: "LeadClaw <hello@leadclaw.uk>",
           to: safeEmail,
           subject: `Thanks for contacting ${clinicName}`,
           html: `
             <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.5; color: #0f172a;">
               <p>Hi ${escapeHtml(safeName)},</p>
-
               <p>Thanks for contacting <strong>${escapeHtml(clinicName)}</strong>.</p>
-
-              <p>
-                We've received your enquiry and a member of the clinic team can follow up shortly.
-              </p>
-
-              <p>
-                If your enquiry is urgent, please contact the clinic directly.
-              </p>
-
+              <p>We've received your enquiry and a member of the clinic team can follow up shortly.</p>
+              <p>If your enquiry is urgent, please contact the clinic directly.</p>
               <p style="margin-top: 20px;">
                 Best regards,<br />
                 ${escapeHtml(clinicName)}
@@ -308,8 +314,6 @@ If your enquiry is urgent, please contact the clinic directly.
 Best regards,
 ${clinicName}`,
         });
-
-        console.log("[widget.submit] auto reply sent", autoReplyResult);
       } catch (autoReplyError) {
         console.error("[widget.submit] auto reply failed", autoReplyError);
       }
@@ -324,7 +328,7 @@ ${clinicName}`,
       },
       { headers: corsHeaders },
     );
-  } catch (err: unknown) {
+  } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(
         { ok: false, error: "invalid_request" },
