@@ -111,170 +111,174 @@ export default function Nav() {
           collapsed ? "w-24" : "w-80"
         }`}
       >
-        <div className="flex h-full w-full flex-col p-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            {!collapsed ? (
-              <p className="pl-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-2">
-                Workspace
-              </p>
-            ) : (
-              <span />
-            )}
+        <div className="flex h-full min-h-0 w-full flex-col">
+          <div className="flex h-full min-h-0 flex-col overflow-y-auto p-4">
+            <div className="mb-3 flex items-center justify-between gap-2">
+              {!collapsed ? (
+                <p className="pl-1 text-xs font-semibold uppercase tracking-[0.16em] text-muted-2">
+                  Workspace
+                </p>
+              ) : (
+                <span />
+              )}
 
-            <button
-              type="button"
-              onClick={() => setCollapsed((value) => !value)}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-white text-sm text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-2"
-            >
-              {collapsed ? "→" : "←"}
-            </button>
-          </div>
-
-          <Link
-            href="/"
-            className={`group flex ${
-              collapsed
-                ? "flex-col items-center gap-2 text-center"
-                : "flex-col items-center gap-3 text-center"
-            }`}
-          >
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-white shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
-              <Image
-                src="/brand/icons/leadclaw-logo-dark.png"
-                alt="LeadClaw"
-                width={44}
-                height={44}
-                className="h-auto w-auto object-contain"
-                priority
-              />
-            </div>
-
-            {!collapsed && (
-              <div className="leading-tight">
-                <div className="text-base font-semibold tracking-tight text-foreground">
-                  LeadClaw
-                </div>
-                <div className="text-xs text-muted">
-                  AI front desk for clinics
-                </div>
-              </div>
-            )}
-          </Link>
-
-          <div className="mt-8">
-            {!collapsed && (
-              <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted-2">
-                Navigation
-              </p>
-            )}
-
-            <nav className="mt-3 flex flex-col gap-3">
-              {links.map((link) => {
-                const active = isActivePath(pathname, link.href);
-
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    title={collapsed ? link.label : undefined}
-                    className={[
-                      "group flex rounded-2xl text-sm font-medium transition-all duration-200",
-                      collapsed
-                        ? "justify-center px-2 py-3"
-                        : "w-full items-center gap-3 px-4 py-3",
-                      active
-                        ? "bg-brand-soft text-foreground shadow-sm ring-1 ring-brand/10"
-                        : "text-muted hover:bg-surface-2 hover:text-foreground hover:shadow-sm",
-                    ].join(" ")}
-                  >
-                    <span
-                      className={[
-                        "flex h-10 w-10 items-center justify-center rounded-xl border text-sm shadow-sm transition-all duration-200",
-                        active
-                          ? "border-brand/20 bg-white text-brand-strong"
-                          : "border-border bg-white text-foreground group-hover:border-border-strong",
-                      ].join(" ")}
-                    >
-                      {link.icon}
-                    </span>
-
-                    {!collapsed && <span>{link.label}</span>}
-
-                    {!collapsed && active ? (
-                      <span className="ml-auto h-2.5 w-2.5 rounded-full bg-brand" />
-                    ) : null}
-                  </Link>
-                );
-              })}
-            </nav>
-          </div>
-
-          {!collapsed && (
-            <div className="mt-8 rounded-[24px] border border-border bg-white/80 p-4 shadow-sm">
-              <p className="text-sm font-semibold text-foreground">
-                Recover more missed enquiries
-              </p>
-              <p className="mt-2 text-xs leading-6 text-muted">
-                Give your clinic an AI front desk that captures website interest
-                and turns it into follow-up-ready leads.
-              </p>
-            </div>
-          )}
-
-          <div className={`mt-auto ${collapsed ? "space-y-2" : "space-y-3"}`}>
-            {isSignedIn ? (
-              <Link
-                href="/portal"
-                title={collapsed ? "Open portal" : undefined}
-                className={
-                  collapsed
-                    ? "button-secondary w-full px-0"
-                    : "button-secondary w-full"
-                }
+              <button
+                type="button"
+                onClick={() => setCollapsed((value) => !value)}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-white text-sm text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-2"
               >
-                {collapsed ? "💬" : "Open portal"}
-              </Link>
-            ) : (
-              <Link
-                href="/login"
-                title={collapsed ? "Sign in" : undefined}
-                className={
-                  collapsed
-                    ? "button-secondary w-full px-0"
-                    : "button-secondary w-full"
-                }
-              >
-                {collapsed ? "🔐" : "Sign in"}
-              </Link>
-            )}
+                {collapsed ? "→" : "←"}
+              </button>
+            </div>
 
             <Link
-              href="/free-trial?plan=growth"
-              title={collapsed ? "Start 7-day free trial" : undefined}
-              className={
+              href="/"
+              className={`group flex ${
                 collapsed
-                  ? "button-primary w-full px-0"
-                  : "button-primary w-full"
-              }
+                  ? "flex-col items-center gap-2 text-center"
+                  : "flex-col items-center gap-3 text-center"
+              }`}
             >
-              {collapsed ? "✨" : "Start 7-day free trial"}
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-white shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
+                <Image
+                  src="/brand/icons/leadclaw-logo-dark.png"
+                  alt="LeadClaw"
+                  width={44}
+                  height={44}
+                  className="h-auto w-auto object-contain"
+                  priority
+                />
+              </div>
+
+              {!collapsed && (
+                <div className="leading-tight">
+                  <div className="text-base font-semibold tracking-tight text-foreground">
+                    LeadClaw
+                  </div>
+                  <div className="text-xs text-muted">
+                    AI front desk for clinics
+                  </div>
+                </div>
+              )}
             </Link>
 
-            {authReady && isAdmin ? (
+            <div className="mt-8">
+              {!collapsed && (
+                <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted-2">
+                  Navigation
+                </p>
+              )}
+
+              <nav className="mt-3 flex flex-col gap-3">
+                {links.map((link) => {
+                  const active = isActivePath(pathname, link.href);
+
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      title={collapsed ? link.label : undefined}
+                      className={[
+                        "group flex rounded-2xl text-sm font-medium transition-all duration-200",
+                        collapsed
+                          ? "justify-center px-2 py-3"
+                          : "w-full items-center gap-3 px-4 py-3",
+                        active
+                          ? "bg-brand-soft text-foreground shadow-sm ring-1 ring-brand/10"
+                          : "text-muted hover:bg-surface-2 hover:text-foreground hover:shadow-sm",
+                      ].join(" ")}
+                    >
+                      <span
+                        className={[
+                          "flex h-10 w-10 items-center justify-center rounded-xl border text-sm shadow-sm transition-all duration-200",
+                          active
+                            ? "border-brand/20 bg-white text-brand-strong"
+                            : "border-border bg-white text-foreground group-hover:border-border-strong",
+                        ].join(" ")}
+                      >
+                        {link.icon}
+                      </span>
+
+                      {!collapsed && <span>{link.label}</span>}
+
+                      {!collapsed && active ? (
+                        <span className="ml-auto h-2.5 w-2.5 rounded-full bg-brand" />
+                      ) : null}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+
+            {!collapsed && (
+              <div className="mt-8 rounded-[24px] border border-border bg-white/80 p-4 shadow-sm">
+                <p className="text-sm font-semibold text-foreground">
+                  Recover more missed enquiries
+                </p>
+                <p className="mt-2 text-xs leading-6 text-muted">
+                  Give your clinic an AI front desk that captures website
+                  interest and turns it into follow-up-ready leads.
+                </p>
+              </div>
+            )}
+
+            <div
+              className={`mt-auto pt-6 ${collapsed ? "space-y-2" : "space-y-3"}`}
+            >
+              {isSignedIn ? (
+                <Link
+                  href="/portal"
+                  title={collapsed ? "Open portal" : undefined}
+                  className={
+                    collapsed
+                      ? "button-secondary flex w-full justify-center px-0"
+                      : "button-secondary w-full"
+                  }
+                >
+                  {collapsed ? "💬" : "Open portal"}
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  title={collapsed ? "Sign in" : undefined}
+                  className={
+                    collapsed
+                      ? "button-secondary flex w-full justify-center px-0"
+                      : "button-secondary w-full"
+                  }
+                >
+                  {collapsed ? "🔐" : "Sign in"}
+                </Link>
+              )}
+
               <Link
-                href="/admin"
-                title={collapsed ? "Admin portal" : undefined}
+                href="/free-trial?plan=growth"
+                title={collapsed ? "Start 7-day free trial" : undefined}
                 className={
                   collapsed
-                    ? "button-secondary w-full px-0"
-                    : "button-secondary w-full"
+                    ? "button-primary flex w-full justify-center px-0"
+                    : "button-primary w-full"
                 }
               >
-                {collapsed ? "🛠️" : "Admin portal"}
+                {collapsed ? "✨" : "Start 7-day free trial"}
               </Link>
-            ) : null}
+
+              {authReady && isAdmin ? (
+                <Link
+                  href="/admin"
+                  title={collapsed ? "Admin portal" : undefined}
+                  className={
+                    collapsed
+                      ? "button-secondary flex w-full justify-center px-0"
+                      : "button-secondary w-full"
+                  }
+                >
+                  {collapsed ? "🛠️" : "Admin portal"}
+                </Link>
+              ) : null}
+            </div>
           </div>
         </div>
       </aside>
