@@ -1,8 +1,10 @@
-"use client";
-
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { canUseLeadClawProduct } from "@/lib/subscription-access";
+import PortalMobileNav from "../../components/portal-mobile-nav";
+import PortalSidebarNav from "../../components/portal-sidebar-nav";
 
 const portalLinks = [
   { href: "/portal", label: "Dashboard", icon: "🏠" },
@@ -15,13 +17,34 @@ const portalLinks = [
   { href: "/portal/activity", label: "Activity", icon: "📈" },
 ];
 
-function isActive(pathname: string, href: string) {
-  if (href === "/portal") return pathname === "/portal";
-  return pathname.startsWith(href);
-}
+export default async function PortalLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const supabase = await createClient();
 
-export default function PortalLayout({ children }: { children: ReactNode }) {
-  const pathname = usePathname() ?? "";
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user?.email) {
+    redirect("/login?next=/portal");
+  }
+
+  const { data: subscription } = await supabase
+    .from("subscriptions")
+    .select("status, updated_at")
+    .eq("email", user.email)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const allowed = canUseLeadClawProduct(subscription?.status || null);
+
+  if (!allowed) {
+    redirect("/free-trial?plan=growth");
+  }
 
   return (
     <>
@@ -41,27 +64,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
             </div>
           </div>
 
-          <nav className="flex-1 space-y-2 overflow-y-auto p-4">
-            {portalLinks.map((link) => {
-              const active = isActive(pathname, link.href);
-
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={[
-                    "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition",
-                    active
-                      ? "bg-brand-soft text-foreground shadow-sm"
-                      : "text-muted hover:bg-surface-2 hover:text-foreground",
-                  ].join(" ")}
-                >
-                  <span className="text-base">{link.icon}</span>
-                  <span>{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
+          <PortalSidebarNav links={portalLinks} />
         </aside>
 
         <div className="min-w-0 flex-1">
@@ -69,36 +72,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
         </div>
       </div>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 backdrop-blur-xl lg:hidden">
-        <div className="grid grid-cols-4 sm:grid-cols-8">
-          {portalLinks.map((link) => {
-            const active = isActive(pathname, link.href);
-
-            return (
-              <Link
-                key={`${link.href}-mobile`}
-                href={link.href}
-                className={[
-                  "flex flex-col items-center justify-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors",
-                  active
-                    ? "text-brand-strong"
-                    : "text-muted hover:text-foreground",
-                ].join(" ")}
-              >
-                <span
-                  className={[
-                    "flex h-8 w-8 items-center justify-center rounded-full text-base transition-all",
-                    active ? "bg-brand-soft" : "",
-                  ].join(" ")}
-                >
-                  {link.icon}
-                </span>
-                <span>{link.label}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
+      <PortalMobileNav links={portalLinks} />
     </>
   );
 }

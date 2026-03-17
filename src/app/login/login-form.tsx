@@ -11,28 +11,72 @@ export default function LoginForm({ next }: { next: string }) {
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
+
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail) return;
+
     setLoading(true);
-    setStatus("Sending magic link...");
+    setStatus("Checking your account...");
 
-    const supabase = createClient();
+    try {
+      const checkRes = await fetch("/api/auth/check-account", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: trimmedEmail }),
+      });
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: email.trim(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
-          next,
-        )}`,
-      },
-    });
+      const checkData = (await checkRes.json()) as {
+        ok?: boolean;
+        shouldLogin?: boolean;
+        shouldStartTrial?: boolean;
+      };
 
-    if (error) {
-      setStatus(error.message);
+      if (!checkRes.ok || !checkData.ok) {
+        setStatus("We could not verify this account right now.");
+        setLoading(false);
+        return;
+      }
+
+      if (checkData.shouldStartTrial) {
+        window.location.href = `/free-trial?plan=growth&email=${encodeURIComponent(
+          trimmedEmail,
+        )}`;
+        return;
+      }
+
+      if (!checkData.shouldLogin) {
+        setStatus("We could not find an active account for this email.");
+        setLoading(false);
+        return;
+      }
+
+      setStatus("Sending magic link...");
+
+      const supabase = createClient();
+
+      const { error } = await supabase.auth.signInWithOtp({
+        email: trimmedEmail,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+            next,
+          )}`,
+        },
+      });
+
+      if (error) {
+        setStatus(error.message);
+        setLoading(false);
+        return;
+      }
+
+      setStatus("Magic link sent. Check your email.");
       setLoading(false);
-      return;
+    } catch {
+      setStatus("Something went wrong. Please try again.");
+      setLoading(false);
     }
-
-    setStatus("Magic link sent. Check your email.");
-    setLoading(false);
   }
 
   return (
@@ -51,8 +95,8 @@ export default function LoginForm({ next }: { next: string }) {
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-8 text-muted">
-                Use your clinic email and we’ll send you a secure magic link. No
-                password needed.
+                Use your clinic email and we&apos;ll send you a secure magic
+                link. No password needed.
               </p>
 
               <div className="mt-8 grid gap-3 sm:grid-cols-2">
@@ -98,7 +142,7 @@ export default function LoginForm({ next }: { next: string }) {
               </h2>
 
               <p className="mt-3 text-sm leading-7 text-muted">
-                We’ll send a secure sign-in link to your inbox.
+                We&apos;ll send a secure sign-in link to your inbox.
               </p>
 
               <form onSubmit={onSubmit} className="mt-6 space-y-4">
@@ -126,7 +170,7 @@ export default function LoginForm({ next }: { next: string }) {
                     type="submit"
                     disabled={loading}
                   >
-                    {loading ? "Sending magic link..." : "Send magic link"}
+                    {loading ? "Checking account..." : "Send magic link"}
                   </button>
                 </div>
               </form>
@@ -142,9 +186,9 @@ export default function LoginForm({ next }: { next: string }) {
                   Redirect after sign in
                 </p>
                 <p className="mt-2 text-sm text-muted">
-                  You’ll be sent to{" "}
+                  You&apos;ll be sent to{" "}
                   <span className="font-medium text-foreground">{next}</span>{" "}
-                  after confirming your email link.
+                  after using your email link.
                 </p>
               </div>
             </div>

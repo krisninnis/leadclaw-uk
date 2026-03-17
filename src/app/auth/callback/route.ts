@@ -19,8 +19,15 @@ export async function GET(request: NextRequest) {
 
   const supabase = await createClient();
 
-  if (code) {
-    await supabase.auth.exchangeCodeForSession(code);
+  if (!code) {
+    return NextResponse.redirect(`${origin}/login`);
+  }
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    console.error("[auth.callback] failed to exchange code for session", error);
+    return NextResponse.redirect(`${origin}/login`);
   }
 
   const nextUrl = new URL(next, origin);
@@ -36,9 +43,10 @@ export async function GET(request: NextRequest) {
           Cookie: request.headers.get("cookie") || "",
         },
         body: JSON.stringify({ plan: selectedPlan }),
+        cache: "no-store",
       });
-    } catch {
-      // fail quietly and continue redirecting
+    } catch (trialError) {
+      console.error("[auth.callback] failed to start trial", trialError);
     }
   }
 
