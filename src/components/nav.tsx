@@ -104,6 +104,10 @@ export default function Nav() {
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
   ];
 
+  if (pathname.startsWith("/portal")) {
+    return null;
+  }
+
   return (
     <>
       <aside
@@ -135,25 +139,24 @@ export default function Nav() {
 
             <Link
               href="/"
-              className={`group flex ${
-                collapsed
-                  ? "flex-col items-center gap-2 text-center"
-                  : "flex-col items-center gap-3 text-center"
-              }`}
+              className={[
+                "group flex items-center gap-3 rounded-[24px] border border-border bg-white/80 p-3 shadow-sm transition",
+                collapsed ? "justify-center" : "",
+              ].join(" ")}
             >
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-white shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
                 <Image
                   src="/brand/icons/leadclaw-logo-dark.png"
                   alt="LeadClaw"
-                  width={44}
-                  height={44}
+                  width={36}
+                  height={36}
                   className="h-auto w-auto object-contain"
                   priority
                 />
               </div>
 
-              {!collapsed && (
-                <div className="leading-tight">
+              {!collapsed ? (
+                <div className="min-w-0 leading-tight">
                   <div className="text-base font-semibold tracking-tight text-foreground">
                     LeadClaw
                   </div>
@@ -161,15 +164,15 @@ export default function Nav() {
                     AI front desk for clinics
                   </div>
                 </div>
-              )}
+              ) : null}
             </Link>
 
             <div className="mt-8">
-              {!collapsed && (
-                <p className="text-center text-xs font-semibold uppercase tracking-[0.16em] text-muted-2">
+              {!collapsed ? (
+                <p className="px-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-2">
                   Navigation
                 </p>
-              )}
+              ) : null}
 
               <nav className="mt-3 flex flex-col gap-3">
                 {links.map((link) => {
@@ -179,12 +182,9 @@ export default function Nav() {
                     <Link
                       key={link.href}
                       href={link.href}
-                      title={collapsed ? link.label : undefined}
                       className={[
-                        "group flex rounded-2xl text-sm font-medium transition-all duration-200",
-                        collapsed
-                          ? "justify-center px-2 py-3"
-                          : "w-full items-center gap-3 px-4 py-3",
+                        "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
+                        collapsed ? "justify-center px-3" : "",
                         active
                           ? "bg-brand-soft text-foreground shadow-sm ring-1 ring-brand/10"
                           : "text-muted hover:bg-surface-2 hover:text-foreground hover:shadow-sm",
@@ -201,7 +201,7 @@ export default function Nav() {
                         {link.icon}
                       </span>
 
-                      {!collapsed && <span>{link.label}</span>}
+                      {!collapsed ? <span>{link.label}</span> : null}
 
                       {!collapsed && active ? (
                         <span className="ml-auto h-2.5 w-2.5 rounded-full bg-brand" />
@@ -212,7 +212,7 @@ export default function Nav() {
               </nav>
             </div>
 
-            {!collapsed && (
+            {!collapsed ? (
               <div className="mt-8 rounded-[24px] border border-border bg-white/80 p-4 shadow-sm">
                 <p className="text-sm font-semibold text-foreground">
                   Recover more missed enquiries
@@ -222,18 +222,15 @@ export default function Nav() {
                   interest and turns it into follow-up-ready leads.
                 </p>
               </div>
-            )}
+            ) : null}
 
-            <div
-              className={`mt-auto pt-6 ${collapsed ? "space-y-2" : "space-y-3"}`}
-            >
+            <div className="mt-auto space-y-3 pt-6">
               {isSignedIn ? (
                 <Link
                   href="/portal"
-                  title={collapsed ? "Open portal" : undefined}
                   className={
                     collapsed
-                      ? "button-secondary flex w-full justify-center px-0"
+                      ? "button-secondary px-0 text-center"
                       : "button-secondary w-full"
                   }
                 >
@@ -242,10 +239,9 @@ export default function Nav() {
               ) : (
                 <Link
                   href="/login"
-                  title={collapsed ? "Sign in" : undefined}
                   className={
                     collapsed
-                      ? "button-secondary flex w-full justify-center px-0"
+                      ? "button-secondary px-0 text-center"
                       : "button-secondary w-full"
                   }
                 >
@@ -255,10 +251,9 @@ export default function Nav() {
 
               <Link
                 href="/free-trial?plan=growth"
-                title={collapsed ? "Start 7-day free trial" : undefined}
                 className={
                   collapsed
-                    ? "button-primary flex w-full justify-center px-0"
+                    ? "button-primary px-0 text-center"
                     : "button-primary w-full"
                 }
               >
@@ -268,10 +263,9 @@ export default function Nav() {
               {authReady && isAdmin ? (
                 <Link
                   href="/admin"
-                  title={collapsed ? "Admin portal" : undefined}
                   className={
                     collapsed
-                      ? "button-secondary flex w-full justify-center px-0"
+                      ? "button-secondary px-0 text-center"
                       : "button-secondary w-full"
                   }
                 >
