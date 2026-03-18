@@ -1,3 +1,7 @@
 [submodule "leadclaw-lead-scraper"]
     path = leadclaw-lead-scraper
     url = https://github.com/krisninnis/leadclaw-lead-scraper.git
+   
+[submodule "leadclaw-uk"]
+  path = leadclaw-uk
+  url = https://github.com/krisninnis/leadclaw-uk.git
