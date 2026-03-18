@@ -38,6 +38,19 @@ export default function PortalSidebarNav({ links }: { links: PortalLink[] }) {
           </Link>
         );
       })}
+      {/* Add Profile Link */}
+      <Link
+        href="/portal/profile"
+        className={[
+          "flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition",
+          pathname.startsWith("/portal/profile")
+            ? "bg-brand-soft text-foreground shadow-sm"
+            : "text-muted hover:bg-surface-2 hover:text-foreground",
+        ].join(" ")}
+      >
+        <span className="text-base">👤</span>
+        <span>Profile</span>
+      </Link>
     </nav>
   );
 }

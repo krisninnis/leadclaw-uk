@@ -46,6 +46,27 @@ export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
             </Link>
           );
         })}
+
+        {/* Add Profile Link */}
+        <Link
+          href="/portal/profile"
+          className={[
+            "flex flex-col items-center justify-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors",
+            pathname.startsWith("/portal/profile")
+              ? "text-brand-strong"
+              : "text-muted hover:text-foreground",
+          ].join(" ")}
+        >
+          <span
+            className={[
+              "flex h-8 w-8 items-center justify-center rounded-full text-base transition-all",
+              pathname.startsWith("/portal/profile") ? "bg-brand-soft" : "",
+            ].join(" ")}
+          >
+            👤
+          </span>
+          <span>Profile</span>
+        </Link>
       </div>
     </nav>
   );
