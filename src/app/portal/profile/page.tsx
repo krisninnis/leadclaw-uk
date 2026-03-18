@@ -1,193 +1,177 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export default function ProfilePage() {
-  const supabase = createClient();
+  const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
+  // States for profile data and status
+  const [profile, setProfile] = useState<any>({
+    name: "",
+    phone: "",
+    clinic_name: "",
+  });
   const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
 
+  // Fetch user profile from Supabase
   useEffect(() => {
-    const fetchUserDetails = async () => {
-      const { data: user, error } = await supabase.auth.getUser();
+    async function loadProfile() {
+      setLoading(true);
+      setStatus("");
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      const { data: userProfile, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user?.id)
+        .single();
 
       if (error) {
-        setStatus("Error fetching user details.");
-        return;
-      }
-
-      if (user) {
-        const { data, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-
-        if (profileError) {
-          setStatus("Error fetching user profile.");
-        } else {
-          setName(data?.name || "");
-          setEmail(user.email || "");
-          setPhone(data?.phone || "");
-        }
-      }
-    };
-
-    fetchUserDetails();
-  }, []);
-
-  // Update Name
-  const handleNameUpdate = async () => {
-    setLoading(true);
-    setStatus("Updating your name...");
-
-    try {
-      const { error } = await supabase.auth.updateUser({
-        data: { name },
-      });
-
-      if (error) {
-        setStatus("Failed to update name. Try again.");
+        setStatus("Could not load your profile.");
         setLoading(false);
         return;
       }
 
-      setStatus("Name updated successfully.");
-      setLoading(false);
-    } catch (err) {
-      setStatus("Something went wrong. Please try again.");
+      setProfile(userProfile);
       setLoading(false);
     }
-  };
 
-  // Delete Account
-  const handleDeleteAccount = async () => {
-    if (
-      !confirm(
-        "Are you sure you want to delete your account? This action is irreversible.",
-      )
-    ) {
+    loadProfile();
+  }, [supabase]);
+
+  // Handle saving profile
+  const handleSaveProfile = async () => {
+    setSaving(true);
+    setStatus("Saving profile...");
+
+    const { error } = await supabase.from("profiles").upsert({
+      id: profile.id,
+      name: profile.name,
+      phone: profile.phone,
+      clinic_name: profile.clinic_name,
+    });
+
+    if (error) {
+      setStatus("Failed to save profile.");
+      setSaving(false);
       return;
     }
 
-    setDeleting(true);
-    setStatus("Deleting your account...");
-
-    try {
-      const { error } = await supabase.auth.api.deleteUser(
-        supabase.auth.user()?.id,
-      );
-
-      if (error) {
-        setStatus("Failed to delete account. Try again.");
-        setDeleting(false);
-        return;
-      }
-
-      setStatus("Account deleted successfully.");
-      router.push("/goodbye"); // Redirect to a goodbye page after deletion
-    } catch (err) {
-      setStatus("Something went wrong. Please try again.");
-      setDeleting(false);
-    }
+    setStatus("Profile updated successfully.");
+    setSaving(false);
   };
 
+  // Handle deleting account
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete your account? This cannot be undone.",
+    );
+    if (!confirmed) return;
+
+    setStatus("Deleting account...");
+    const { error } = await supabase.auth.api.deleteUser(profile.id);
+
+    if (error) {
+      setStatus("Failed to delete account.");
+      return;
+    }
+
+    setStatus("Account deleted successfully.");
+    router.replace("/goodbye");
+  };
+
+  const calculateCompleteness = () => {
+    let completeness = 0;
+    if (profile.name) completeness += 33;
+    if (profile.phone) completeness += 33;
+    if (profile.clinic_name) completeness += 33;
+    return completeness;
+  };
+
+  const completeness = calculateCompleteness();
+
   return (
-    <div className="p-6 max-w-lg mx-auto space-y-4">
-      <h1 className="text-2xl font-semibold">Profile</h1>
-      <p className="text-sm text-muted">Manage your account and settings.</p>
+    <div className="space-y-6 p-6 max-w-lg mx-auto">
+      <h1 className="text-2xl font-semibold">Your Profile</h1>
 
-      {/* Profile Picture */}
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-foreground">
-          Profile Picture
-        </label>
-        <input type="file" className="input-premium w-full" />
+      {loading && <p>Loading...</p>}
+
+      {/* Profile Completeness Section */}
+      <div className="mb-4">
+        <p>Profile Completeness: {completeness}%</p>
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div
+            className="bg-blue-500 h-2.5 rounded-full"
+            style={{ width: `${completeness}%` }}
+          />
+        </div>
       </div>
 
-      {/* Name Update */}
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-foreground">
-          Name
-        </label>
+      {/* Form Fields */}
+      <div>
+        <label className="block text-sm font-medium">Full Name</label>
         <input
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Enter your new name"
-          className="input-premium w-full"
+          className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+          value={profile.name || ""}
+          onChange={(e) => setProfile({ ...profile, name: e.target.value })}
         />
-        <button
-          onClick={handleNameUpdate}
-          className="button-primary mt-4 w-full"
-          disabled={loading}
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Phone Number</label>
+        <input
+          type="text"
+          className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+          value={profile.phone || ""}
+          onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium">Clinic Name</label>
+        <input
+          type="text"
+          className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+          value={profile.clinic_name || ""}
+          onChange={(e) =>
+            setProfile({ ...profile, clinic_name: e.target.value })
+          }
+        />
+      </div>
+
+      <button
+        onClick={handleSaveProfile}
+        disabled={saving}
+        className="mt-4 w-full bg-blue-600 text-white py-2 rounded-md shadow-md hover:bg-blue-700 disabled:opacity-50 transition"
+      >
+        {saving ? "Saving..." : "Save Profile"}
+      </button>
+
+      {/* Delete Account Button */}
+      <button
+        onClick={handleDeleteAccount}
+        className="mt-4 w-full bg-red-600 text-white py-2 rounded-md shadow-md hover:bg-red-700 transition"
+      >
+        Delete Account
+      </button>
+
+      {/* Feedback Message */}
+      {status && (
+        <p
+          className={`mt-2 text-sm ${status.includes("success") ? "text-green-500" : "text-red-500"}`}
         >
-          {loading ? "Updating..." : "Update Name"}
-        </button>
-      </div>
-
-      {/* Email */}
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-foreground">
-          Email
-        </label>
-        <input
-          type="email"
-          value={email}
-          disabled
-          placeholder="Your email"
-          className="input-premium w-full"
-        />
-      </div>
-
-      {/* Phone Number */}
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-foreground">
-          Phone Number
-        </label>
-        <input
-          type="text"
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          placeholder="Enter your phone number"
-          className="input-premium w-full"
-        />
-      </div>
-
-      {/* Subscription Plan */}
-      <div className="mt-6">
-        <label className="block text-sm font-medium text-foreground">
-          Subscription Plan
-        </label>
-        <input
-          type="text"
-          value="Growth Plan"
-          disabled
-          className="input-premium w-full"
-        />
-      </div>
-
-      {/* Status Message */}
-      {status && <p className="text-sm text-muted">{status}</p>}
-
-      {/* Delete Account */}
-      <div className="mt-6">
-        <button
-          onClick={handleDeleteAccount}
-          className="button-danger w-full"
-          disabled={deleting}
-        >
-          {deleting ? "Deleting..." : "Delete Account"}
-        </button>
-      </div>
+          {status}
+        </p>
+      )}
     </div>
   );
 }

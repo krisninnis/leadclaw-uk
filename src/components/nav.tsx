@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@/lib/supabase/client";
+import { User, Session } from "@supabase/supabase-js"; // Import the types
 
 type NavLink = {
   href: string;
@@ -15,15 +16,6 @@ type NavLink = {
 function isActivePath(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
-}
-
-function getSupabaseClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) return null;
-
-  return createSupabaseClient(url, anonKey);
 }
 
 export default function Nav() {
@@ -53,7 +45,7 @@ export default function Nav() {
   }, [collapsed]);
 
   useEffect(() => {
-    const supabase = getSupabaseClient();
+    const supabase = createClient();
 
     if (!supabase) {
       setAuthReady(true);
@@ -62,19 +54,24 @@ export default function Nav() {
 
     let mounted = true;
 
-    supabase.auth.getUser().then(({ data }) => {
-      if (!mounted) return;
-      setUserEmail(data.user?.email?.toLowerCase() ?? null);
-      setAuthReady(true);
-    });
+    supabase.auth
+      .getUser()
+      .then(({ data }: { data: { user: User | null } }) => {
+        if (!mounted) return;
+        setUserEmail(data.user?.email?.toLowerCase() ?? null);
+        setAuthReady(true);
+      });
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return;
-      setUserEmail(session?.user?.email?.toLowerCase() ?? null);
-      setAuthReady(true);
-    });
+    } = supabase.auth.onAuthStateChange(
+      (_event: any, session: Session | null) => {
+        // Explicitly typing _event and session
+        if (!mounted) return;
+        setUserEmail(session?.user?.email?.toLowerCase() ?? null);
+        setAuthReady(true);
+      },
+    );
 
     return () => {
       mounted = false;
