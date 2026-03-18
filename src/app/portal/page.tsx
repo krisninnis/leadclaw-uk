@@ -187,7 +187,9 @@ export default async function PortalPage({
       }
     }
   }
-
+  if (isTrialExpired) {
+    redirect("/portal/billing?expired=1");
+  }
   const widgetDetected = Boolean(widgetLastSeenAt);
   const widgetStatus = widgetDetected ? "Live" : "Needs install";
 

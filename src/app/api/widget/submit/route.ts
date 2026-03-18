@@ -40,6 +40,22 @@ function escapeHtml(input: string) {
     .replace(/'/g, "&#39;");
 }
 
+function buildServiceValue(intent?: string | null, message?: string | null) {
+  const safeIntent = (intent || "").trim();
+  if (safeIntent) return safeIntent.slice(0, 255);
+
+  const safeMessage = (message || "").trim();
+  if (!safeMessage) return "Website enquiry";
+
+  return safeMessage.slice(0, 255);
+}
+
+function buildPreferredTimeValue(message?: string | null) {
+  const safeMessage = (message || "").trim();
+  if (!safeMessage) return null;
+  return safeMessage.slice(0, 255);
+}
+
 export async function OPTIONS(req: Request) {
   const origin = req.headers.get("origin");
 
@@ -189,16 +205,9 @@ export async function POST(req: Request) {
       name: safeName,
       email: safeEmail,
       phone: safePhone,
-      message: safeMessage,
+      service: buildServiceValue(safeIntent, safeMessage),
+      preferred_time: buildPreferredTimeValue(safeMessage),
       status: "new",
-      source: "widget",
-      meta: {
-        intent: safeIntent,
-        pageUrl: safePageUrl,
-        pageTitle: safePageTitle,
-        domain: safeDomain,
-        siteDomain: site.domain || null,
-      },
     };
 
     const { error: insertError } = await admin
@@ -260,6 +269,15 @@ export async function POST(req: Request) {
                       safeMessage || "No message provided",
                     )}</td>
                   </tr>
+                  <tr>
+                    <td style="padding: 6px 12px 6px 0;"><strong>Page:</strong></td>
+                    <td style="padding: 6px 0;">${escapeHtml(
+                      safePageTitle ||
+                        safePageUrl ||
+                        safeDomain ||
+                        "Not provided",
+                    )}</td>
+                  </tr>
                 </table>
 
                 <p style="margin-top: 16px;">
@@ -275,6 +293,7 @@ Email: ${safeEmail}
 Phone: ${safePhone || "Not provided"}
 Intent: ${safeIntent || "General enquiry"}
 Message: ${safeMessage || "No message provided"}
+Page: ${safePageTitle || safePageUrl || safeDomain || "Not provided"}
 
 Log into your LeadClaw portal to view the lead.`,
           });

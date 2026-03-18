@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import PortalTrialCta from "@/components/portal-trial-cta";
 import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import { Badge, SectionHeading, StatCard } from "@/components/ui";
 
@@ -20,13 +19,20 @@ function getPlanTone(
   return "neutral";
 }
 
-export default async function PortalBillingPage() {
+export default async function PortalBillingPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const params = (await searchParams) || {};
+  const expired = params.expired === "1";
 
   const admin = createAdminClient();
 
@@ -70,12 +76,24 @@ export default async function PortalBillingPage() {
   }
 
   const currentPlanTone = getPlanTone(subStatus);
-  const showTrialExpiredBox = isTrialExpired;
+  const showTrialExpiredBox = isTrialExpired || expired;
   const showUpgradeBox =
     !hasActiveSubscription || rawSubscriptionStatus === "past_due";
 
   return (
     <div className="space-y-6">
+      {expired && (
+        <div className="rounded-[24px] border border-rose-300 bg-rose-50 p-5">
+          <h2 className="text-lg font-semibold text-rose-950">
+            Your free trial has ended
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-rose-900">
+            To continue capturing leads, using your website widget, and keeping
+            your clinic workspace live, activate a paid package below.
+          </p>
+        </div>
+      )}
+
       <div className="card-premium p-6 md:p-8">
         <SectionHeading
           eyebrow="Billing"
@@ -100,7 +118,11 @@ export default async function PortalBillingPage() {
           <StatCard
             label="Trial status"
             value={
-              isTrialing ? "Active" : isTrialExpired ? "Ended" : "Not in trial"
+              isTrialing
+                ? "Active"
+                : showTrialExpiredBox
+                  ? "Ended"
+                  : "Not in trial"
             }
             hint={
               trialEnd
@@ -121,7 +143,7 @@ export default async function PortalBillingPage() {
             hint={
               hasActiveSubscription
                 ? "Portal and widget usage are currently available."
-                : "Reactivate to restore full access."
+                : "Upgrade to restore full access."
             }
           />
         </div>
@@ -138,7 +160,7 @@ export default async function PortalBillingPage() {
         <div className="mt-5 flex flex-wrap items-center gap-3">
           <Badge tone={currentPlanTone}>{subStatus}</Badge>
 
-          {isTrialing && !isTrialExpired && (
+          {isTrialing && !showTrialExpiredBox && (
             <Badge tone="brand">
               Trial
               {trialEnd ? ` • ends ${formatDateTime(trialEnd)}` : ""}
@@ -152,12 +174,12 @@ export default async function PortalBillingPage() {
             <p className="mt-2 text-base font-semibold text-foreground">
               {hasActiveSubscription
                 ? "LeadClaw is available"
-                : "LeadClaw is limited"}
+                : "LeadClaw requires upgrade"}
             </p>
             <p className="mt-2 text-sm text-muted">
               {hasActiveSubscription
                 ? "Your clinic can continue using portal and widget features."
-                : "Upgrade or reactivate to restore full portal and widget access."}
+                : "Activate a paid package to restore or continue full portal and widget access."}
             </p>
           </div>
 
@@ -216,26 +238,6 @@ export default async function PortalBillingPage() {
             <PortalPlanUpgrade email={user.email} />
           </div>
         </div>
-      )}
-
-      {!showTrialExpiredBox && !hasActiveSubscription && (
-        <>
-          <div className="rounded-[24px] border border-rose-200 bg-rose-50 p-5">
-            <h2 className="text-lg font-semibold text-rose-950">
-              Your LeadClaw service is currently paused
-            </h2>
-            <p className="mt-2 text-sm leading-7 text-rose-900">
-              Your website widget and live lead capture are not active right
-              now. Reactivate your subscription to turn the widget back on and
-              continue using LeadClaw normally.
-            </p>
-            <div className="mt-4">
-              <PortalPlanUpgrade email={user.email} />
-            </div>
-          </div>
-
-          <PortalTrialCta />
-        </>
       )}
 
       {showUpgradeBox &&
