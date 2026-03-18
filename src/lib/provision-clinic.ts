@@ -47,7 +47,7 @@ export async function provisionClinicWorkspace(
     latestApp?.website || input.fallbackDomain || "",
   ).trim();
 
-  const domain = rawWebsite ? normalizeDomain(rawWebsite) : null;
+  const domain = rawWebsite ? normalizeDomain(rawWebsite) : "test.leadclaw.uk";
 
   // 1) onboarding client
   const { data: existingClient } = await admin
@@ -77,77 +77,123 @@ export async function provisionClinicWorkspace(
   }
 
   // 2) clinic
-  const { data: existingClinic } = await admin
-    .from("clinics")
-    .select("id")
-    .eq("onboarding_client_id", clientId)
-    .limit(1)
-    .maybeSingle();
+  // Live schema does not have clinics.onboarding_client_id,
+  // so we resolve clinic ownership via owner_user_id when possible,
+  // otherwise by latest matching clinic name.
+  let ownerUserId: string | null = null;
 
-  let clinicId = existingClinic?.id || null;
+  const { data: authUser } = await admin.auth.admin.listUsers();
+  const matchedUser = authUser.users.find(
+    (user) => (user.email || "").trim().toLowerCase() === email,
+  );
+  ownerUserId = matchedUser?.id || null;
+
+  let clinicId: string | null = null;
+
+  if (ownerUserId) {
+    const { data: existingClinicByOwner } = await admin
+      .from("clinics")
+      .select("id")
+      .eq("owner_user_id", ownerUserId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    clinicId = existingClinicByOwner?.id || null;
+  }
+
+  if (!clinicId) {
+    const { data: existingClinicByName } = await admin
+      .from("clinics")
+      .select("id")
+      .eq("name", clinicName)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    clinicId = existingClinicByName?.id || null;
+  }
 
   if (!clinicId) {
     const { data: insertedClinic, error } = await admin
       .from("clinics")
       .insert({
         name: clinicName,
-        onboarding_client_id: clientId,
+        owner_user_id: ownerUserId,
+        subscription_status: "trialing",
+        plan: "growth",
       })
       .select("id")
       .single();
 
     if (error) throw new Error(error.message);
     clinicId = insertedClinic.id;
+  } else {
+    const clinicUpdate: Record<string, unknown> = {
+      subscription_status: "trialing",
+      plan: "growth",
+    };
+
+    if (ownerUserId) {
+      clinicUpdate.owner_user_id = ownerUserId;
+    }
+
+    const { error: clinicUpdateError } = await admin
+      .from("clinics")
+      .update(clinicUpdate)
+      .eq("id", clinicId);
+
+    if (clinicUpdateError) throw new Error(clinicUpdateError.message);
   }
 
   // 3) site
   let siteId: string | null = null;
 
-  if (domain) {
-    const { data: existingSite } = await admin
-      .from("onboarding_sites")
-      .select("id,clinic_id")
-      .eq("onboarding_client_id", clientId)
-      .eq("domain", domain)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+  const { data: existingSite } = await admin
+    .from("onboarding_sites")
+    .select("id,clinic_id")
+    .eq("onboarding_client_id", clientId)
+    .eq("domain", domain)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
-    if (existingSite?.id) {
-      siteId = existingSite.id;
+  if (existingSite?.id) {
+    siteId = existingSite.id;
 
-      if (!existingSite.clinic_id && clinicId) {
-        await admin
-          .from("onboarding_sites")
-          .update({ clinic_id: clinicId })
-          .eq("id", siteId);
-      }
-    } else {
-      const { data: insertedSite, error } = await admin
+    if (!existingSite.clinic_id && clinicId) {
+      const { error: siteUpdateError } = await admin
         .from("onboarding_sites")
-        .insert({
-          onboarding_client_id: clientId,
-          clinic_id: clinicId,
-          domain,
-          platform: "custom",
-          settings: {
-            services: latestApp?.services
-              ? String(latestApp.services)
-                  .split(",")
-                  .map((s) => s.trim())
-                  .filter(Boolean)
-              : [],
-            city: latestApp?.city || null,
-            signup_mode: "autonomous_provision",
-          },
-          status: "pending_install",
-        })
-        .select("id")
-        .single();
+        .update({ clinic_id: clinicId })
+        .eq("id", siteId);
 
-      if (error) throw new Error(error.message);
-      siteId = insertedSite.id;
+      if (siteUpdateError) throw new Error(siteUpdateError.message);
     }
+  } else {
+    const { data: insertedSite, error } = await admin
+      .from("onboarding_sites")
+      .insert({
+        onboarding_client_id: clientId,
+        clinic_id: clinicId,
+        domain,
+        platform: "custom",
+        settings: {
+          services: latestApp?.services
+            ? String(latestApp.services)
+                .split(",")
+                .map((s) => s.trim())
+                .filter(Boolean)
+            : [],
+          city: latestApp?.city || null,
+          signup_mode: "autonomous_provision",
+        },
+        status: "pending_install",
+      })
+      .select("id")
+      .single();
+
+    if (error) throw new Error(error.message);
+    siteId = insertedSite.id;
   }
 
   // 4) widget token

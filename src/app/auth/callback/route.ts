@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServerClient } from "@supabase/ssr";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
@@ -91,21 +91,40 @@ async function startTrialForUser(
 }
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const next = normalizeNext(searchParams.get("next"));
+  const requestUrl = new URL(request.url);
+  const origin = requestUrl.origin;
+  const code = requestUrl.searchParams.get("code");
+  const next = normalizeNext(requestUrl.searchParams.get("next"));
+
+  const redirectUrl = new URL(next, origin);
+  const response = NextResponse.redirect(redirectUrl);
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(new URL("/login", origin));
   }
 
-  const supabase = await createClient();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            response.cookies.set(name, value, options);
+          });
+        },
+      },
+    },
+  );
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     console.error("[auth.callback] failed to exchange code for session", error);
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(new URL("/login", origin));
   }
 
   const {
@@ -113,7 +132,7 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (!user?.id || !user.email) {
-    return NextResponse.redirect(`${origin}/login`);
+    return NextResponse.redirect(new URL("/login", origin));
   }
 
   const nextUrl = new URL(next, origin);
@@ -130,12 +149,15 @@ export async function GET(request: NextRequest) {
     } catch (trialError) {
       console.error("[auth.callback] failed to start trial", trialError);
       return NextResponse.redirect(
-        `${origin}/free-trial?plan=${selectedPlan}&email=${encodeURIComponent(
-          user.email.trim().toLowerCase(),
-        )}&error=trial_start_failed`,
+        new URL(
+          `/free-trial?plan=${selectedPlan}&email=${encodeURIComponent(
+            user.email.trim().toLowerCase(),
+          )}&error=trial_start_failed`,
+          origin,
+        ),
       );
     }
   }
 
-  return NextResponse.redirect(`${origin}${next}`);
+  return response;
 }
