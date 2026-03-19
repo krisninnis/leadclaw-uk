@@ -4,21 +4,29 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
+type Profile = {
+  id?: string;
+  name?: string | null;
+  phone?: string | null;
+  clinic_name?: string | null;
+  email?: string | null; // Add email to profile
+};
+
 export default function ProfilePage() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
 
-  // States for profile data and status
-  const [profile, setProfile] = useState<any>({
+  const [profile, setProfile] = useState<Profile>({
     name: "",
     phone: "",
     clinic_name: "",
+    email: "", // Initialize email in state
   });
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
-  // Fetch user profile from Supabase
   useEffect(() => {
     async function loadProfile() {
       setLoading(true);
@@ -28,10 +36,17 @@ export default function ProfilePage() {
         data: { user },
       } = await supabase.auth.getUser();
 
+      if (!user) {
+        setStatus("You need to sign in again.");
+        setLoading(false);
+        router.replace("/login");
+        return;
+      }
+
       const { data: userProfile, error } = await supabase
         .from("profiles")
         .select("*")
-        .eq("id", user?.id)
+        .eq("id", user.id)
         .single();
 
       if (error) {
@@ -40,23 +55,37 @@ export default function ProfilePage() {
         return;
       }
 
-      setProfile(userProfile);
+      setProfile({
+        ...userProfile,
+        email: userProfile?.email || user.email || "",
+      });
       setLoading(false);
     }
 
     loadProfile();
-  }, [supabase]);
+  }, [router, supabase]);
 
-  // Handle saving profile
   const handleSaveProfile = async () => {
     setSaving(true);
     setStatus("Saving profile...");
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setStatus("You need to sign in again.");
+      setSaving(false);
+      router.replace("/login");
+      return;
+    }
+
     const { error } = await supabase.from("profiles").upsert({
-      id: profile.id,
-      name: profile.name,
-      phone: profile.phone,
-      clinic_name: profile.clinic_name,
+      id: user.id,
+      name: profile.name ?? "",
+      phone: profile.phone ?? "",
+      clinic_name: profile.clinic_name ?? "",
+      email: profile.email ?? "", // Save email to the profile table
     });
 
     if (error) {
@@ -69,30 +98,44 @@ export default function ProfilePage() {
     setSaving(false);
   };
 
-  // Handle deleting account
   const handleDeleteAccount = async () => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete your account? This cannot be undone.",
+      "Are you sure you want to delete your account? This will also cancel any active subscription immediately. This cannot be undone.",
     );
-    if (!confirmed) return;
 
-    setStatus("Deleting account...");
-    const { error } = await supabase.auth.api.deleteUser(profile.id);
+    if (!confirmed || deleting) return;
 
-    if (error) {
-      setStatus("Failed to delete account.");
-      return;
+    setDeleting(true);
+    setStatus("Deleting your account and canceling billing...");
+
+    try {
+      const response = await fetch("/api/account/delete", {
+        method: "POST",
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.ok) {
+        setStatus(result?.error || "Failed to delete account.");
+        setDeleting(false);
+        return;
+      }
+
+      await supabase.auth.signOut().catch(() => undefined);
+      router.replace("/goodbye");
+      router.refresh();
+    } catch {
+      setStatus("Something went wrong. Please try again.");
+      setDeleting(false);
     }
-
-    setStatus("Account deleted successfully.");
-    router.replace("/goodbye");
   };
 
   const calculateCompleteness = () => {
     let completeness = 0;
-    if (profile.name) completeness += 33;
-    if (profile.phone) completeness += 33;
-    if (profile.clinic_name) completeness += 33;
+    if (profile.name) completeness += 25;
+    if (profile.phone) completeness += 25;
+    if (profile.clinic_name) completeness += 25;
+    if (profile.email) completeness += 25; // Add completeness for email
     return completeness;
   };
 
@@ -104,7 +147,6 @@ export default function ProfilePage() {
 
       {loading && <p>Loading...</p>}
 
-      {/* Profile Completeness Section */}
       <div className="mb-4">
         <p>Profile Completeness: {completeness}%</p>
         <div className="w-full bg-gray-200 rounded-full h-2.5">
@@ -115,13 +157,13 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Form Fields */}
+      {/* Profile Form */}
       <div>
         <label className="block text-sm font-medium">Full Name</label>
         <input
           type="text"
           className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
-          value={profile.name || ""}
+          value={profile.name ?? ""}
           onChange={(e) => setProfile({ ...profile, name: e.target.value })}
         />
       </div>
@@ -131,7 +173,7 @@ export default function ProfilePage() {
         <input
           type="text"
           className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
-          value={profile.phone || ""}
+          value={profile.phone ?? ""}
           onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
         />
       </div>
@@ -141,10 +183,21 @@ export default function ProfilePage() {
         <input
           type="text"
           className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
-          value={profile.clinic_name || ""}
+          value={profile.clinic_name ?? ""}
           onChange={(e) =>
             setProfile({ ...profile, clinic_name: e.target.value })
           }
+        />
+      </div>
+
+      {/* New Email Field */}
+      <div>
+        <label className="block text-sm font-medium">Email Address</label>
+        <input
+          type="email"
+          className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+          value={profile.email ?? ""}
+          onChange={(e) => setProfile({ ...profile, email: e.target.value })}
         />
       </div>
 
@@ -156,18 +209,21 @@ export default function ProfilePage() {
         {saving ? "Saving..." : "Save Profile"}
       </button>
 
-      {/* Delete Account Button */}
       <button
         onClick={handleDeleteAccount}
-        className="mt-4 w-full bg-red-600 text-white py-2 rounded-md shadow-md hover:bg-red-700 transition"
+        disabled={deleting}
+        className="mt-4 w-full bg-red-600 text-white py-2 rounded-md shadow-md hover:bg-red-700 disabled:opacity-50 transition"
       >
-        Delete Account
+        {deleting ? "Deleting..." : "Delete Account"}
       </button>
 
-      {/* Feedback Message */}
       {status && (
         <p
-          className={`mt-2 text-sm ${status.includes("success") ? "text-green-500" : "text-red-500"}`}
+          className={`mt-2 text-sm ${
+            status.toLowerCase().includes("success")
+              ? "text-green-500"
+              : "text-red-500"
+          }`}
         >
           {status}
         </p>

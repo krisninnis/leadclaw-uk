@@ -11,9 +11,11 @@ function planFromPriceId(priceId?: string | null) {
   const starter = process.env.STRIPE_PRICE_STARTER;
   const growth = process.env.STRIPE_PRICE_GROWTH;
   const pro = process.env.STRIPE_PRICE_PRO;
+
   if (priceId === starter) return "starter";
   if (priceId === growth) return "growth";
   if (priceId === pro) return "pro";
+
   return "custom";
 }
 
@@ -39,15 +41,18 @@ export async function POST(req: Request) {
   }
 
   let event: Stripe.Event;
+
   try {
     event = stripe.webhooks.constructEvent(body, sig, secret);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "invalid_signature";
+
     await logSystemEvent({
       level: "error",
       category: "stripe_webhook",
       message,
     });
+
     return NextResponse.json({ ok: false, error: message }, { status: 400 });
   }
 
@@ -102,6 +107,7 @@ export async function POST(req: Request) {
             }
           }
         }
+
         break;
       }
 
@@ -121,11 +127,13 @@ export async function POST(req: Request) {
           trialEnd: sub.trial_end,
           cancelAtPeriodEnd: sub.cancel_at_period_end,
         });
+
         break;
       }
 
       case "invoice.payment_failed": {
         const invoice = event.data.object as Stripe.Invoice;
+
         await logSystemEvent({
           level: "warn",
           category: "billing",
@@ -138,6 +146,7 @@ export async function POST(req: Request) {
             invoiceId: invoice.id,
           },
         });
+
         break;
       }
 
@@ -149,11 +158,13 @@ export async function POST(req: Request) {
   } catch (err: unknown) {
     const message =
       err instanceof Error ? err.message : "webhook_processing_failed";
+
     await logSystemEvent({
       level: "error",
       category: "stripe_webhook",
       message,
     });
+
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

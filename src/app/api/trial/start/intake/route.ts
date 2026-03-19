@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}));
 
+  console.log("Received body:", body);
+
   const admin = createAdminClient();
   if (!admin) {
     return NextResponse.json(
@@ -29,6 +31,8 @@ export async function POST(req: NextRequest) {
   const plan = String(body?.plan || "growth")
     .trim()
     .toLowerCase();
+
+  console.log("Plan:", plan); // Log the value of the plan field
 
   const payload = {
     email,

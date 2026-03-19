@@ -21,6 +21,7 @@ type TrialIntake = {
   email: string;
   website: string;
   phone: string;
+  city: string; // Added city
   plan: PlanSlug;
   createdAt: string;
 };
@@ -41,6 +42,7 @@ function FreeTrialContent() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [city, setCity] = useState(""); // Added state for city
 
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,6 +57,7 @@ function FreeTrialContent() {
       email: email.trim().toLowerCase(),
       website: website.trim(),
       phone: phone.trim(),
+      city: city.trim(), // Collect city from input
       plan: selectedPlan,
       createdAt: new Date().toISOString(),
     };
@@ -93,21 +96,24 @@ function FreeTrialContent() {
     setLoading(false);
     setPasswordLoading(false);
     setMagicLinkLoading(false);
-    setStatus("Saving your details...");
+    setStatus("");
 
     try {
       const intake = buildIntake();
 
-      if (!intake.email) {
-        setStatus("Enter your work email first.");
-        setGoogleLoading(false);
-        return;
-      }
-
       saveTrialIntake(intake);
-      await saveIntakeToBackend(intake);
 
-      setStatus("Redirecting to Google...");
+      const hasAnyTypedDetails =
+        intake.clinicName ||
+        intake.contactName ||
+        intake.email ||
+        intake.website ||
+        intake.phone ||
+        intake.city;
+
+      if (hasAnyTypedDetails) {
+        await saveIntakeToBackend(intake);
+      }
 
       const next = buildNextUrl();
 
@@ -288,19 +294,17 @@ function FreeTrialContent() {
 
           <form onSubmit={signUpWithPassword} className="space-y-3">
             <input
-              placeholder="Clinic name"
+              placeholder="Clinic name (optional)"
               value={clinicName}
               onChange={(e) => setClinicName(e.target.value)}
               className="input-premium w-full"
             />
-
             <input
               placeholder="Your name"
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
               className="input-premium w-full"
             />
-
             <input
               type="email"
               placeholder="Work email"
@@ -308,23 +312,27 @@ function FreeTrialContent() {
               onChange={(e) => setEmail(e.target.value)}
               className="input-premium w-full"
             />
-
             <input
               type="url"
-              placeholder="Clinic website"
+              placeholder="Clinic website (optional)"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               className="input-premium w-full"
             />
-
             <input
               type="tel"
-              placeholder="Phone number"
+              placeholder="Phone number (optional)"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="input-premium w-full"
             />
-
+            <input
+              type="text"
+              placeholder="City (optional)"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="input-premium w-full"
+            />
             <input
               type="password"
               placeholder="Create password"
@@ -332,7 +340,6 @@ function FreeTrialContent() {
               onChange={(e) => setPassword(e.target.value)}
               className="input-premium w-full"
             />
-
             <input
               type="password"
               placeholder="Re-enter password"
@@ -340,7 +347,6 @@ function FreeTrialContent() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="input-premium w-full"
             />
-
             <button
               type="submit"
               className="button-primary w-full"
