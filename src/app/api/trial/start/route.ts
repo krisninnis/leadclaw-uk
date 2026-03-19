@@ -4,22 +4,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
 
-type PlanSlug = "starter" | "growth" | "pro";
+const DEFAULT_TRIAL_PLAN = "growth" as const;
 
-function normalizePlan(value: unknown): PlanSlug {
-  if (typeof value !== "string") return "growth";
-
-  const normalized = value.trim().toLowerCase();
-
-  if (normalized === "starter") return "starter";
-  if (normalized === "pro") return "pro";
-  return "growth";
-}
-
-export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => ({}));
-  const selectedPlan = normalizePlan(body?.plan);
-
+export async function POST(_req: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -53,6 +40,7 @@ export async function POST(req: NextRequest) {
   trialEnd.setDate(trialEnd.getDate() + 7);
 
   const trialSubscriptionId = `trial_${user.id}`;
+  const selectedPlan = DEFAULT_TRIAL_PLAN;
 
   const row = {
     user_id: user.id,

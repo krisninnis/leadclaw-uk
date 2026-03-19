@@ -38,16 +38,10 @@ export async function POST() {
   const admin = createAdminClient();
   const stripe = getStripe();
 
-  if (!stripe) {
-    return NextResponse.json(
-      { ok: false, error: "stripe_not_configured" },
-      { status: 500 },
-    );
-  }
-
   try {
     const subscriptionIds = new Set<string>();
     const customerIds = new Set<string>();
+    const canceledSubscriptions: string[] = [];
     const normalizedEmail = authed.user.email?.trim().toLowerCase() ?? "";
 
     const ingest = (row: SubscriptionRow | null) => {
@@ -99,28 +93,56 @@ export async function POST() {
       (byEmail ?? []).forEach((row) => ingest(row as SubscriptionRow));
     }
 
-    for (const customerId of customerIds) {
-      const list = await stripe.subscriptions.list({
-        customer: customerId,
-        status: "all",
-        limit: 100,
-      });
+    if (stripe) {
+      for (const customerId of customerIds) {
+        try {
+          const list = await stripe.subscriptions.list({
+            customer: customerId,
+            status: "all",
+            limit: 100,
+          });
 
-      for (const sub of list.data) {
-        if (shouldCancel(sub.status)) {
-          subscriptionIds.add(sub.id);
+          for (const sub of list.data) {
+            if (shouldCancel(sub.status)) {
+              subscriptionIds.add(sub.id);
+            }
+          }
+        } catch (error) {
+          await logSystemEvent({
+            level: "warn",
+            category: "account_delete",
+            message: "Failed to list Stripe subscriptions for customer",
+            meta: {
+              userId: authed.user.id,
+              email: normalizedEmail || null,
+              customerId,
+              error: error instanceof Error ? error.message : "unknown",
+            },
+          });
         }
       }
-    }
 
-    const canceledSubscriptions: string[] = [];
+      for (const subscriptionId of subscriptionIds) {
+        try {
+          const sub = await stripe.subscriptions.cancel(subscriptionId, {
+            prorate: false,
+          });
 
-    for (const subscriptionId of subscriptionIds) {
-      const sub = await stripe.subscriptions.cancel(subscriptionId, {
-        prorate: false,
-      });
-
-      canceledSubscriptions.push(sub.id);
+          canceledSubscriptions.push(sub.id);
+        } catch (error) {
+          await logSystemEvent({
+            level: "warn",
+            category: "account_delete",
+            message: "Failed to cancel Stripe subscription during delete flow",
+            meta: {
+              userId: authed.user.id,
+              email: normalizedEmail || null,
+              subscriptionId,
+              error: error instanceof Error ? error.message : "unknown",
+            },
+          });
+        }
+      }
     }
 
     const { error: deleteSubsByUserError } = await admin
@@ -149,6 +171,32 @@ export async function POST() {
       }
     }
 
+    const { error: deleteProfileError } = await admin
+      .from("profiles")
+      .delete()
+      .eq("id", authed.user.id);
+
+    if (deleteProfileError) {
+      return NextResponse.json(
+        { ok: false, error: deleteProfileError.message },
+        { status: 500 },
+      );
+    }
+
+    if (normalizedEmail) {
+      const { error: deleteApplicationsError } = await admin
+        .from("applications")
+        .delete()
+        .eq("email", normalizedEmail);
+
+      if (deleteApplicationsError) {
+        return NextResponse.json(
+          { ok: false, error: deleteApplicationsError.message },
+          { status: 500 },
+        );
+      }
+    }
+
     const { error: deleteError } = await admin.auth.admin.deleteUser(
       authed.user.id,
     );
@@ -157,7 +205,7 @@ export async function POST() {
       await logSystemEvent({
         level: "error",
         category: "account_delete",
-        message: "Billing canceled but auth user deletion failed",
+        message: "Database cleanup completed but auth user deletion failed",
         meta: {
           userId: authed.user.id,
           email: normalizedEmail || null,
@@ -167,7 +215,7 @@ export async function POST() {
       });
 
       return NextResponse.json(
-        { ok: false, error: "user_delete_failed_after_billing_cancel" },
+        { ok: false, error: "user_delete_failed_after_cleanup" },
         { status: 500 },
       );
     }

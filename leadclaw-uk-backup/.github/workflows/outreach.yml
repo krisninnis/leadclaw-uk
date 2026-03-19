@@ -1,0 +1,31 @@
+name: Outreach Runner
+
+on:
+  schedule:
+    - cron: "15 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  run-outreach:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger outreach run
+        env:
+          OUTREACH_BASE_URL: ${{ secrets.OUTREACH_BASE_URL }}
+          OUTREACH_RUN_TOKEN: ${{ secrets.OUTREACH_RUN_TOKEN }}
+        run: |
+          set -e
+
+          RESPONSE=$(curl --fail --show-error --silent \
+            -X POST "${OUTREACH_BASE_URL}/api/outreach/run" \
+            -H "Authorization: Bearer ${OUTREACH_RUN_TOKEN}" \
+            -H "Content-Type: application/json")
+
+          echo "Outreach API response:"
+          echo "$RESPONSE"
+
+          echo "$RESPONSE" | grep '"ok":true' > /dev/null || {
+            echo "❌ Outreach API returned failure"
+            exit 1
+          }

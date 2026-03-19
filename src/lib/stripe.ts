@@ -8,8 +8,16 @@ export function getStripe() {
   return new Stripe(key);
 }
 
+// IMPORTANT:
+// Basic = FREE → no Stripe price
+// Only paid plans exist in Stripe
+
 export const PRICE_IDS = {
-  starter: process.env.STRIPE_PRICE_STARTER || "",
   growth: process.env.STRIPE_PRICE_GROWTH || "",
   pro: process.env.STRIPE_PRICE_PRO || "",
 };
+
+// Optional helper (VERY useful later)
+export function isPaidPlan(plan: string) {
+  return plan === "growth" || plan === "pro";
+}

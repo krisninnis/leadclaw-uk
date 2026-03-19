@@ -10,25 +10,27 @@ export default function PricingCta() {
               Ready to choose a plan?
             </p>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
-              Start with the plan that fits today and upgrade as your clinic
-              grows.
+              Start free, try full automation, and upgrade when your clinic is
+              ready.
             </h2>
             <p className="mt-5 text-lg leading-8 text-muted">
-              Growth is the safest default for most clinics, but every LeadClaw
-              plan is designed to help you capture more website opportunities.
+              Start on a 7-day Growth trial to experience the full LeadClaw
+              workflow, then keep Growth, upgrade to Pro, or switch to the free
+              Basic plan.
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/pricing" className="button-primary">
-                Start paid plan
+              <Link href="/free-trial?plan=growth" className="button-primary">
+                Start 7-day free trial
               </Link>
-              <Link href="/free-trial?plan=growth" className="button-secondary">
-                Prefer to try first?
+              <Link href="/pricing" className="button-secondary">
+                Compare plans
               </Link>
             </div>
 
             <p className="mt-4 text-xs text-muted-2">
-              Start a no-card free trial or go straight to checkout.
+              No card required to try Growth. Switch to Basic anytime if you
+              want the free widget-only option.
             </p>
           </div>
         </div>

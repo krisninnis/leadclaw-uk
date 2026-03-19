@@ -13,7 +13,7 @@ function getPlanTone(
   subscriptionText: string,
 ): "brand" | "amber" | "violet" | "cyan" | "neutral" {
   const lower = subscriptionText.toLowerCase();
-  if (lower.includes("starter")) return "amber";
+  if (lower.includes("basic")) return "amber";
   if (lower.includes("growth")) return "violet";
   if (lower.includes("pro")) return "cyan";
   return "neutral";
@@ -88,8 +88,8 @@ export default async function PortalBillingPage({
             Your free trial has ended
           </h2>
           <p className="mt-2 text-sm leading-7 text-rose-900">
-            To continue capturing leads, using your website widget, and keeping
-            your clinic workspace live, activate a paid package below.
+            Your 7-day Growth trial has finished. You can now keep Growth,
+            upgrade to Pro, or switch to the free Basic package.
           </p>
         </div>
       )}
@@ -98,7 +98,7 @@ export default async function PortalBillingPage({
         <SectionHeading
           eyebrow="Billing"
           title="Manage your subscription"
-          description="Review your current plan, trial state, billing status, and next steps for keeping LeadClaw active."
+          description="Review your current plan, trial state, billing status, and the next best option for your clinic."
           maxWidth="lg"
         />
 
@@ -110,8 +110,8 @@ export default async function PortalBillingPage({
               isTrialing && trialEnd
                 ? `Trial ends ${formatDateTime(trialEnd)}`
                 : hasActiveSubscription
-                  ? "Your package is currently usable."
-                  : "No active paid access right now."
+                  ? "Your current package is active."
+                  : "No active paid package right now."
             }
           />
 
@@ -143,7 +143,7 @@ export default async function PortalBillingPage({
             hint={
               hasActiveSubscription
                 ? "Portal and widget usage are currently available."
-                : "Upgrade to restore full access."
+                : "Choose Basic, Growth, or Pro to continue."
             }
           />
         </div>
@@ -153,7 +153,7 @@ export default async function PortalBillingPage({
         <SectionHeading
           eyebrow="Current plan"
           title="Subscription overview"
-          description="Your current LeadClaw setup and billing state."
+          description="Your current LeadClaw setup and available package options."
           maxWidth="md"
         />
 
@@ -170,16 +170,16 @@ export default async function PortalBillingPage({
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <div className="rounded-[22px] border border-border bg-white p-5">
-            <p className="text-sm font-medium text-muted">Billing access</p>
+            <p className="text-sm font-medium text-muted">Package access</p>
             <p className="mt-2 text-base font-semibold text-foreground">
               {hasActiveSubscription
                 ? "LeadClaw is available"
-                : "LeadClaw requires upgrade"}
+                : "Choose your next package"}
             </p>
             <p className="mt-2 text-sm text-muted">
               {hasActiveSubscription
                 ? "Your clinic can continue using portal and widget features."
-                : "Activate a paid package to restore or continue full portal and widget access."}
+                : "Continue with Growth, move to free Basic, or upgrade to Pro."}
             </p>
           </div>
 
@@ -214,7 +214,8 @@ export default async function PortalBillingPage({
           </h2>
           <p className="mt-2 text-sm leading-7 text-amber-900">
             Your package is still accessible right now, but there is a billing
-            issue that needs attention to avoid interruption.
+            issue that needs attention to avoid interruption. You can also move
+            to the free Basic package if you do not want to stay on a paid plan.
           </p>
           <div className="mt-4">
             <PortalPlanUpgrade email={user.email} />
@@ -229,10 +230,10 @@ export default async function PortalBillingPage({
           </h2>
           <p className="mt-2 text-sm leading-7 text-amber-900">
             {trialEnd
-              ? `Your free trial ended on ${formatDateTime(trialEnd)}.`
-              : "Your free trial has ended."}{" "}
-            Upgrade now to keep your widget live, continue receiving enquiries,
-            and keep portal access fully unlocked.
+              ? `Your 7-day Growth trial ended on ${formatDateTime(trialEnd)}.`
+              : "Your 7-day Growth trial has ended."}{" "}
+            Choose the option that fits your clinic best: keep Growth, switch to
+            the free Basic package, or upgrade to Pro.
           </p>
           <div className="mt-4">
             <PortalPlanUpgrade email={user.email} />
@@ -246,11 +247,11 @@ export default async function PortalBillingPage({
         user.email && (
           <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-5">
             <h2 className="text-lg font-semibold text-sky-950">
-              Upgrade or reactivate your package
+              Choose your next package
             </h2>
             <p className="mt-2 text-sm leading-7 text-sky-900">
-              Choose a plan to restore or continue access to the widget, lead
-              inbox, install tools, and clinic workspace.
+              Continue with full automation on Growth, upgrade to Pro for a more
+              advanced setup, or move to Basic if you only want the free widget.
             </p>
             <div className="mt-4">
               <PortalPlanUpgrade email={user.email} />

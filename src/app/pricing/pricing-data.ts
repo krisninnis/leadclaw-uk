@@ -1,6 +1,6 @@
 export type PricingPlan = {
   name: string;
-  slug: "starter" | "growth" | "pro";
+  slug: "basic" | "growth" | "pro";
   price: string;
   period: string;
   description: string;
@@ -25,11 +25,12 @@ export type PricingFaq = {
 
 export const plans: PricingPlan[] = [
   {
-    name: "Starter",
-    slug: "starter",
-    price: "£39",
-    period: "/month",
-    description: "Friendly lead capture for smaller clinics getting started.",
+    name: "Basic",
+    slug: "basic",
+    price: "Free",
+    period: "",
+    description:
+      "A simple AI receptionist widget to capture enquiries. No automation included.",
     mascot: "Fox",
     themeClass:
       "border-amber-200 bg-[linear-gradient(180deg,rgba(255,251,235,0.95),rgba(255,255,255,0.96))]",
@@ -38,20 +39,21 @@ export const plans: PricingPlan[] = [
       "inline-flex items-center justify-center rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-600",
     features: [
       "AI website enquiry widget",
-      "Lead capture into clinic portal",
-      "Email notifications",
-      "Simple setup",
-      "Best for smaller clinics",
+      "Basic lead capture",
+      "Limited monthly conversations",
+      "No automated follow-ups",
+      "No missed call recovery",
+      "Self-setup only",
     ],
-    cta: "/free-trial?plan=starter",
+    cta: "/free-trial?plan=growth",
   },
   {
     name: "Growth",
     slug: "growth",
-    price: "£99",
+    price: "£79",
     period: "/month",
     description:
-      "More power for clinics that want stronger follow-up and better lead handling.",
+      "Turn missed enquiries into booked appointments with automation and follow-up.",
     mascot: "Panther",
     themeClass:
       "border-violet-200 bg-[linear-gradient(180deg,rgba(248,245,255,0.96),rgba(255,255,255,0.96))]",
@@ -60,21 +62,23 @@ export const plans: PricingPlan[] = [
       "button-primary inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold",
     featured: true,
     features: [
-      "Everything in Starter",
-      "Priority clinic workflow",
-      "Improved lead visibility",
-      "Better fit for active clinics",
-      "Recommended plan",
+      "Everything in Basic",
+      "Unlimited AI conversations",
+      "Automated follow-ups (email/SMS)",
+      "Missed call → instant text reply",
+      "Lead notifications",
+      "Clinic lead dashboard",
+      "7-day free trial included",
     ],
     cta: "/free-trial?plan=growth",
   },
   {
     name: "Pro",
     slug: "pro",
-    price: "£249",
+    price: "£149",
     period: "/month",
     description:
-      "Flagship automation tier for ambitious clinics that want the strongest setup.",
+      "Advanced automation and performance tools for clinics serious about growth.",
     mascot: "Dragon",
     themeClass:
       "border-cyan-200 bg-[linear-gradient(180deg,rgba(236,254,255,0.96),rgba(255,255,255,0.96))]",
@@ -83,10 +87,11 @@ export const plans: PricingPlan[] = [
       "inline-flex items-center justify-center rounded-full bg-cyan-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-cyan-700",
     features: [
       "Everything in Growth",
-      "Premium plan positioning",
-      "Best for high-intent clinics",
-      "Stronger premium branding fit",
-      "Top-tier LeadClaw experience",
+      "Advanced automation flows",
+      "Multi-location support",
+      "Performance analytics dashboard",
+      "Priority onboarding support",
+      "Custom AI tuning for your clinic",
     ],
     cta: "/free-trial?plan=pro",
   },
@@ -94,46 +99,50 @@ export const plans: PricingPlan[] = [
 
 export const comparisonRows: ComparisonRow[] = [
   {
-    label: "Website enquiry capture",
+    label: "AI website widget",
     values: ["Included", "Included", "Included"],
   },
   {
-    label: "Clinic lead portal",
-    values: ["Included", "Included", "Included"],
+    label: "Lead capture",
+    values: ["Basic", "Advanced", "Advanced"],
   },
   {
-    label: "Email alerts",
-    values: ["Included", "Included", "Included"],
+    label: "Automated follow-ups",
+    values: ["—", "Included", "Included"],
   },
   {
-    label: "Plan theme / premium presentation",
-    values: ["Basic", "Enhanced", "Flagship"],
+    label: "Missed call recovery",
+    values: ["—", "Included", "Included"],
   },
   {
-    label: "Best clinic stage",
-    values: ["Getting started", "Growing", "Established / scaling"],
+    label: "Monthly conversations",
+    values: ["Limited", "Unlimited", "Unlimited"],
+  },
+  {
+    label: "Support level",
+    values: ["Self-serve", "Standard", "Priority"],
   },
 ];
 
 export const faqs: PricingFaq[] = [
   {
-    question: "How quickly can I get started?",
+    question: "How does the free trial work?",
     answer:
-      "LeadClaw is designed to be lightweight. Once your clinic is set up and the widget is installed, you can begin capturing website enquiries without rebuilding your site.",
+      "You start on the Growth plan for 7 days. This lets you experience full automation, lead capture, and follow-ups before deciding to continue.",
+  },
+  {
+    question: "What happens after the 7-day trial?",
+    answer:
+      "You can continue on Growth, upgrade to Pro, or switch to the free Basic plan with limited functionality.",
   },
   {
     question: "Do I need a new website?",
     answer:
-      "No. The product is designed to sit on top of your existing clinic website using a lightweight widget approach.",
+      "No. LeadClaw works with your existing clinic website using a lightweight widget.",
   },
   {
-    question: "Which plan should most clinics choose?",
+    question: "Can this actually generate bookings?",
     answer:
-      "Growth is the best default for most clinics because it gives a stronger, more premium setup while still staying cost-effective.",
-  },
-  {
-    question: "Can one extra treatment lead justify the subscription?",
-    answer:
-      "In many clinics, yes. A single recovered enquiry for a treatment can easily outweigh a monthly subscription if it turns into a booking.",
+      "Yes. The system captures and follows up with missed enquiries automatically, helping turn more visitors into booked appointments.",
   },
 ];

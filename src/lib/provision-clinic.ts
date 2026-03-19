@@ -2,10 +2,15 @@ import { randomBytes } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { AUTONOMOUS_TASK_ORDER, normalizeDomain } from "@/lib/onboarding";
 
+type ProvisionPlan = "basic" | "growth" | "pro";
+type ProvisionSubscriptionStatus = "active" | "trialing";
+
 type ProvisionClinicWorkspaceInput = {
   email: string;
   fallbackClinicName?: string | null;
   fallbackDomain?: string | null;
+  plan?: ProvisionPlan;
+  subscriptionStatus?: ProvisionSubscriptionStatus;
 };
 
 type ProvisionClinicWorkspaceResult = {
@@ -31,9 +36,14 @@ export async function provisionClinicWorkspace(
     throw new Error("missing_email");
   }
 
+  const resolvedPlan: ProvisionPlan = input.plan ?? "growth";
+  const resolvedSubscriptionStatus: ProvisionSubscriptionStatus =
+    input.subscriptionStatus ??
+    (resolvedPlan === "basic" ? "active" : "trialing");
+
   const { data: latestApp } = await admin
     .from("applications")
-    .select("clinic_name,website,services,city")
+    .select("clinic_name,website,services,city,contact_name")
     .eq("email", email)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -48,6 +58,50 @@ export async function provisionClinicWorkspace(
   ).trim();
 
   const domain = rawWebsite ? normalizeDomain(rawWebsite) : "test.leadclaw.uk";
+
+  // 0) keep profiles table in sync
+  let ownerUserId: string | null = null;
+  let matchedUserEmail: string | null = null;
+  let matchedUserName: string | null = null;
+
+  const { data: authUsersPage, error: listUsersError } =
+    await admin.auth.admin.listUsers();
+
+  if (listUsersError) {
+    throw new Error(listUsersError.message);
+  }
+
+  const matchedUser = authUsersPage.users.find(
+    (user) => (user.email || "").trim().toLowerCase() === email,
+  );
+
+  ownerUserId = matchedUser?.id || null;
+  matchedUserEmail = (matchedUser?.email || "").trim().toLowerCase() || null;
+  matchedUserName =
+    String(matchedUser?.user_metadata?.name || "").trim() ||
+    String(matchedUser?.user_metadata?.full_name || "").trim() ||
+    String(latestApp?.contact_name || "").trim() ||
+    null;
+
+  if (ownerUserId) {
+    const { error: profileUpsertError } = await admin.from("profiles").upsert(
+      {
+        id: ownerUserId,
+        role: "client",
+        name: matchedUserName,
+        phone: null,
+        clinic_name: clinicName || null,
+        email: matchedUserEmail,
+        city: latestApp?.city || null,
+        services: latestApp?.services || null,
+      },
+      { onConflict: "id" },
+    );
+
+    if (profileUpsertError) {
+      throw new Error(profileUpsertError.message);
+    }
+  }
 
   // 1) onboarding client
   const { data: existingClient } = await admin
@@ -77,17 +131,6 @@ export async function provisionClinicWorkspace(
   }
 
   // 2) clinic
-  // Live schema does not have clinics.onboarding_client_id,
-  // so we resolve clinic ownership via owner_user_id when possible,
-  // otherwise by latest matching clinic name.
-  let ownerUserId: string | null = null;
-
-  const { data: authUser } = await admin.auth.admin.listUsers();
-  const matchedUser = authUser.users.find(
-    (user) => (user.email || "").trim().toLowerCase() === email,
-  );
-  ownerUserId = matchedUser?.id || null;
-
   let clinicId: string | null = null;
 
   if (ownerUserId) {
@@ -120,8 +163,8 @@ export async function provisionClinicWorkspace(
       .insert({
         name: clinicName,
         owner_user_id: ownerUserId,
-        subscription_status: "trialing",
-        plan: "growth",
+        subscription_status: resolvedSubscriptionStatus,
+        plan: resolvedPlan,
       })
       .select("id")
       .single();
@@ -130,8 +173,8 @@ export async function provisionClinicWorkspace(
     clinicId = insertedClinic.id;
   } else {
     const clinicUpdate: Record<string, unknown> = {
-      subscription_status: "trialing",
-      plan: "growth",
+      subscription_status: resolvedSubscriptionStatus,
+      plan: resolvedPlan,
     };
 
     if (ownerUserId) {
@@ -186,6 +229,7 @@ export async function provisionClinicWorkspace(
             : [],
           city: latestApp?.city || null,
           signup_mode: "autonomous_provision",
+          plan: resolvedPlan,
         },
         status: "pending_install",
       })

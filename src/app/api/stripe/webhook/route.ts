@@ -8,11 +8,10 @@ import { provisionClinicWorkspace } from "@/lib/provision-clinic";
 
 function planFromPriceId(priceId?: string | null) {
   if (!priceId) return null;
-  const starter = process.env.STRIPE_PRICE_STARTER;
+
   const growth = process.env.STRIPE_PRICE_GROWTH;
   const pro = process.env.STRIPE_PRICE_PRO;
 
-  if (priceId === starter) return "starter";
   if (priceId === growth) return "growth";
   if (priceId === pro) return "pro";
 
@@ -92,7 +91,16 @@ export async function POST(req: Request) {
 
           if (email) {
             try {
-              await provisionClinicWorkspace({ email });
+              const resolvedPlan = planFromPriceId(priceId);
+
+              if (resolvedPlan === "growth" || resolvedPlan === "pro") {
+                await provisionClinicWorkspace({
+                  email,
+                  plan: resolvedPlan,
+                  subscriptionStatus:
+                    sub.status === "active" ? "active" : "trialing",
+                });
+              }
             } catch (err) {
               await logSystemEvent({
                 level: "warn",
@@ -101,6 +109,8 @@ export async function POST(req: Request) {
                 meta: {
                   email,
                   subscriptionId: sub.id,
+                  priceId,
+                  plan: planFromPriceId(priceId),
                   error: err instanceof Error ? err.message : "unknown",
                 },
               });

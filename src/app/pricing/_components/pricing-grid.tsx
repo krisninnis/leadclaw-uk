@@ -19,26 +19,60 @@ function CheckIcon() {
   );
 }
 
-function mascotSrc(slug: "starter" | "growth" | "pro") {
-  if (slug === "starter") return "/brand/mascots/fox-starter.png";
+function mascotSrc(slug: "basic" | "growth" | "pro") {
+  if (slug === "basic") return "/brand/mascots/fox-starter.png";
   if (slug === "growth") return "/brand/mascots/panther-growth.png";
   return "/brand/mascots/dragon-elite.png";
 }
 
-function glowClass(slug: "starter" | "growth" | "pro") {
-  if (slug === "starter") return "bg-amber-300/30";
+function glowClass(slug: "basic" | "growth" | "pro") {
+  if (slug === "basic") return "bg-amber-300/30";
   if (slug === "growth") return "bg-violet-500/45";
   return "bg-cyan-300/28";
 }
 
-function mascotWrapClass(slug: "starter" | "growth" | "pro") {
+function mascotWrapClass(slug: "basic" | "growth" | "pro") {
   if (slug === "growth") {
     return "border-violet-200 bg-white shadow-[0_12px_30px_rgba(139,92,246,0.18)]";
   }
-  if (slug === "starter") {
+  if (slug === "basic") {
     return "border-amber-100 bg-white shadow-lg";
   }
   return "border-cyan-100 bg-white shadow-lg";
+}
+
+function primaryHref(slug: "basic" | "growth" | "pro") {
+  if (slug === "basic") return "/signup?plan=basic";
+  return `/free-trial?plan=${slug}`;
+}
+
+function primaryLabel(slug: "basic" | "growth" | "pro") {
+  if (slug === "basic") return "Start free Basic";
+  return "Start 7-day free trial";
+}
+
+function supportCopy(slug: "basic" | "growth" | "pro") {
+  if (slug === "basic") {
+    return "Free forever • no card required";
+  }
+
+  if (slug === "growth") {
+    return "Try the full Growth package for 7 days • no card required";
+  }
+
+  return "Try Pro free for 7 days • no card required";
+}
+
+function planSummary(slug: "basic" | "growth" | "pro") {
+  if (slug === "basic") {
+    return "Built for clinics that want a simple free enquiry widget with self-serve setup.";
+  }
+
+  if (slug === "growth") {
+    return "Most clinics should start here to experience LeadClaw’s full automation and follow-up workflow.";
+  }
+
+  return "Built for clinics that want advanced automation, stronger performance insight, and premium support.";
 }
 
 export default function PricingGrid() {
@@ -110,7 +144,7 @@ export default function PricingGrid() {
               </div>
 
               <p className="mt-3 text-center text-sm text-muted">
-                Built for clinics that want a cleaner enquiry workflow.
+                {planSummary(plan.slug)}
               </p>
 
               <div className="mt-8 space-y-3">
@@ -125,18 +159,23 @@ export default function PricingGrid() {
               </div>
 
               <div className="mt-8 text-center">
-                <Link href="/pricing" className={plan.buttonClass}>
-                  Start paid plan
+                <Link
+                  href={primaryHref(plan.slug)}
+                  className={plan.buttonClass}
+                >
+                  {primaryLabel(plan.slug)}
                 </Link>
 
-                <div className="mt-3">
-                  <Link
-                    href={`/free-trial?plan=${plan.slug}`}
-                    className="text-xs font-medium text-muted-2 underline underline-offset-4 transition hover:text-foreground"
-                  >
-                    Prefer to try first? Start a free trial
-                  </Link>
-                </div>
+                <p className="mt-3 text-xs font-medium text-muted-2">
+                  {supportCopy(plan.slug)}
+                </p>
+
+                {plan.slug === "growth" ? (
+                  <p className="mt-2 text-xs text-muted-2">
+                    After your trial, keep Growth, upgrade to Pro, or switch to
+                    free Basic.
+                  </p>
+                ) : null}
               </div>
             </article>
           ))}

@@ -5,13 +5,11 @@ import { FormEvent, Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type PlanSlug = "starter" | "growth" | "pro";
+type PlanSlug = "growth";
 
 const TRIAL_INTAKE_KEY = "leadclaw_trial_intake";
 
-function normalizePlan(value: string | null): PlanSlug {
-  if (value === "starter") return "starter";
-  if (value === "pro") return "pro";
+function normalizePlan(_value: string | null): PlanSlug {
   return "growth";
 }
 
@@ -21,7 +19,7 @@ type TrialIntake = {
   email: string;
   website: string;
   phone: string;
-  city: string; // Added city
+  city: string;
   plan: PlanSlug;
   createdAt: string;
 };
@@ -42,10 +40,9 @@ function FreeTrialContent() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [city, setCity] = useState(""); // Added state for city
+  const [city, setCity] = useState("");
 
   const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
@@ -57,7 +54,7 @@ function FreeTrialContent() {
       email: email.trim().toLowerCase(),
       website: website.trim(),
       phone: phone.trim(),
-      city: city.trim(), // Collect city from input
+      city: city.trim(),
       plan: selectedPlan,
       createdAt: new Date().toISOString(),
     };
@@ -66,9 +63,7 @@ function FreeTrialContent() {
   function saveTrialIntake(intake: TrialIntake) {
     try {
       window.sessionStorage.setItem(TRIAL_INTAKE_KEY, JSON.stringify(intake));
-    } catch {
-      // ignore storage errors
-    }
+    } catch {}
   }
 
   async function saveIntakeToBackend(intake: TrialIntake) {
@@ -88,12 +83,11 @@ function FreeTrialContent() {
   }
 
   function buildNextUrl() {
-    return `/portal?startTrial=1&trial=started&setup=ready&plan=${selectedPlan}`;
+    return `/portal?startTrial=1&trial=started&setup=ready&plan=growth`;
   }
 
   async function signInWithGoogle() {
     setGoogleLoading(true);
-    setLoading(false);
     setPasswordLoading(false);
     setMagicLinkLoading(false);
     setStatus("");
@@ -120,7 +114,7 @@ function FreeTrialContent() {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(
             next,
           )}`,
         },
@@ -144,13 +138,18 @@ function FreeTrialContent() {
     e.preventDefault();
 
     setPasswordLoading(true);
-    setLoading(false);
     setGoogleLoading(false);
     setMagicLinkLoading(false);
     setStatus("Creating your account...");
 
     try {
       const intake = buildIntake();
+
+      if (!intake.contactName) {
+        setStatus("Enter your name.");
+        setPasswordLoading(false);
+        return;
+      }
 
       if (!intake.email) {
         setStatus("Enter your work email.");
@@ -185,9 +184,12 @@ function FreeTrialContent() {
         email: intake.email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(
             next,
           )}`,
+          data: {
+            name: intake.contactName,
+          },
         },
       });
 
@@ -198,7 +200,7 @@ function FreeTrialContent() {
       }
 
       setStatus(
-        "Account created. Check your email to confirm your address and activate your free trial.",
+        "Account created. Check your email to confirm your address and start your 7-day Growth trial.",
       );
       setPasswordLoading(false);
     } catch (error) {
@@ -213,7 +215,6 @@ function FreeTrialContent() {
 
   async function sendMagicLink() {
     setMagicLinkLoading(true);
-    setLoading(false);
     setGoogleLoading(false);
     setPasswordLoading(false);
     setStatus("Preparing your magic link...");
@@ -235,7 +236,7 @@ function FreeTrialContent() {
       const { error } = await supabase.auth.signInWithOtp({
         email: intake.email,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(
             next,
           )}`,
         },
@@ -248,7 +249,7 @@ function FreeTrialContent() {
       }
 
       setStatus(
-        "Magic link sent. Check your email to confirm and activate your free trial.",
+        "Magic link sent. Check your email to confirm and start your 7-day Growth trial.",
       );
       setMagicLinkLoading(false);
     } catch (error) {
@@ -270,9 +271,13 @@ function FreeTrialContent() {
             Start your 7-day free trial
           </h1>
           <p className="mt-3 text-sm text-muted">
-            Create your clinic account and begin setup on the{" "}
-            <span className="font-medium text-foreground">{selectedPlan}</span>{" "}
-            plan.
+            Start on the{" "}
+            <span className="font-medium text-foreground">Growth</span> plan for
+            7 days with full access to the core LeadClaw workflow.
+          </p>
+          <p className="mt-2 text-xs font-medium text-muted-2">
+            No card required • keep Growth, upgrade to Pro, or switch to free
+            Basic after the trial
           </p>
         </div>
 
@@ -283,8 +288,12 @@ function FreeTrialContent() {
             disabled={googleLoading || passwordLoading || magicLinkLoading}
             className="button-secondary w-full"
           >
-            {googleLoading ? "Redirecting..." : "Sign up with Google"}
+            {googleLoading ? "Redirecting..." : "Continue with Google"}
           </button>
+
+          <p className="text-center text-xs text-muted-2">
+            Fastest option — start your Growth trial with no card details
+          </p>
 
           <div className="flex items-center gap-3">
             <div className="h-px flex-1 bg-border" />
@@ -347,6 +356,7 @@ function FreeTrialContent() {
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="input-premium w-full"
             />
+
             <button
               type="submit"
               className="button-primary w-full"
@@ -369,6 +379,13 @@ function FreeTrialContent() {
 
           {status ? <p className="text-sm text-muted">{status}</p> : null}
         </div>
+
+        <p className="text-center text-sm text-muted">
+          Want the free widget only?{" "}
+          <Link href="/signup?plan=basic" className="underline text-foreground">
+            Start Basic instead
+          </Link>
+        </p>
 
         <p className="text-center text-sm text-muted">
           Already have an account?{" "}

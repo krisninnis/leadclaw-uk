@@ -3,23 +3,39 @@ import { getStripe, PRICE_IDS } from "@/lib/stripe";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const ALLOWED_PLANS = ["starter", "growth", "pro"] as const;
+const ALLOWED_PLANS = ["basic", "growth", "pro"] as const;
+const PAID_PLANS = ["growth", "pro"] as const;
 
 export async function POST(req: Request) {
   try {
     const { plan, email } = await req.json();
+
+    if (!ALLOWED_PLANS.includes(plan)) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_plan" },
+        { status: 400 },
+      );
+    }
+
+    if (plan === "basic") {
+      return NextResponse.json(
+        { ok: false, error: "basic_plan_does_not_require_checkout" },
+        { status: 400 },
+      );
+    }
+
+    if (!PAID_PLANS.includes(plan)) {
+      return NextResponse.json(
+        { ok: false, error: "invalid_paid_plan" },
+        { status: 400 },
+      );
+    }
+
     const stripe = getStripe();
 
     if (!stripe) {
       return NextResponse.json(
         { ok: false, error: "stripe_not_configured" },
-        { status: 400 },
-      );
-    }
-
-    if (!ALLOWED_PLANS.includes(plan)) {
-      return NextResponse.json(
-        { ok: false, error: "invalid_plan" },
         { status: 400 },
       );
     }
@@ -68,38 +84,20 @@ export async function POST(req: Request) {
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
 
-    const shouldUseStripeTrial = false;
-
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: resolvedEmail,
-      success_url: `${appUrl}/portal?checkout=success&setup=ready`,
+      success_url: `${appUrl}/portal?checkout=success&setup=ready&plan=${plan}`,
       cancel_url: `${appUrl}/portal/billing?checkout=cancelled`,
       payment_method_collection: "always",
-      ...(shouldUseStripeTrial
-        ? {
-            subscription_data: {
-              trial_period_days: 7,
-              trial_settings: {
-                end_behavior: { missing_payment_method: "cancel" },
-              },
-              metadata: {
-                plan,
-                userId: user?.id || "",
-                existingStatus: existingStatus || "",
-              },
-            },
-          }
-        : {
-            subscription_data: {
-              metadata: {
-                plan,
-                userId: user?.id || "",
-                existingStatus: existingStatus || "",
-              },
-            },
-          }),
+      subscription_data: {
+        metadata: {
+          plan,
+          userId: user?.id || "",
+          existingStatus: existingStatus || "",
+        },
+      },
       metadata: {
         plan,
         userId: user?.id || "",

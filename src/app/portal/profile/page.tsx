@@ -9,8 +9,24 @@ type Profile = {
   name?: string | null;
   phone?: string | null;
   clinic_name?: string | null;
-  email?: string | null; // Add email to profile
+  email?: string | null;
 };
+
+function buildFallbackName(email: string, metadata: Record<string, unknown>) {
+  const metadataName =
+    String(metadata?.name || "").trim() ||
+    String(metadata?.full_name || "").trim();
+
+  if (metadataName) return metadataName;
+
+  const emailName = email
+    .split("@")[0]
+    ?.replace(/[._-]+/g, " ")
+    .trim();
+  if (emailName) return emailName;
+
+  return "";
+}
 
 export default function ProfilePage() {
   const supabase = useMemo(() => createClient(), []);
@@ -20,7 +36,7 @@ export default function ProfilePage() {
     name: "",
     phone: "",
     clinic_name: "",
-    email: "", // Initialize email in state
+    email: "",
   });
   const [status, setStatus] = useState("");
   const [loading, setLoading] = useState(true);
@@ -43,11 +59,17 @@ export default function ProfilePage() {
         return;
       }
 
+      const normalizedEmail = (user.email || "").trim().toLowerCase();
+      const fallbackName = buildFallbackName(
+        normalizedEmail,
+        (user.user_metadata ?? {}) as Record<string, unknown>,
+      );
+
       const { data: userProfile, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         setStatus("Could not load your profile.");
@@ -56,9 +78,13 @@ export default function ProfilePage() {
       }
 
       setProfile({
-        ...userProfile,
-        email: userProfile?.email || user.email || "",
+        id: user.id,
+        name: userProfile?.name ?? fallbackName,
+        phone: userProfile?.phone ?? "",
+        clinic_name: userProfile?.clinic_name ?? "",
+        email: userProfile?.email ?? normalizedEmail,
       });
+
       setLoading(false);
     }
 
@@ -80,16 +106,24 @@ export default function ProfilePage() {
       return;
     }
 
-    const { error } = await supabase.from("profiles").upsert({
+    const normalizedEmail = (profile.email || user.email || "")
+      .trim()
+      .toLowerCase();
+
+    const payload = {
       id: user.id,
-      name: profile.name ?? "",
-      phone: profile.phone ?? "",
-      clinic_name: profile.clinic_name ?? "",
-      email: profile.email ?? "", // Save email to the profile table
-    });
+      name: profile.name?.trim() || "",
+      phone: profile.phone?.trim() || "",
+      clinic_name: profile.clinic_name?.trim() || "",
+      email: normalizedEmail,
+    };
+
+    const { error } = await supabase
+      .from("profiles")
+      .upsert(payload, { onConflict: "id" });
 
     if (error) {
-      setStatus("Failed to save profile.");
+      setStatus(`Failed to save profile: ${error.message}`);
       setSaving(false);
       return;
     }
@@ -130,22 +164,20 @@ export default function ProfilePage() {
     }
   };
 
-  const calculateCompleteness = () => {
-    let completeness = 0;
-    if (profile.name) completeness += 25;
-    if (profile.phone) completeness += 25;
-    if (profile.clinic_name) completeness += 25;
-    if (profile.email) completeness += 25; // Add completeness for email
-    return completeness;
-  };
-
-  const completeness = calculateCompleteness();
+  const completeness = (() => {
+    let value = 0;
+    if (profile.name) value += 25;
+    if (profile.phone) value += 25;
+    if (profile.clinic_name) value += 25;
+    if (profile.email) value += 25;
+    return value;
+  })();
 
   return (
     <div className="space-y-6 p-6 max-w-lg mx-auto">
       <h1 className="text-2xl font-semibold">Your Profile</h1>
 
-      {loading && <p>Loading...</p>}
+      {loading ? <p>Loading...</p> : null}
 
       <div className="mb-4">
         <p>Profile Completeness: {completeness}%</p>
@@ -157,7 +189,6 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Profile Form */}
       <div>
         <label className="block text-sm font-medium">Full Name</label>
         <input
@@ -190,7 +221,6 @@ export default function ProfilePage() {
         />
       </div>
 
-      {/* New Email Field */}
       <div>
         <label className="block text-sm font-medium">Email Address</label>
         <input
@@ -203,7 +233,7 @@ export default function ProfilePage() {
 
       <button
         onClick={handleSaveProfile}
-        disabled={saving}
+        disabled={saving || loading}
         className="mt-4 w-full bg-blue-600 text-white py-2 rounded-md shadow-md hover:bg-blue-700 disabled:opacity-50 transition"
       >
         {saving ? "Saving..." : "Save Profile"}
@@ -211,13 +241,13 @@ export default function ProfilePage() {
 
       <button
         onClick={handleDeleteAccount}
-        disabled={deleting}
+        disabled={deleting || loading}
         className="mt-4 w-full bg-red-600 text-white py-2 rounded-md shadow-md hover:bg-red-700 disabled:opacity-50 transition"
       >
         {deleting ? "Deleting..." : "Delete Account"}
       </button>
 
-      {status && (
+      {status ? (
         <p
           className={`mt-2 text-sm ${
             status.toLowerCase().includes("success")
@@ -227,7 +257,7 @@ export default function ProfilePage() {
         >
           {status}
         </p>
-      )}
+      ) : null}
     </div>
   );
 }
