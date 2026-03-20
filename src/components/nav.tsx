@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { User, Session } from "@supabase/supabase-js"; // Import the types
+import type { Session, User } from "@supabase/supabase-js";
 
 type NavLink = {
   href: string;
@@ -65,8 +64,7 @@ export default function Nav() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      (_event: any, session: Session | null) => {
-        // Explicitly typing _event and session
+      (_event: string, session: Session | null) => {
         if (!mounted) return;
         setUserEmail(session?.user?.email?.toLowerCase() ?? null);
         setAuthReady(true);
@@ -81,8 +79,8 @@ export default function Nav() {
 
   const adminEmails = useMemo(
     () =>
-      ["kris@leadclaw.uk", "krisninnis@gmail.com"].map((email) =>
-        email.toLowerCase(),
+      ["kris@leadclaw.uk", "krisninnis@gmail.com", "leadclawops@gmail.com"].map(
+        (email) => email.toLowerCase(),
       ),
     [],
   );
@@ -136,137 +134,70 @@ export default function Nav() {
 
             <Link
               href="/"
-              className={[
-                "group flex items-center gap-3 rounded-[24px] border border-border bg-white/80 p-3 shadow-sm transition",
-                collapsed ? "justify-center" : "",
-              ].join(" ")}
+              className={`group flex items-center gap-3 rounded-2xl border border-transparent px-3 py-3 transition hover:border-border hover:bg-white ${
+                collapsed ? "justify-center" : ""
+              }`}
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-white shadow-sm">
-                <Image
-                  src="/brand/icons/leadclaw-logo-dark.png"
-                  alt="LeadClaw"
-                  width={36}
-                  height={36}
-                  className="h-auto w-auto object-contain"
-                  priority
-                />
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-900 text-lg text-white shadow-sm">
+                LC
               </div>
 
-              {!collapsed ? (
-                <div className="min-w-0 leading-tight">
-                  <div className="text-base font-semibold tracking-tight text-foreground">
+              {!collapsed && (
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">
                     LeadClaw
-                  </div>
-                  <div className="text-xs text-muted">
-                    AI front desk for clinics
-                  </div>
+                  </p>
+                  <p className="truncate text-xs text-muted">
+                    AI lead capture for clinics
+                  </p>
                 </div>
-              ) : null}
+              )}
             </Link>
 
-            <div className="mt-8">
-              {!collapsed ? (
+            {!collapsed && (
+              <div className="mt-6">
                 <p className="px-2 text-xs font-semibold uppercase tracking-[0.16em] text-muted-2">
                   Navigation
                 </p>
-              ) : null}
-
-              <nav className="mt-3 flex flex-col gap-3">
-                {links.map((link) => {
-                  const active = isActivePath(pathname, link.href);
-
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={[
-                        "group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-200",
-                        collapsed ? "justify-center px-3" : "",
-                        active
-                          ? "bg-brand-soft text-foreground shadow-sm ring-1 ring-brand/10"
-                          : "text-muted hover:bg-surface-2 hover:text-foreground hover:shadow-sm",
-                      ].join(" ")}
-                    >
-                      <span
-                        className={[
-                          "flex h-10 w-10 items-center justify-center rounded-xl border text-sm shadow-sm transition-all duration-200",
-                          active
-                            ? "border-brand/20 bg-white text-brand-strong"
-                            : "border-border bg-white text-foreground group-hover:border-border-strong",
-                        ].join(" ")}
-                      >
-                        {link.icon}
-                      </span>
-
-                      {!collapsed ? <span>{link.label}</span> : null}
-
-                      {!collapsed && active ? (
-                        <span className="ml-auto h-2.5 w-2.5 rounded-full bg-brand" />
-                      ) : null}
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
-
-            {!collapsed ? (
-              <div className="mt-8 rounded-[24px] border border-border bg-white/80 p-4 shadow-sm">
-                <p className="text-sm font-semibold text-foreground">
-                  Recover more missed enquiries
-                </p>
-                <p className="mt-2 text-xs leading-6 text-muted">
-                  Give your clinic an AI front desk that captures website
-                  interest and turns it into follow-up-ready leads.
-                </p>
               </div>
-            ) : null}
+            )}
 
-            <div className="mt-auto space-y-3 pt-6">
-              {isSignedIn ? (
-                <Link
-                  href="/portal"
-                  className={
-                    collapsed
-                      ? "button-secondary px-0 text-center"
-                      : "button-secondary w-full"
-                  }
-                >
-                  {collapsed ? "💬" : "Open portal"}
-                </Link>
-              ) : (
-                <Link
-                  href="/login"
-                  className={
-                    collapsed
-                      ? "button-secondary px-0 text-center"
-                      : "button-secondary w-full"
-                  }
-                >
-                  {collapsed ? "🔐" : "Sign in"}
-                </Link>
-              )}
+            <nav className="mt-3 flex flex-col gap-3">
+              {links.map((link) => {
+                const active = isActivePath(pathname, link.href);
 
-              <Link
-                href="/free-trial?plan=growth"
-                className={
-                  collapsed
-                    ? "button-primary px-0 text-center"
-                    : "button-primary w-full"
-                }
-              >
-                {collapsed ? "✨" : "Start 7-day free trial"}
-              </Link>
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={[
+                      "group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition",
+                      active
+                        ? "bg-slate-900 text-white shadow-sm"
+                        : "text-foreground hover:bg-white hover:shadow-sm",
+                      collapsed ? "justify-center" : "",
+                    ].join(" ")}
+                    title={collapsed ? link.label : undefined}
+                  >
+                    <span className="text-lg">{link.icon}</span>
+                    {!collapsed && <span>{link.label}</span>}
+                  </Link>
+                );
+              })}
+            </nav>
 
+            <div className="mt-auto pt-6">
               {authReady && isAdmin ? (
                 <Link
                   href="/admin"
-                  className={
-                    collapsed
-                      ? "button-secondary px-0 text-center"
-                      : "button-secondary w-full"
-                  }
+                  className={[
+                    "flex items-center gap-3 rounded-2xl border border-border bg-white px-3 py-3 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-2",
+                    collapsed ? "justify-center" : "",
+                  ].join(" ")}
+                  title={collapsed ? "Admin portal" : undefined}
                 >
-                  {collapsed ? "🛠️" : "Admin portal"}
+                  <span className="text-lg">🛠️</span>
+                  {!collapsed && <span>Admin portal</span>}
                 </Link>
               ) : null}
             </div>

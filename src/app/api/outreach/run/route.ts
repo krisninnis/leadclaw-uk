@@ -101,11 +101,17 @@ function renderInitialMessage(lead: {
   if (v === 0) {
     return `Hi ${company} team,
 
-Quick one — noticed you’re a ${ctx.label}${city ? ` in ${city}` : ""}.
+I came across your clinic${city ? ` in ${city}` : ""} and wanted to reach out.
 
-If some enquiries get missed when the team is busy, we can help capture those automatically through your website.
+I'm building LeadClaw, a brand-new startup for clinics that helps capture website enquiries when staff are busy or out of hours.
 
-Want me to send a 2-minute example for ${company}?
+It's free to get started, with an optional paid subscription later, and there's also a no-obligation free trial.
+
+Because we're still early, we're improving the product constantly and listening closely to feedback from clinics.
+
+The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits that won't be offered once we grow.
+
+Would you like me to send over a very short example of how it could work for ${company}?
 
 Best,
 Kris
@@ -119,7 +125,13 @@ Reply "no" to opt out.`;
 
 Just a quick note — we help ${ctx.label}s${city ? ` in ${city}` : ""} respond faster when calls, forms, or messages come in at busy times.
 
-Would it help if I sent over a very short example of how that could work for ${company}?
+LeadClaw is a brand-new startup, free to get started, with an optional paid subscription later and a no-obligation free trial.
+
+We're updating the product constantly, and early clinics get a real chance to shape what we build with direct feedback.
+
+The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits that won't be available later.
+
+Would it help if I sent over a very short example for ${company}?
 
 Best,
 Kris
@@ -130,9 +142,15 @@ Reply "no" to opt out.`;
 
   return `Hi ${company} team,
 
-Saw your business and thought I’d reach out.
+Saw your business and thought I'd reach out.
 
-We help clinics avoid losing website enquiries when staff are tied up or it's out of hours.
+I'm building LeadClaw, a brand-new startup for clinics that helps avoid losing website enquiries when staff are tied up or it's out of hours.
+
+It's free to get started, with an optional paid subscription later, and there's a no-obligation free trial as well.
+
+We're still early, so the product is always improving, and early users get a genuine chance to shape it with feedback.
+
+The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits we won't offer once LeadClaw grows.
 
 Want me to send a short example tailored to ${company}?
 
@@ -148,9 +166,13 @@ function renderFollowUp1(lead: { company_name: string }) {
 
 Just checking if you saw my last note.
 
-If you'd like, I can send over a very short example of how LeadClaw helps clinics capture more website enquiries when the team is busy.
+LeadClaw is a brand-new startup for clinics, free to get started, with an optional paid subscription later and a no-obligation free trial.
 
-Worth sending it over?
+We're improving it constantly, and early clinics get a real chance to shape the product with feedback.
+
+The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits that won't be offered later.
+
+If you'd like, I can send over a very short example of how it could work for ${lead.company_name}.
 
 Best,
 Kris
@@ -164,7 +186,11 @@ function renderFollowUp2(lead: { company_name: string }) {
 
 Final quick note from me.
 
-If improving enquiry response times is on your radar, I’m happy to send a short example tailored to your clinic.
+If improving enquiry response times is on your radar, I'd be happy to send a short example tailored to your clinic.
+
+LeadClaw is a new startup, free to get started, with an optional paid subscription later and a no-obligation free trial.
+
+We're still early, so the product is always improving, and the first 100 clients will receive founding-client perks like priority support, early feature access, and future benefits that won't be available later.
 
 If not, no worries at all.
 

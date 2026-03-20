@@ -1,21 +1,15 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { canUseLeadClawProduct } from "@/lib/subscription-access";
 import PortalMobileNav from "../../components/portal-mobile-nav";
 import PortalSidebarNav from "../../components/portal-sidebar-nav";
 
-const portalLinks = [
-  { href: "/portal", label: "Dashboard", icon: "🏠" },
-  { href: "/portal/leads", label: "Leads", icon: "📥" },
-  { href: "/portal/install", label: "Install", icon: "🧩" },
-  { href: "/portal/support", label: "Support", icon: "💬" },
-  { href: "/portal/billing", label: "Billing", icon: "💳" },
-  { href: "/portal/settings", label: "Settings", icon: "⚙️" },
-  { href: "/portal/resources", label: "Resources", icon: "📘" },
-  { href: "/portal/activity", label: "Activity", icon: "📈" },
-];
+type PortalLink = {
+  href: string;
+  label: string;
+  icon: string;
+};
 
 export default async function PortalLayout({
   children,
@@ -45,6 +39,32 @@ export default async function PortalLayout({
   if (!allowed) {
     redirect("/free-trial?plan=growth");
   }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const adminEmails = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+
+  const isAdminEmail = adminEmails.includes(user.email.toLowerCase());
+  const isAdmin = profile?.role === "admin" || isAdminEmail;
+
+  const portalLinks: PortalLink[] = [
+    { href: "/portal", label: "Dashboard", icon: "🏠" },
+    { href: "/portal/leads", label: "Leads", icon: "📥" },
+    { href: "/portal/install", label: "Install", icon: "🧩" },
+    { href: "/portal/support", label: "Support", icon: "💬" },
+    { href: "/portal/billing", label: "Billing", icon: "💳" },
+    { href: "/portal/settings", label: "Settings", icon: "⚙️" },
+    { href: "/portal/resources", label: "Resources", icon: "📘" },
+    { href: "/portal/activity", label: "Activity", icon: "📈" },
+    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
+  ];
 
   return (
     <>

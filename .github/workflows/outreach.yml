@@ -26,6 +26,6 @@ jobs:
           echo "$RESPONSE"
 
           echo "$RESPONSE" | grep '"ok":true' > /dev/null || {
-            echo "❌ Outreach API returned failure"
+            echo "Outreach run did not return ok=true"
             exit 1
           }

@@ -16,10 +16,14 @@ function isActive(pathname: string, href: string) {
 
 export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
   const pathname = usePathname() ?? "";
+  const totalItems = links.length + 1; // +1 for Profile
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 backdrop-blur-xl lg:hidden">
-      <div className="grid grid-cols-4 sm:grid-cols-8">
+      <div
+        className="grid"
+        style={{ gridTemplateColumns: `repeat(${totalItems}, minmax(0, 1fr))` }}
+      >
         {links.map((link) => {
           const active = isActive(pathname, link.href);
 
@@ -47,7 +51,6 @@ export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
           );
         })}
 
-        {/* Add Profile Link */}
         <Link
           href="/portal/profile"
           className={[
