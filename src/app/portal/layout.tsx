@@ -1,7 +1,12 @@
 import type { ReactNode } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { canUseLeadClawProduct } from "@/lib/subscription-access";
+import {
+  canAccessPortal,
+  hasFullLeadClawAccess,
+  isLimitedSubscription,
+  normalizeSubscriptionStatus,
+} from "@/lib/subscription-access";
 import PortalMobileNav from "../../components/portal-mobile-nav";
 import PortalSidebarNav from "../../components/portal-sidebar-nav";
 
@@ -10,6 +15,14 @@ type PortalLink = {
   label: string;
   icon: string;
 };
+
+function titleCase(value: string | null | undefined) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase();
+  if (!normalized) return "Unknown";
+  return normalized.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+}
 
 export default async function PortalLayout({
   children,
@@ -28,15 +41,18 @@ export default async function PortalLayout({
 
   const { data: subscription } = await supabase
     .from("subscriptions")
-    .select("status, updated_at")
+    .select("status,plan,trial_end,updated_at")
     .eq("email", user.email)
     .order("updated_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  const allowed = canUseLeadClawProduct(subscription?.status || null);
+  const subscriptionStatus = normalizeSubscriptionStatus(subscription?.status);
+  const canEnterPortal = canAccessPortal(subscriptionStatus);
+  const hasFullAccess = hasFullLeadClawAccess(subscriptionStatus);
+  const isLimitedAccess = isLimitedSubscription(subscriptionStatus);
 
-  if (!allowed) {
+  if (!canEnterPortal) {
     redirect("/free-trial?plan=growth");
   }
 
@@ -54,7 +70,7 @@ export default async function PortalLayout({
   const isAdminEmail = adminEmails.includes(user.email.toLowerCase());
   const isAdmin = profile?.role === "admin" || isAdminEmail;
 
-  const portalLinks: PortalLink[] = [
+  const fullPortalLinks: PortalLink[] = [
     { href: "/portal", label: "Dashboard", icon: "🏠" },
     { href: "/portal/leads", label: "Leads", icon: "📥" },
     { href: "/portal/install", label: "Install", icon: "🧩" },
@@ -63,8 +79,24 @@ export default async function PortalLayout({
     { href: "/portal/settings", label: "Settings", icon: "⚙️" },
     { href: "/portal/resources", label: "Resources", icon: "📘" },
     { href: "/portal/activity", label: "Activity", icon: "📈" },
+  ];
+
+  const limitedPortalLinks: PortalLink[] = [
+    { href: "/portal", label: "Dashboard", icon: "🏠" },
+    { href: "/portal/billing", label: "Billing", icon: "💳" },
+    { href: "/portal/settings", label: "Settings", icon: "⚙️" },
+    { href: "/portal/support", label: "Support", icon: "💬" },
+    { href: "/portal/resources", label: "Resources", icon: "📘" },
+  ];
+
+  const portalLinks: PortalLink[] = [
+    ...(hasFullAccess ? fullPortalLinks : limitedPortalLinks),
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
   ];
+
+  const currentPlan = String(subscription?.plan || "basic").toLowerCase();
+  const showLimitedBanner = isLimitedAccess;
+  const trialEnded = subscriptionStatus === "expired";
 
   return (
     <>
@@ -79,7 +111,9 @@ export default async function PortalLayout({
                 LeadClaw
               </h2>
               <p className="mt-1 text-sm text-muted">
-                Clinic workspace for leads, install, billing, and support.
+                {hasFullAccess
+                  ? "Clinic workspace for leads, install, billing, and support."
+                  : "Basic workspace with billing, support, and upgrade access."}
               </p>
             </div>
           </div>
@@ -88,7 +122,37 @@ export default async function PortalLayout({
         </aside>
 
         <div className="min-w-0 flex-1">
-          <div className="mx-auto w-full max-w-[1500px]">{children}</div>
+          <div className="mx-auto w-full max-w-[1500px] space-y-6">
+            {showLimitedBanner && (
+              <div className="rounded-[24px] border border-amber-300 bg-amber-50 p-5">
+                <h2 className="text-lg font-semibold text-amber-950">
+                  {trialEnded
+                    ? "Your free trial has ended"
+                    : "You are currently on the Basic package"}
+                </h2>
+                <p className="mt-2 text-sm leading-7 text-amber-900">
+                  {trialEnded
+                    ? "Your 7-day free trial has ended and your account has been moved to Basic. Upgrade to Growth or Pro to keep full access to LeadClaw features."
+                    : "Your account is currently using the Basic package. Upgrade to Growth or Pro to unlock the full LeadClaw experience."}
+                </p>
+                <div className="mt-3 flex flex-wrap gap-3 text-sm text-amber-950">
+                  <span className="rounded-full bg-white px-3 py-1 shadow-sm">
+                    Current plan: {titleCase(currentPlan)}
+                  </span>
+                  <span className="rounded-full bg-white px-3 py-1 shadow-sm">
+                    Status: {titleCase(subscriptionStatus)}
+                  </span>
+                </div>
+                <div className="mt-4">
+                  <a href="/portal/billing" className="button-primary">
+                    View plans and upgrade
+                  </a>
+                </div>
+              </div>
+            )}
+
+            {children}
+          </div>
         </div>
       </div>
 

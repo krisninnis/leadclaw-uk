@@ -8,6 +8,20 @@ import {
   type TrialStage,
 } from "@/lib/trial-automation";
 
+type SubscriptionRow = {
+  id: string;
+  email: string | null;
+  status: string | null;
+  trial_end: string | null;
+  plan: string | null;
+};
+
+function isExpiredTrial(status: string | null | undefined, stage: TrialStage) {
+  return (
+    stage === "expired" && String(status || "").toLowerCase() === "trialing"
+  );
+}
+
 export async function POST(req: Request) {
   const tokens = [
     process.env.BILLING_RUN_TOKEN?.trim(),
@@ -37,7 +51,7 @@ export async function POST(req: Request) {
   const { data: subs, error } = await admin
     .from("subscriptions")
     .select("id,email,status,trial_end,plan")
-    .in("status", ["trialing", "active", "past_due"])
+    .in("status", ["trialing", "active", "past_due", "expired", "canceled"])
     .not("trial_end", "is", null)
     .limit(500);
 
@@ -55,22 +69,59 @@ export async function POST(req: Request) {
   let sentCount = 0;
   let skippedCount = 0;
   let expiredCount = 0;
+  let downgradedToBasicCount = 0;
+  let failedCount = 0;
 
-  for (const sub of subs || []) {
+  for (const sub of (subs || []) as SubscriptionRow[]) {
     const stage = detectTrialStage(sub.trial_end);
-    if (!stage || !sub.email) continue;
+    if (!stage) continue;
 
-    if (stage === "expired" && sub.status === "trialing") {
+    const normalizedEmail = (sub.email || "").trim().toLowerCase();
+    if (!normalizedEmail) continue;
+
+    if (isExpiredTrial(sub.status, stage)) {
       const { error: expireError } = await admin
         .from("subscriptions")
         .update({
           status: "expired",
+          plan: "basic",
           updated_at: new Date().toISOString(),
         })
         .eq("id", sub.id);
 
       if (!expireError) {
         expiredCount += 1;
+        downgradedToBasicCount += 1;
+
+        await logSystemEvent({
+          level: "info",
+          category: "billing_trial",
+          message: `Trial expired and downgraded to basic for ${normalizedEmail}`,
+          meta: {
+            subscriptionId: sub.id,
+            email: normalizedEmail,
+            previousPlan: sub.plan || null,
+            newPlan: "basic",
+            newStatus: "expired",
+            trialEnd: sub.trial_end,
+          },
+        });
+      } else {
+        failedCount += 1;
+
+        await logSystemEvent({
+          level: "error",
+          category: "billing_trial",
+          message: `Failed to expire trial for ${normalizedEmail}`,
+          meta: {
+            subscriptionId: sub.id,
+            email: normalizedEmail,
+            error: expireError.message,
+            trialEnd: sub.trial_end,
+          },
+        });
+
+        continue;
       }
     }
 
@@ -87,10 +138,10 @@ export async function POST(req: Request) {
       continue;
     }
 
-    if (await isSuppressed(sub.email)) {
+    if (await isSuppressed(normalizedEmail)) {
       await admin.from("billing_notifications").insert({
         subscription_id: sub.id,
-        email: sub.email,
+        email: normalizedEmail,
         stage,
         status: "suppressed",
       });
@@ -104,7 +155,7 @@ export async function POST(req: Request) {
     });
 
     const result = await sendEmail({
-      to: sub.email,
+      to: normalizedEmail,
       subject: rendered.subject,
       text: rendered.text,
       html: `<p>${rendered.text.replace(/\n/g, "<br/>")}</p>`,
@@ -112,21 +163,31 @@ export async function POST(req: Request) {
 
     await admin.from("billing_notifications").insert({
       subscription_id: sub.id,
-      email: sub.email,
+      email: normalizedEmail,
       stage,
       status: result.ok ? "sent" : "failed",
-      error: result.ok ? null : result.error,
+      error: result.ok ? null : String(result.error || "send_failed"),
     });
 
-    if (result.ok) sentCount += 1;
-    else skippedCount += 1;
+    if (result.ok) {
+      sentCount += 1;
+    } else {
+      skippedCount += 1;
+      failedCount += 1;
+    }
   }
 
   await logSystemEvent({
     level: "info",
     category: "billing_trial",
-    message: `Trial run complete sent=${sentCount} skipped=${skippedCount} expired=${expiredCount}`,
-    meta: { sentCount, skippedCount, expiredCount },
+    message: `Trial run complete sent=${sentCount} skipped=${skippedCount} expired=${expiredCount} downgraded=${downgradedToBasicCount} failed=${failedCount}`,
+    meta: {
+      sentCount,
+      skippedCount,
+      expiredCount,
+      downgradedToBasicCount,
+      failedCount,
+    },
   });
 
   return NextResponse.json({
@@ -134,5 +195,7 @@ export async function POST(req: Request) {
     sentCount,
     skippedCount,
     expiredCount,
+    downgradedToBasicCount,
+    failedCount,
   });
 }

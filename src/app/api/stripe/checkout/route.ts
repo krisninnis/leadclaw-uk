@@ -6,36 +6,74 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const ALLOWED_PLANS = ["basic", "growth", "pro"] as const;
 const PAID_PLANS = ["growth", "pro"] as const;
 
+type AllowedPlan = (typeof ALLOWED_PLANS)[number];
+type PaidPlan = (typeof PAID_PLANS)[number];
+
+type SubscriptionRow = {
+  id?: string;
+  user_id: string | null;
+  email: string | null;
+  plan: string | null;
+  status: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  updated_at?: string | null;
+};
+
+function normalizeEmail(value: unknown) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function isAllowedPlan(value: unknown): value is AllowedPlan {
+  return (
+    typeof value === "string" &&
+    (ALLOWED_PLANS as readonly string[]).includes(value)
+  );
+}
+
+function isPaidPlan(value: unknown): value is PaidPlan {
+  return (
+    typeof value === "string" &&
+    (PAID_PLANS as readonly string[]).includes(value)
+  );
+}
+
+function normalizeStatus(value: string | null | undefined) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
 export async function POST(req: Request) {
   try {
-    // Extract data from the request body
-    const { plan, email } = await req.json();
+    const body = await req.json().catch(() => null);
+    const requestedPlan = String(body?.plan || "")
+      .trim()
+      .toLowerCase();
 
-    // Ensure the plan is valid
-    if (!ALLOWED_PLANS.includes(plan)) {
+    if (!isAllowedPlan(requestedPlan)) {
       return NextResponse.json(
         { ok: false, error: "invalid_plan" },
         { status: 400 },
       );
     }
 
-    // Handle the case where the basic plan doesn't require checkout
-    if (plan === "basic") {
+    if (requestedPlan === "basic") {
       return NextResponse.json(
         { ok: false, error: "basic_plan_does_not_require_checkout" },
         { status: 400 },
       );
     }
 
-    // Ensure the plan is one of the paid options (growth, pro)
-    if (!PAID_PLANS.includes(plan)) {
+    if (!isPaidPlan(requestedPlan)) {
       return NextResponse.json(
         { ok: false, error: "invalid_paid_plan" },
         { status: 400 },
       );
     }
 
-    // Initialize Stripe
     const stripe = getStripe();
     if (!stripe) {
       return NextResponse.json(
@@ -44,8 +82,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Retrieve the price ID from your predefined mapping
-    const priceId = PRICE_IDS[plan as keyof typeof PRICE_IDS];
+    const priceId = PRICE_IDS[requestedPlan as keyof typeof PRICE_IDS];
     if (!priceId) {
       return NextResponse.json(
         { ok: false, error: "missing_price_id" },
@@ -53,20 +90,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // Get the authenticated user from Supabase
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    // Normalize the email to lowercase for consistency
     const resolvedEmail =
-      (user?.email || "").trim().toLowerCase() ||
-      String(email || "")
-        .trim()
-        .toLowerCase();
+      normalizeEmail(user?.email) || normalizeEmail(body?.email);
 
-    // Ensure email is provided
     if (!resolvedEmail) {
       return NextResponse.json(
         { ok: false, error: "missing_email" },
@@ -74,50 +105,79 @@ export async function POST(req: Request) {
       );
     }
 
-    // Initialize Supabase admin client
     const admin = createAdminClient();
-    let existingStatus: string | null = null;
+    let existing: SubscriptionRow | null = null;
 
-    // Check if there is an existing subscription for the user by email
     if (admin) {
-      const { data: subscriptionRow } = await admin
-        .from("subscriptions")
-        .select("status")
-        .eq("email", resolvedEmail)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const filters: string[] = [];
+      if (user?.id) filters.push(`user_id.eq.${user.id}`);
+      filters.push(`email.eq.${resolvedEmail}`);
 
-      existingStatus = subscriptionRow?.status || null;
+      const { data: rows, error } = await admin
+        .from("subscriptions")
+        .select(
+          "id,user_id,email,plan,status,stripe_customer_id,stripe_subscription_id,updated_at",
+        )
+        .or(filters.join(","))
+        .order("updated_at", { ascending: false })
+        .limit(10);
+
+      if (error) {
+        return NextResponse.json(
+          { ok: false, error: error.message },
+          { status: 500 },
+        );
+      }
+
+      const typedRows = (rows || []) as SubscriptionRow[];
+      existing =
+        typedRows.find((row) => row.user_id && row.user_id === user?.id) ||
+        typedRows.find((row) => normalizeEmail(row.email) === resolvedEmail) ||
+        null;
     }
 
-    // The application URL for redirection after the checkout process
+    const existingStatus = normalizeStatus(existing?.status);
+    const existingPlan = String(existing?.plan || "")
+      .trim()
+      .toLowerCase();
+
+    if (existingStatus === "active" && existingPlan === requestedPlan) {
+      return NextResponse.json(
+        { ok: false, error: "already_on_requested_plan" },
+        { status: 409 },
+      );
+    }
+
     const appUrl =
       process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
 
-    // Create the Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: resolvedEmail,
-      success_url: `${appUrl}/portal?checkout=success&setup=ready&plan=${plan}`,
+      success_url: `${appUrl}/portal?checkout=success&setup=ready&plan=${requestedPlan}`,
       cancel_url: `${appUrl}/portal/billing?checkout=cancelled`,
       payment_method_collection: "always",
+      metadata: {
+        plan: requestedPlan,
+        userId: user?.id || "",
+        email: resolvedEmail,
+        existingStatus,
+        existingPlan,
+        subscriptionId: existing?.id || "",
+      },
       subscription_data: {
         metadata: {
-          plan,
-          userId: user?.id || "", // Pass the user ID to Stripe's metadata
-          existingStatus: existingStatus || "",
+          plan: requestedPlan,
+          userId: user?.id || "",
+          email: resolvedEmail,
+          existingStatus,
+          existingPlan,
+          subscriptionId: existing?.id || "",
         },
-      },
-      metadata: {
-        plan,
-        userId: user?.id || "", // Pass the user ID to Stripe's metadata
-        existingStatus: existingStatus || "",
       },
     });
 
-    // Return the session URL to complete the checkout process
     return NextResponse.json({ ok: true, url: session.url });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "checkout_failed";
