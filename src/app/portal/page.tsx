@@ -44,6 +44,7 @@ export default async function PortalPage({
 
   let subStatus = "No active subscription found";
   let rawSubscriptionStatus = "none";
+  let currentPlan = "basic";
   let trialEnd: string | null = null;
   let currentPeriodEnd: string | null = null;
   let hasActiveSubscription = false;
@@ -79,6 +80,7 @@ export default async function PortalPage({
       const planLabel = subscription.plan
         ? `${String(subscription.plan).toUpperCase()} • `
         : "";
+      currentPlan = String(subscription.plan || "basic").toLowerCase();
 
       subStatus = `${planLabel}${subscription.status}`;
       trialEnd = subscription.trial_end || null;
@@ -189,7 +191,9 @@ export default async function PortalPage({
     }
   }
 
-  if (isTrialExpired) {
+  const isDowngradedBasic =
+    rawSubscriptionStatus === "expired" && currentPlan === "basic";
+  if (isTrialExpired && !isDowngradedBasic) {
     redirect("/portal/billing?expired=1");
   }
 
@@ -197,7 +201,7 @@ export default async function PortalPage({
   const widgetStatus = widgetDetected ? "Live" : "Needs install";
 
   const currentPlanTone = getPlanTone(subStatus);
-  const showTrialExpiredBox = isTrialExpired;
+  const showTrialExpiredBox = isTrialExpired && !isDowngradedBasic;
 
   return (
     <div className="space-y-6">

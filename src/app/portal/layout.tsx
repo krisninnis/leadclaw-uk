@@ -48,9 +48,13 @@ export default async function PortalLayout({
     .maybeSingle();
 
   const subscriptionStatus = normalizeSubscriptionStatus(subscription?.status);
-  const canEnterPortal = canAccessPortal(subscriptionStatus);
+  const currentPlan = String(subscription?.plan || "basic").toLowerCase();
+  const canEnterPortal = canAccessPortal(subscriptionStatus, currentPlan);
   const hasFullAccess = hasFullLeadClawAccess(subscriptionStatus);
-  const isLimitedAccess = isLimitedSubscription(subscriptionStatus);
+  const isLimitedAccess = isLimitedSubscription(
+    subscriptionStatus,
+    currentPlan,
+  );
 
   if (!canEnterPortal) {
     redirect("/free-trial?plan=growth");
@@ -94,7 +98,6 @@ export default async function PortalLayout({
     ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
   ];
 
-  const currentPlan = String(subscription?.plan || "basic").toLowerCase();
   const showLimitedBanner = isLimitedAccess;
   const trialEnded = subscriptionStatus === "expired";
 
