@@ -15,8 +15,7 @@ function planFromPriceId(priceId?: string | null) {
   if (priceId === growth) return "growth";
   if (priceId === pro) return "pro";
 
-  return "custom";
-}
+  return null;
 
 export async function POST(req: Request) {
   const stripe = getStripe();
