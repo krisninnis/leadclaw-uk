@@ -5,6 +5,7 @@ import { getStripe } from "@/lib/stripe";
 import { upsertStripeSubscription } from "@/lib/subscriptions";
 import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 function planFromPriceId(priceId?: string | null) {
   if (!priceId) return null;
@@ -16,6 +17,25 @@ function planFromPriceId(priceId?: string | null) {
   if (priceId === pro) return "pro";
 
   return null;
+}
+
+async function syncApplicationPlan(email: string, plan: "growth" | "pro") {
+  const admin = createAdminClient();
+  if (!admin) return;
+
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const { data: existingRow } = await admin
+    .from("applications")
+    .select("id")
+    .eq("email", normalizedEmail)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (existingRow?.id) {
+    await admin.from("applications").update({ plan }).eq("id", existingRow.id);
+  }
 }
 
 export async function POST(req: Request) {
@@ -100,6 +120,7 @@ export async function POST(req: Request) {
                   subscriptionStatus:
                     sub.status === "active" ? "active" : "trialing",
                 });
+                await syncApplicationPlan(email, resolvedPlan);
               }
             } catch (err) {
               await logSystemEvent({

@@ -6,6 +6,7 @@ import LogoutButton from "@/components/logout-button";
 import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import PortalChat from "@/components/portal-chat";
 import { Badge, SectionHeading, StatCard } from "@/components/ui";
+import ManageBillingButton from "@/components/manage-billing-button";
 
 function formatDateTime(value: string | null) {
   if (!value) return "—";
@@ -16,7 +17,7 @@ function getPlanTone(
   subscriptionText: string,
 ): "brand" | "amber" | "violet" | "cyan" | "neutral" {
   const lower = subscriptionText.toLowerCase();
-  if (lower.includes("starter")) return "amber";
+  if (lower.includes("basic")) return "amber";
   if (lower.includes("growth")) return "violet";
   if (lower.includes("pro")) return "cyan";
   return "neutral";
@@ -187,9 +188,11 @@ export default async function PortalPage({
       }
     }
   }
+
   if (isTrialExpired) {
     redirect("/portal/billing?expired=1");
   }
+
   const widgetDetected = Boolean(widgetLastSeenAt);
   const widgetStatus = widgetDetected ? "Live" : "Needs install";
 
@@ -219,13 +222,29 @@ export default async function PortalPage({
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/portal/billing" className="button-secondary">
-              Manage billing
-            </Link>
+            <ManageBillingButton />
             <LogoutButton />
           </div>
         </div>
       </section>
+
+      <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-5">
+        <h2 className="text-lg font-semibold text-sky-950">
+          Built with real clinic feedback
+        </h2>
+        <p className="mt-2 text-sm leading-7 text-sky-900">
+          LeadClaw is an early-stage product built closely with real clinic
+          feedback. If you spot an issue, want something improved, or have an
+          idea that would make the platform more useful for your clinic, please
+          send us a message. We review every report carefully and ship
+          improvements continuously.
+        </p>
+        <div className="mt-4">
+          <Link href="/portal/support" className="button-secondary">
+            Contact support
+          </Link>
+        </div>
+      </div>
 
       {checkoutSuccess && (
         <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 shadow-sm">

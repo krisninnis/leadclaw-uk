@@ -7,6 +7,10 @@ type SubscriptionRow = {
   stripe_customer_id: string | null;
 };
 
+function isRealStripeCustomerId(value?: string | null) {
+  return typeof value === "string" && value.startsWith("cus_");
+}
+
 export async function POST() {
   try {
     const authed = await requireUser();
@@ -28,7 +32,10 @@ export async function POST() {
       );
     }
 
-    const { data, error } = await admin
+    const normalizedEmail = authed.user.email?.trim().toLowerCase() ?? "";
+    let customerId: string | null = null;
+
+    const { data: byUser, error: byUserError } = await admin
       .from("subscriptions")
       .select("stripe_customer_id")
       .eq("user_id", authed.user.id)
@@ -37,15 +44,40 @@ export async function POST() {
       .limit(1)
       .maybeSingle();
 
-    if (error) {
+    if (byUserError) {
       return NextResponse.json(
-        { ok: false, error: error.message },
+        { ok: false, error: byUserError.message },
         { status: 500 },
       );
     }
 
-    const subscription = (data || null) as SubscriptionRow | null;
-    const customerId = subscription?.stripe_customer_id;
+    const userRow = (byUser || null) as SubscriptionRow | null;
+    if (isRealStripeCustomerId(userRow?.stripe_customer_id)) {
+      customerId = userRow!.stripe_customer_id!;
+    }
+
+    if (!customerId && normalizedEmail) {
+      const { data: byEmail, error: byEmailError } = await admin
+        .from("subscriptions")
+        .select("stripe_customer_id")
+        .eq("email", normalizedEmail)
+        .not("stripe_customer_id", "is", null)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (byEmailError) {
+        return NextResponse.json(
+          { ok: false, error: byEmailError.message },
+          { status: 500 },
+        );
+      }
+
+      const emailRow = (byEmail || null) as SubscriptionRow | null;
+      if (isRealStripeCustomerId(emailRow?.stripe_customer_id)) {
+        customerId = emailRow!.stripe_customer_id!;
+      }
+    }
 
     if (!customerId) {
       return NextResponse.json(
@@ -54,10 +86,12 @@ export async function POST() {
       );
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
-      return_url: `${appUrl}/portal`,
+      return_url: `${appUrl}/portal/billing`,
     });
 
     return NextResponse.json({ ok: true, url: session.url });
