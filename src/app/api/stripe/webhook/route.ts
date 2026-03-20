@@ -16,6 +16,7 @@ function planFromPriceId(priceId?: string | null) {
   if (priceId === pro) return "pro";
 
   return null;
+}
 
 export async function POST(req: Request) {
   const stripe = getStripe();
@@ -65,7 +66,7 @@ export async function POST(req: Request) {
 
         if (subscriptionId) {
           const subResp = await stripe.subscriptions.retrieve(subscriptionId);
-          const sub = subResp as unknown as Stripe.Subscription;
+          const sub = subResp as Stripe.Subscription;
           const priceId = sub.items.data[0]?.price?.id || null;
           const userId = (session.metadata?.userId ||
             sub.metadata?.userId ||
