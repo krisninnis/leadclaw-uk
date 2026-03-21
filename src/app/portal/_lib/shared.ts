@@ -21,6 +21,7 @@ export type EnquiryRow = {
   phone: string | null;
   status: string | null;
   service: string | null;
+  notes: string | null;
   created_at: string | null;
 };
 
@@ -87,6 +88,30 @@ export async function updateEnquiryStatus(formData: FormData) {
 
   if (error) {
     console.error("[portal] failed to update enquiry status", error);
+  }
+
+  revalidatePath("/portal");
+  revalidatePath("/portal/leads");
+}
+
+export async function updateEnquiryNotes(formData: FormData) {
+  "use server";
+
+  const enquiryId = String(formData.get("enquiryId") || "").trim();
+  const notes = String(formData.get("notes") || "").trim();
+
+  if (!enquiryId) return;
+
+  const admin = createAdminClient();
+  if (!admin) return;
+
+  const { error } = await admin
+    .from("enquiries")
+    .update({ notes: notes || null })
+    .eq("id", enquiryId);
+
+  if (error) {
+    console.error("[portal] failed to update enquiry notes", error);
   }
 
   revalidatePath("/portal");

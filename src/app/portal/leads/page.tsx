@@ -9,6 +9,7 @@ import {
   statusBadgeClasses,
   statusLabel,
   updateEnquiryStatus,
+  updateEnquiryNotes,
   type EnquiryRow,
 } from "../_lib/shared";
 
@@ -62,7 +63,7 @@ export default async function PortalLeadsPage() {
         if (site?.clinic_id) {
           const { data: enquiryRows } = await admin
             .from("enquiries")
-            .select("id,name,email,phone,status,service,created_at")
+            .select("id,name,email,phone,status,service,notes,created_at")
             .eq("clinic_id", site.clinic_id)
             .order("created_at", { ascending: false })
             .limit(100);
@@ -157,12 +158,13 @@ export default async function PortalLeadsPage() {
           enquiries.length > 0 ? (
             <>
               <div className="mt-6 hidden overflow-hidden rounded-[24px] border border-border lg:block">
-                <div className="grid grid-cols-[1fr_1fr_0.9fr_1fr_1fr_1fr] border-b border-border bg-surface-2 px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-muted-2">
+                <div className="grid grid-cols-[1fr_1fr_0.9fr_1fr_1fr_1.2fr_1fr] border-b border-border bg-surface-2 px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-muted-2">
                   <div>Name</div>
                   <div>Email</div>
                   <div>Phone</div>
                   <div>Enquiry</div>
                   <div>Status</div>
+                  <div>Notes</div>
                   <div>Received</div>
                 </div>
 
@@ -172,7 +174,7 @@ export default async function PortalLeadsPage() {
                   return (
                     <div
                       key={enquiry.id}
-                      className="grid grid-cols-[1fr_1fr_0.9fr_1fr_1fr_1fr] items-start border-b border-border bg-white px-5 py-4 last:border-b-0"
+                      className="grid grid-cols-[1fr_1fr_0.9fr_1fr_1fr_1.2fr_1fr] items-start border-b border-border bg-white px-5 py-4 last:border-b-0"
                     >
                       <div className="pr-4 font-medium text-foreground">
                         {enquiry.name || "—"}
@@ -199,7 +201,6 @@ export default async function PortalLeadsPage() {
                           >
                             {status}
                           </span>
-
                           <form
                             action={updateEnquiryStatus}
                             className="flex flex-col gap-2"
@@ -228,6 +229,32 @@ export default async function PortalLeadsPage() {
                             </button>
                           </form>
                         </div>
+                      </div>
+
+                      <div className="pr-4">
+                        <form
+                          action={updateEnquiryNotes}
+                          className="flex flex-col gap-2"
+                        >
+                          <input
+                            type="hidden"
+                            name="enquiryId"
+                            value={enquiry.id}
+                          />
+                          <textarea
+                            name="notes"
+                            defaultValue={enquiry.notes || ""}
+                            placeholder="Add notes..."
+                            rows={2}
+                            className="rounded-xl border border-border bg-white px-3 py-2 text-xs text-foreground outline-none transition focus:border-brand resize-none w-full"
+                          />
+                          <button
+                            type="submit"
+                            className="inline-flex w-fit items-center justify-center rounded-full bg-slate-900 px-3 py-1.5 text-xs font-medium text-white transition hover:-translate-y-0.5"
+                          >
+                            Save note
+                          </button>
+                        </form>
                       </div>
 
                       <div className="text-sm text-muted">
@@ -300,6 +327,32 @@ export default async function PortalLeadsPage() {
                             className="inline-flex items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:-translate-y-0.5"
                           >
                             Update
+                          </button>
+                        </form>
+                      </div>
+
+                      <div className="mt-4">
+                        <form
+                          action={updateEnquiryNotes}
+                          className="flex flex-col gap-2"
+                        >
+                          <input
+                            type="hidden"
+                            name="enquiryId"
+                            value={enquiry.id}
+                          />
+                          <textarea
+                            name="notes"
+                            defaultValue={enquiry.notes || ""}
+                            placeholder="Add notes..."
+                            rows={2}
+                            className="w-full rounded-xl border border-border bg-white px-3 py-2 text-sm text-foreground outline-none transition focus:border-brand resize-none"
+                          />
+                          <button
+                            type="submit"
+                            className="inline-flex w-fit items-center justify-center rounded-full bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:-translate-y-0.5"
+                          >
+                            Save note
                           </button>
                         </form>
                       </div>
