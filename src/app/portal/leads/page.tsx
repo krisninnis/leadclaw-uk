@@ -85,6 +85,10 @@ export default async function PortalLeadsPage() {
     (enquiry) => normalizeEnquiryStatus(enquiry.status) === "booked",
   ).length;
 
+  const lostLeadsCount = enquiries.filter(
+    (enquiry) => normalizeEnquiryStatus(enquiry.status) === "lost",
+  ).length;
+
   return (
     <div className="space-y-6">
       <div className="card-premium p-6 md:p-8">
@@ -96,7 +100,7 @@ export default async function PortalLeadsPage() {
         />
 
         {hasActiveSubscription ? (
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
+          <div className="mt-6 grid gap-4 md:grid-cols-4">
             <div className="rounded-[22px] border border-border bg-white p-5">
               <p className="text-sm font-medium text-muted">Total enquiries</p>
               <p className="mt-2 text-2xl font-semibold text-foreground">
@@ -115,6 +119,12 @@ export default async function PortalLeadsPage() {
               <p className="text-sm font-medium text-muted">Booked enquiries</p>
               <p className="mt-2 text-2xl font-semibold text-foreground">
                 {bookedLeadsCount}
+              </p>
+            </div>
+            <div className="rounded-[22px] border border-border bg-white p-5">
+              <p className="text-sm font-medium text-muted">Lost enquiries</p>
+              <p className="mt-2 text-2xl font-semibold text-rose-500">
+                {lostLeadsCount}
               </p>
             </div>
           </div>
