@@ -1,63 +1,42 @@
-type Entry = {
-  count: number;
-  resetAt: number;
-};
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
-const store = new Map<string, Entry>();
+const redis = new Redis({
+  url: process.env.UPSTASH_REDIS_REST_URL!,
+  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+});
 
-export function rateLimit(options?: {
-  windowMs?: number;
-  max?: number;
-  key?: string;
-}) {
-  const windowMs = options?.windowMs ?? 60_000;
-  const max = options?.max ?? 10;
-  const key = options?.key ?? "global";
+// Admin routes — 20 requests per minute
+export const adminRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(20, "1 m"),
+  analytics: true,
+  prefix: "leadclaw:admin",
+});
 
-  const now = Date.now();
-  const current = store.get(key);
+// Public widget routes — 60 requests per minute
+export const widgetRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(60, "1 m"),
+  analytics: true,
+  prefix: "leadclaw:widget",
+});
 
-  if (!current || now > current.resetAt) {
-    store.set(key, {
-      count: 1,
-      resetAt: now + windowMs,
-    });
+// Outreach/retention runners — 10 requests per minute
+export const runnerRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, "1 m"),
+  analytics: true,
+  prefix: "leadclaw:runner",
+});
 
-    return {
-      ok: true,
-      remaining: max - 1,
-      resetAt: now + windowMs,
-    };
-  }
-
-  if (current.count >= max) {
-    return {
-      ok: false,
-      remaining: 0,
-      resetAt: current.resetAt,
-    };
-  }
-
-  current.count += 1;
-  store.set(key, current);
-
-  return {
-    ok: true,
-    remaining: max - current.count,
-    resetAt: current.resetAt,
-  };
-}
-
+// Keep backward compatibility with existing code that uses the old rateLimit function
 export function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
     return forwardedFor.split(",")[0]?.trim() || "unknown";
   }
-
   const realIp = request.headers.get("x-real-ip");
-  if (realIp) {
-    return realIp.trim();
-  }
-
+  if (realIp) return realIp.trim();
   return "unknown";
 }
