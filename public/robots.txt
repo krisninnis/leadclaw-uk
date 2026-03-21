@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /portal/
+Disallow: /admin/
+
+Sitemap: https://www.leadclaw.uk/sitemap.xml
