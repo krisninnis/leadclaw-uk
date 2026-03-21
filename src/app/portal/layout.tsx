@@ -49,6 +49,7 @@ export default async function PortalLayout({
 
   const subscriptionStatus = normalizeSubscriptionStatus(subscription?.status);
   const currentPlan = String(subscription?.plan || "basic").toLowerCase();
+
   const canEnterPortal = canAccessPortal(subscriptionStatus, currentPlan);
   const hasFullAccess = hasFullLeadClawAccess(subscriptionStatus);
   const isLimitedAccess = isLimitedSubscription(

@@ -8,6 +8,21 @@ import { provisionClinicWorkspace } from "@/lib/provision-clinic";
 
 type PlanSlug = "basic" | "growth" | "pro";
 
+type SubscriptionRow = {
+  id?: string;
+  user_id: string | null;
+  email: string | null;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  stripe_price_id: string | null;
+  plan: string | null;
+  status: string | null;
+  trial_end: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean | null;
+  updated_at: string | null;
+};
+
 function normalizeNext(value: string | null) {
   if (!value || !value.startsWith("/")) return "/portal";
   return value;
@@ -17,6 +32,12 @@ function normalizePlan(value: string | null): PlanSlug {
   if (value === "basic") return "basic";
   if (value === "pro") return "pro";
   return "growth";
+}
+
+function normalizeEmail(value: unknown) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
 }
 
 function buildFallbackContactName(
@@ -33,9 +54,23 @@ function buildFallbackContactName(
     .split("@")[0]
     ?.replace(/[._-]+/g, " ")
     .trim();
+
   if (emailName) return emailName;
 
   return "New LeadClaw User";
+}
+
+function isFutureDate(value?: string | null) {
+  if (!value) return false;
+  const dt = new Date(value);
+  return !Number.isNaN(dt.getTime()) && dt.getTime() > Date.now();
+}
+
+function isPaidLikeStatus(status: string | null | undefined) {
+  const normalized = String(status || "")
+    .trim()
+    .toLowerCase();
+  return ["active", "past_due"].includes(normalized);
 }
 
 async function saveApplicationRecord(
@@ -104,6 +139,41 @@ async function startTrialForUser(
     throw new Error("supabase_not_configured");
   }
 
+  const { data: existingRows, error: existingError } = await admin
+    .from("subscriptions")
+    .select(
+      "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
+    )
+    .or(`user_id.eq.${userId},email.eq.${email}`)
+    .order("updated_at", { ascending: false })
+    .limit(10);
+
+  if (existingError) {
+    throw new Error(existingError.message);
+  }
+
+  const existingList = (existingRows || []) as SubscriptionRow[];
+  const existing =
+    existingList.find((row) => row.user_id === userId) ||
+    existingList.find((row) => normalizeEmail(row.email) === email) ||
+    null;
+
+  const existingStatus = String(existing?.status || "")
+    .trim()
+    .toLowerCase();
+
+  if (existingStatus === "trialing" && isFutureDate(existing?.trial_end)) {
+    throw new Error("trial_already_active");
+  }
+
+  if (isPaidLikeStatus(existing?.status)) {
+    throw new Error("already_subscribed");
+  }
+
+  if (existing?.trial_end) {
+    throw new Error("trial_already_used");
+  }
+
   const now = new Date();
   const trialEnd = new Date(now);
   trialEnd.setDate(trialEnd.getDate() + 7);
@@ -113,7 +183,7 @@ async function startTrialForUser(
   const subscriptionRow = {
     user_id: userId,
     email,
-    stripe_customer_id: null,
+    stripe_customer_id: existing?.stripe_customer_id || null,
     stripe_subscription_id: trialSubscriptionId,
     stripe_price_id: null,
     plan,
@@ -124,12 +194,23 @@ async function startTrialForUser(
     updated_at: new Date().toISOString(),
   };
 
-  const { error: subError } = await admin
-    .from("subscriptions")
-    .upsert(subscriptionRow, { onConflict: "stripe_subscription_id" });
+  let subError: string | null = null;
+
+  if (existing?.id) {
+    const { error } = await admin
+      .from("subscriptions")
+      .update(subscriptionRow)
+      .eq("id", existing.id);
+
+    if (error) subError = error.message;
+  } else {
+    const { error } = await admin.from("subscriptions").insert(subscriptionRow);
+
+    if (error) subError = error.message;
+  }
 
   if (subError) {
-    throw new Error(subError.message);
+    throw new Error(subError);
   }
 
   await saveApplicationRecord(email, plan, contactName);
@@ -183,27 +264,65 @@ async function startBasicForUser(
     throw new Error("supabase_not_configured");
   }
 
-  const subscriptionId = `basic_${userId}`;
+  const { data: existingRows, error: existingError } = await admin
+    .from("subscriptions")
+    .select(
+      "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
+    )
+    .or(`user_id.eq.${userId},email.eq.${email}`)
+    .order("updated_at", { ascending: false })
+    .limit(10);
 
-  const { error: subError } = await admin.from("subscriptions").upsert(
-    {
-      user_id: userId,
-      email,
-      stripe_customer_id: null,
-      stripe_subscription_id: subscriptionId,
-      stripe_price_id: null,
-      plan: "basic",
-      status: "active",
-      trial_end: null,
-      current_period_end: null,
-      cancel_at_period_end: false,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "stripe_subscription_id" },
-  );
+  if (existingError) {
+    throw new Error(existingError.message);
+  }
+
+  const existingList = (existingRows || []) as SubscriptionRow[];
+  const existing =
+    existingList.find((row) => row.user_id === userId) ||
+    existingList.find((row) => normalizeEmail(row.email) === email) ||
+    null;
+
+  const existingStatus = String(existing?.status || "")
+    .trim()
+    .toLowerCase();
+
+  if (isPaidLikeStatus(existingStatus)) {
+    throw new Error("already_subscribed");
+  }
+
+  const subscriptionRow = {
+    user_id: userId,
+    email,
+    stripe_customer_id: existing?.stripe_customer_id || null,
+    stripe_subscription_id:
+      existing?.stripe_subscription_id || `basic_${userId}`,
+    stripe_price_id: null,
+    plan: "basic" as const,
+    status: "basic" as const,
+    trial_end: existing?.trial_end || null,
+    current_period_end: null,
+    cancel_at_period_end: false,
+    updated_at: new Date().toISOString(),
+  };
+
+  let subError: string | null = null;
+
+  if (existing?.id) {
+    const { error } = await admin
+      .from("subscriptions")
+      .update(subscriptionRow)
+      .eq("id", existing.id);
+
+    if (error) subError = error.message;
+  } else {
+    const { error } = await admin.from("subscriptions").insert(subscriptionRow);
+
+    if (error) subError = error.message;
+  }
 
   if (subError) {
-    throw new Error(subError.message);
+    throw new Error(subError);
   }
 
   await saveApplicationRecord(email, "basic", contactName);
@@ -297,7 +416,7 @@ export async function GET(request: NextRequest) {
   const shouldStartTrial = nextUrl.searchParams.get("startTrial") === "1";
   const shouldStartBasic = nextUrl.searchParams.get("startBasic") === "1";
   const selectedPlan = normalizePlan(nextUrl.searchParams.get("plan"));
-  const normalizedEmail = user.email.trim().toLowerCase();
+  const normalizedEmail = normalizeEmail(user.email);
   const contactName = buildFallbackContactName(
     normalizedEmail,
     (user.user_metadata ?? {}) as Record<string, unknown>,
@@ -313,11 +432,15 @@ export async function GET(request: NextRequest) {
       );
     } catch (trialError) {
       console.error("[api.auth.callback] failed to start trial", trialError);
+
+      const errorMessage =
+        trialError instanceof Error ? trialError.message : "trial_start_failed";
+
       return NextResponse.redirect(
         new URL(
           `/free-trial?plan=${selectedPlan}&email=${encodeURIComponent(
             normalizedEmail,
-          )}&error=trial_start_failed`,
+          )}&error=${encodeURIComponent(errorMessage)}`,
           origin,
         ),
       );
@@ -329,11 +452,17 @@ export async function GET(request: NextRequest) {
       await startBasicForUser(user.id, normalizedEmail, contactName);
     } catch (basicError) {
       console.error("[api.auth.callback] failed to start basic", basicError);
+
+      const errorMessage =
+        basicError instanceof Error
+          ? basicError.message
+          : "basic_signup_failed";
+
       return NextResponse.redirect(
         new URL(
           `/signup?plan=basic&email=${encodeURIComponent(
             normalizedEmail,
-          )}&error=basic_signup_failed`,
+          )}&error=${encodeURIComponent(errorMessage)}`,
           origin,
         ),
       );
