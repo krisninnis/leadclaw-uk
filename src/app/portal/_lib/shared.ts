@@ -20,6 +20,7 @@ export type EnquiryRow = {
   email: string | null;
   phone: string | null;
   status: string | null;
+  service: string | null;
   created_at: string | null;
 };
 

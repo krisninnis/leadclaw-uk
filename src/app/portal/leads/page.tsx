@@ -62,7 +62,7 @@ export default async function PortalLeadsPage() {
         if (site?.clinic_id) {
           const { data: enquiryRows } = await admin
             .from("enquiries")
-            .select("id,name,email,phone,status,created_at")
+            .select("id,name,email,phone,status,service,created_at")
             .eq("clinic_id", site.clinic_id)
             .order("created_at", { ascending: false })
             .limit(100);
@@ -121,6 +121,7 @@ export default async function PortalLeadsPage() {
                 {bookedLeadsCount}
               </p>
             </div>
+
             <div className="rounded-[22px] border border-border bg-white p-5">
               <p className="text-sm font-medium text-muted">Lost enquiries</p>
               <p className="mt-2 text-2xl font-semibold text-rose-500">
@@ -156,10 +157,11 @@ export default async function PortalLeadsPage() {
           enquiries.length > 0 ? (
             <>
               <div className="mt-6 hidden overflow-hidden rounded-[24px] border border-border lg:block">
-                <div className="grid grid-cols-[1fr_1fr_0.9fr_1fr_1fr] border-b border-border bg-surface-2 px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-muted-2">
+                <div className="grid grid-cols-[1fr_1fr_0.9fr_1fr_1fr_1fr] border-b border-border bg-surface-2 px-5 py-4 text-xs font-semibold uppercase tracking-[0.12em] text-muted-2">
                   <div>Name</div>
                   <div>Email</div>
                   <div>Phone</div>
+                  <div>Enquiry</div>
                   <div>Status</div>
                   <div>Received</div>
                 </div>
@@ -170,7 +172,7 @@ export default async function PortalLeadsPage() {
                   return (
                     <div
                       key={enquiry.id}
-                      className="grid grid-cols-[1fr_1fr_0.9fr_1fr_1fr] items-start border-b border-border bg-white px-5 py-4 last:border-b-0"
+                      className="grid grid-cols-[1fr_1fr_0.9fr_1fr_1fr_1fr] items-start border-b border-border bg-white px-5 py-4 last:border-b-0"
                     >
                       <div className="pr-4 font-medium text-foreground">
                         {enquiry.name || "—"}
@@ -182,6 +184,10 @@ export default async function PortalLeadsPage() {
 
                       <div className="pr-4 text-sm text-muted">
                         {enquiry.phone || "—"}
+                      </div>
+
+                      <div className="pr-4 text-sm text-muted">
+                        {enquiry.service || "—"}
                       </div>
 
                       <div className="pr-4">
@@ -252,6 +258,11 @@ export default async function PortalLeadsPage() {
                           <p className="mt-1 text-sm text-muted">
                             {enquiry.phone || "—"}
                           </p>
+                          {enquiry.service && (
+                            <p className="mt-1 text-sm font-medium text-brand-strong">
+                              {enquiry.service}
+                            </p>
+                          )}
                         </div>
 
                         <span
