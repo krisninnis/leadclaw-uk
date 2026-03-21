@@ -10,6 +10,38 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.png",
   },
+  metadataBase: new URL("https://www.leadclaw.uk"),
+  openGraph: {
+    type: "website",
+    url: "https://www.leadclaw.uk",
+    siteName: "LeadClaw",
+    title: "LeadClaw | AI front desk for aesthetic clinics",
+    description:
+      "Stop losing clinic enquiries out of hours. LeadClaw adds an AI front desk to your clinic website that captures leads 24/7 and sends them straight to your team.",
+    images: [
+      {
+        url: "/brand/mascots/panther-growth.png",
+        width: 512,
+        height: 512,
+        alt: "LeadClaw AI front desk for UK aesthetic clinics",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "LeadClaw | AI front desk for aesthetic clinics",
+    description:
+      "Stop losing clinic enquiries out of hours. LeadClaw adds an AI front desk to your clinic website that captures leads 24/7.",
+    images: ["/brand/mascots/panther-growth.png"],
+  },
+  keywords: [
+    "aesthetic clinic software UK",
+    "AI receptionist for clinics",
+    "clinic lead capture",
+    "missed enquiry recovery",
+    "beauty clinic automation",
+    "UK aesthetic clinic management",
+  ],
 };
 
 export default function RootLayout({
