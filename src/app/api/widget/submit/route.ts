@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getClientIp, rateLimit } from "@/lib/rate-limit";
+import { getClientIp, widgetRateLimit } from "@/lib/rate-limit";
 import { canUseLeadClawProduct } from "@/lib/subscription-access";
 
 const schema = z.object({
@@ -70,24 +70,12 @@ export async function POST(req: Request) {
   const corsHeaders = buildCorsHeaders(origin);
 
   const ip = getClientIp(req);
-  const limit = rateLimit({
-    windowMs: 60_000,
-    max: 10,
-    key: `widget-submit:${ip}`,
-  });
+  const { success } = await widgetRateLimit.limit(ip);
 
-  if (!limit.ok) {
+  if (!success) {
     return NextResponse.json(
       { ok: false, error: "rate_limit_exceeded" },
-      {
-        status: 429,
-        headers: {
-          ...corsHeaders,
-          "Retry-After": String(
-            Math.max(1, Math.ceil((limit.resetAt - Date.now()) / 1000)),
-          ),
-        },
-      },
+      { status: 429, headers: corsHeaders },
     );
   }
 
@@ -183,7 +171,7 @@ export async function POST(req: Request) {
     const { data: subscriptionRow } = clinicContactEmail
       ? await admin
           .from("subscriptions")
-          .select("status,email")
+          .select("status,email,plan")
           .eq("email", clinicContactEmail)
           .order("updated_at", { ascending: false })
           .limit(1)
@@ -191,6 +179,8 @@ export async function POST(req: Request) {
       : { data: null };
 
     const subscriptionStatus = subscriptionRow?.status || null;
+    const subscriptionPlan =
+      (subscriptionRow as { plan?: string } | null)?.plan || null;
     const allowed = canUseLeadClawProduct(subscriptionStatus);
 
     if (!allowed) {
@@ -220,6 +210,45 @@ export async function POST(req: Request) {
         { ok: false, error: "failed_to_store_enquiry" },
         { status: 500, headers: corsHeaders },
       );
+    }
+
+    // Trigger retention follow-up sequence (Growth + Pro plans only)
+    const isGrowthOrPro = subscriptionPlan
+      ? ["growth", "pro"].includes(subscriptionPlan.toLowerCase())
+      : ["trialing", "active"].includes(
+          subscriptionStatus?.toLowerCase() || "",
+        );
+
+    if (isGrowthOrPro) {
+      try {
+        const retentionToken = process.env.RETENTION_INGEST_TOKEN?.trim();
+        const appUrl =
+          process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.leadclaw.uk";
+
+        if (retentionToken) {
+          await fetch(`${appUrl}/api/retention/ingest`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${retentionToken}`,
+            },
+            body: JSON.stringify({
+              triggerType: "enquiry_received",
+              clientName: safeName,
+              email: safeEmail,
+              phone: safePhone,
+              service: buildServiceValue(safeIntent, safeMessage),
+              clinicName,
+            }),
+          });
+        }
+      } catch (retentionError) {
+        // Non-blocking — widget submit succeeds even if retention fails
+        console.error(
+          "[widget.submit] retention ingest failed",
+          retentionError,
+        );
+      }
     }
 
     if (!resend) {
@@ -344,6 +373,7 @@ ${clinicName}`,
         stored: true,
         notifiedClinic: Boolean(clinicContactEmail && resend),
         autoReplySent: Boolean(resend),
+        retentionScheduled: isGrowthOrPro,
       },
       { headers: corsHeaders },
     );
