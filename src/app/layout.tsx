@@ -1,8 +1,8 @@
-import "../sentry.client.config";
 import "./globals.css";
 import type { Metadata } from "next";
 import Nav from "@/components/nav";
 import AppShell from "@/components/app-shell";
+import SentryProvider from "@/components/sentry-provider";
 
 export const metadata: Metadata = {
   title: "LeadClaw | AI front desk for aesthetic clinics",
@@ -51,6 +51,7 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="min-h-screen bg-background text-foreground antialiased">
+        <SentryProvider />
         <Nav />
         <AppShell>{children}</AppShell>
       </body>
