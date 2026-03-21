@@ -30,7 +30,7 @@ export const runnerRateLimit = new Ratelimit({
   prefix: "leadclaw:runner",
 });
 
-// Keep backward compatibility with existing code that uses the old rateLimit function
+// Shared helper for extracting the client IP from request headers
 export function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {

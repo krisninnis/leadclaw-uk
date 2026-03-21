@@ -1,1 +1,0 @@
-export const LEGAL_VERSION = '2026-02-22-v1'
