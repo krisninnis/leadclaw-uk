@@ -1,4 +1,5 @@
 import Link from "next/link";
+import TrialCtaLink from "@/components/trial-cta-link";
 
 const painPoints = [
   "Website visitors leave when nobody replies quickly",
@@ -92,9 +93,13 @@ export default function Home() {
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Link href="/pricing" className="button-primary">
+                <TrialCtaLink
+                  href="/pricing"
+                  className="button-primary"
+                  location="homepage_bottom_cta"
+                >
                   Start free trial
-                </Link>
+                </TrialCtaLink>
                 <Link href="/demo" className="button-secondary">
                   View demo
                 </Link>
@@ -412,9 +417,13 @@ export default function Home() {
               </p>
 
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                <Link href="/pricing" className="button-primary">
+                <TrialCtaLink
+                  href="/pricing"
+                  className="button-primary"
+                  location="homepage_hero"
+                >
                   Start free trial
-                </Link>
+                </TrialCtaLink>
                 <Link href="/demo" className="button-secondary">
                   View demo
                 </Link>

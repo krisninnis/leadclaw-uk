@@ -3,6 +3,7 @@
 import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import TrialCtaLink from "@/components/trial-cta-link";
 
 export default function LoginForm({ next }: { next: string }) {
   const supabase = createClient();
@@ -182,12 +183,13 @@ export default function LoginForm({ next }: { next: string }) {
 
         <p className="text-sm text-center text-muted">
           Don&apos;t have an account?{" "}
-          <Link
+          <TrialCtaLink
             href="/free-trial?plan=growth"
             className="underline text-foreground"
+            location="login_form"
           >
             Start free trial
-          </Link>
+          </TrialCtaLink>
         </p>
       </div>
     </div>
