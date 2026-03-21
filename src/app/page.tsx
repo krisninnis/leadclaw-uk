@@ -1,6 +1,45 @@
 import Link from "next/link";
 import TrialCtaLink from "@/components/trial-cta-link";
 
+const softwareSchema = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "LeadClaw",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  description:
+    "AI front desk for UK aesthetic clinics. Captures missed website enquiries 24/7 and sends them to your clinic portal.",
+  url: "https://www.leadclaw.uk",
+  offers: [
+    {
+      "@type": "Offer",
+      name: "Basic",
+      price: "0",
+      priceCurrency: "GBP",
+      description: "Free AI enquiry widget for clinic websites",
+    },
+    {
+      "@type": "Offer",
+      name: "Growth",
+      price: "79",
+      priceCurrency: "GBP",
+      description: "Full automation with follow-ups and lead dashboard",
+    },
+    {
+      "@type": "Offer",
+      name: "Pro",
+      price: "149",
+      priceCurrency: "GBP",
+      description: "Advanced automation for clinics serious about growth",
+    },
+  ],
+  aggregateRating: {
+    "@type": "AggregateRating",
+    ratingValue: "5",
+    ratingCount: "1",
+  },
+};
+
 const painPoints = [
   "Website visitors leave when nobody replies quickly",
   "Busy reception teams miss enquiries during treatments",
@@ -71,6 +110,10 @@ const steps = [
 export default function Home() {
   return (
     <div className="space-y-0">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
       <section className="page-hero section-shell">
         <div className="container-shell relative">
           <div className="grid items-center gap-10 lg:grid-cols-[1.1fr_0.9fr]">
@@ -156,7 +199,8 @@ export default function Home() {
                         pricing, or booking?
                       </div>
                       <div className="ml-auto max-w-[80%] rounded-2xl rounded-tr-md bg-brand-soft px-4 py-3 text-foreground">
-                        I’m interested in lip filler and would like pricing.
+                        I&apos;m interested in lip filler and would like
+                        pricing.
                       </div>
                       <div className="max-w-[90%] rounded-2xl rounded-tl-md bg-surface-2 px-4 py-3 text-foreground">
                         Great — leave your details and the clinic can follow up
