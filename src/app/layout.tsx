@@ -20,9 +20,9 @@ export const metadata: Metadata = {
       "Stop losing clinic enquiries out of hours. LeadClaw adds an AI front desk to your clinic website that captures leads 24/7 and sends them straight to your team.",
     images: [
       {
-        url: "/brand/mascots/panther-growth.png",
-        width: 512,
-        height: 512,
+        url: "/brand/mascots/panther-growth.jpg",
+        width: 1200,
+        height: 630,
         alt: "LeadClaw AI front desk for UK aesthetic clinics",
       },
     ],
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     title: "LeadClaw | AI front desk for aesthetic clinics",
     description:
       "Stop losing clinic enquiries out of hours. LeadClaw adds an AI front desk to your clinic website that captures leads 24/7.",
-    images: ["/brand/mascots/panther-growth.png"],
+    images: ["/brand/mascots/panther-growth.jpg"],
   },
   keywords: [
     "aesthetic clinic software UK",
