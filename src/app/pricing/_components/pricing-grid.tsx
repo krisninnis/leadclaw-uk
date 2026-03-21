@@ -21,7 +21,7 @@ function CheckIcon() {
 
 function mascotSrc(slug: "basic" | "growth" | "pro") {
   if (slug === "basic") return "/brand/mascots/fox-starter.png";
-  if (slug === "growth") return "/brand/mascots/panther-growth.png";
+  if (slug === "growth") return "/brand/mascots/panther-growth.jpg";
   return "/brand/mascots/dragon-elite.png";
 }
 
