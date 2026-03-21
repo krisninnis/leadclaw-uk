@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Nav from "@/components/nav";
 import AppShell from "@/components/app-shell";
+import PHProvider from "@/components/posthog-provider";
 
 export const metadata: Metadata = {
   title: "LeadClaw | AI front desk for aesthetic clinics",
@@ -50,8 +51,10 @@ export default function RootLayout({
   return (
     <html lang="en" data-scroll-behavior="smooth">
       <body className="min-h-screen bg-background text-foreground antialiased">
-        <Nav />
-        <AppShell>{children}</AppShell>
+        <PHProvider>
+          <Nav />
+          <AppShell>{children}</AppShell>
+        </PHProvider>
       </body>
     </html>
   );
