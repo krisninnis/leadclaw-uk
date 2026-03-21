@@ -96,7 +96,6 @@ export default function Nav() {
     ...(isSignedIn
       ? [{ href: "/portal", label: "Portal", icon: "💬" }]
       : [{ href: "/login", label: "Login", icon: "🔐" }]),
-    ...(isAdmin ? [{ href: "/admin", label: "Admin", icon: "🛠️" }] : []),
   ];
 
   if (pathname.startsWith("/portal")) {
