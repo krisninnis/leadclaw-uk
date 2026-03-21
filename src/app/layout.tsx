@@ -1,3 +1,4 @@
+import "../sentry.client.config";
 import "./globals.css";
 import type { Metadata } from "next";
 import Nav from "@/components/nav";
