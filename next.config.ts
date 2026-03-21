@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
@@ -17,7 +18,6 @@ const nextConfig: NextConfig = {
 
   async headers() {
     return [
-      // Security headers for all routes
       {
         source: "/(.*)",
         headers: [
@@ -34,7 +34,6 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-      // Allow the widget script to be embedded on clinic websites
       {
         source: "/api/widget/:path*",
         headers: [
@@ -42,7 +41,6 @@ const nextConfig: NextConfig = {
           { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
         ],
       },
-      // Lock down admin API routes — no external access
       {
         source: "/api/admin/:path*",
         headers: [
@@ -56,4 +54,13 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+export default Sentry.withSentryConfig(nextConfig, {
+  org: "claw-apps",
+  project: "javascript-nextjs",
+  silent: !process.env.CI,
+  widenClientFileUpload: true,
+  sourcemaps: {
+    disable: false,
+  },
+  disableLogger: true,
+});
