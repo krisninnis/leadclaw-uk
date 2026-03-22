@@ -9,10 +9,14 @@ function formatDateTime(value: string | null) {
   return new Date(value).toLocaleString();
 }
 
+function normalizePlan(value: string | null | undefined) {
+  return String(value || "basic").toLowerCase();
+}
+
 function getPlanTone(
-  subscriptionText: string,
+  planValue: string,
 ): "brand" | "amber" | "violet" | "cyan" | "neutral" {
-  const lower = subscriptionText.toLowerCase();
+  const lower = planValue.toLowerCase();
   if (lower.includes("basic")) return "amber";
   if (lower.includes("growth")) return "violet";
   if (lower.includes("pro")) return "cyan";
@@ -36,13 +40,16 @@ export default async function PortalBillingPage({
 
   const admin = createAdminClient();
 
-  let subStatus = "No active subscription found";
   let rawSubscriptionStatus = "none";
+  let currentPlan = "basic";
   let trialEnd: string | null = null;
   let currentPeriodEnd: string | null = null;
-  let hasActiveSubscription = false;
+
+  let hasFullSubscriptionAccess = false;
+  let hasBasicAccess = true;
   let isTrialing = false;
   let isTrialExpired = false;
+  let trialEndedIntoBasic = false;
 
   if (admin) {
     const { data } = await admin
@@ -53,14 +60,9 @@ export default async function PortalBillingPage({
       .limit(1)
       .maybeSingle();
 
-    if (data?.status) {
-      rawSubscriptionStatus = String(data.status).toLowerCase();
-
-      const planLabel = data.plan
-        ? `${String(data.plan).toUpperCase()} • `
-        : "";
-
-      subStatus = `${planLabel}${data.status}`;
+    if (data) {
+      rawSubscriptionStatus = String(data.status || "").toLowerCase();
+      currentPlan = normalizePlan(data.plan);
       trialEnd = data.trial_end || null;
       currentPeriodEnd = data.current_period_end || null;
 
@@ -69,27 +71,57 @@ export default async function PortalBillingPage({
         rawSubscriptionStatus === "expired" ||
         rawSubscriptionStatus === "canceled";
 
-      hasActiveSubscription = ["trialing", "active", "past_due"].includes(
+      hasFullSubscriptionAccess = ["trialing", "active", "past_due"].includes(
         rawSubscriptionStatus,
       );
+
+      hasBasicAccess = currentPlan === "basic" || hasFullSubscriptionAccess;
+
+      trialEndedIntoBasic =
+        currentPlan === "basic" &&
+        (rawSubscriptionStatus === "expired" ||
+          rawSubscriptionStatus === "canceled");
     }
   }
 
-  const currentPlanTone = getPlanTone(subStatus);
-  const showTrialExpiredBox = isTrialExpired || expired;
-  const showUpgradeBox =
-    !hasActiveSubscription || rawSubscriptionStatus === "past_due";
+  const currentPlanTone = getPlanTone(currentPlan);
+
+  const planLabel =
+    currentPlan === "basic"
+      ? "Basic"
+      : currentPlan === "growth"
+        ? "Growth"
+        : currentPlan === "pro"
+          ? "Pro"
+          : "Basic";
+
+  const accessStateLabel = hasFullSubscriptionAccess
+    ? "Full"
+    : hasBasicAccess
+      ? "Basic"
+      : "Blocked";
+
+  const trialStatusLabel = isTrialing
+    ? "Active"
+    : trialEndedIntoBasic || expired || isTrialExpired
+      ? "Ended"
+      : "Not in trial";
+
+  const showTrialEndedNotice = trialEndedIntoBasic || expired;
+  const showPastDueBox = rawSubscriptionStatus === "past_due";
+  const showUpgradeBox = hasBasicAccess && !hasFullSubscriptionAccess;
 
   return (
     <div className="space-y-6">
-      {expired && (
-        <div className="rounded-[24px] border border-rose-300 bg-rose-50 p-5">
-          <h2 className="text-lg font-semibold text-rose-950">
+      {showTrialEndedNotice && (
+        <div className="rounded-[24px] border border-amber-300 bg-amber-50 p-5">
+          <h2 className="text-lg font-semibold text-amber-950">
             Your free trial has ended
           </h2>
-          <p className="mt-2 text-sm leading-7 text-rose-900">
-            Your 7-day Growth trial has finished. You can now keep Growth,
-            upgrade to Pro, or switch to the free Basic package.
+          <p className="mt-2 text-sm leading-7 text-amber-900">
+            Your 7-day Growth trial has ended and your account is now on the
+            free Basic plan. Your widget can stay live, while Growth and Pro
+            continue to unlock full automation features.
           </p>
         </div>
       )}
@@ -104,26 +136,20 @@ export default async function PortalBillingPage({
 
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
-            label="Subscription"
-            value={subStatus}
+            label="Current plan"
+            value={planLabel}
             hint={
-              isTrialing && trialEnd
-                ? `Trial ends ${formatDateTime(trialEnd)}`
-                : hasActiveSubscription
-                  ? "Your current package is active."
-                  : "No active paid package right now."
+              hasFullSubscriptionAccess
+                ? "Your clinic currently has full LeadClaw access."
+                : hasBasicAccess
+                  ? "Your clinic is currently on the free Basic plan."
+                  : "Your account does not currently have product access."
             }
           />
 
           <StatCard
             label="Trial status"
-            value={
-              isTrialing
-                ? "Active"
-                : showTrialExpiredBox
-                  ? "Ended"
-                  : "Not in trial"
-            }
+            value={trialStatusLabel}
             hint={
               trialEnd
                 ? `Trial date: ${formatDateTime(trialEnd)}`
@@ -139,11 +165,13 @@ export default async function PortalBillingPage({
 
           <StatCard
             label="Access state"
-            value={hasActiveSubscription ? "Unlocked" : "Limited"}
+            value={accessStateLabel}
             hint={
-              hasActiveSubscription
-                ? "Portal and widget usage are currently available."
-                : "Choose Basic, Growth, or Pro to continue."
+              hasFullSubscriptionAccess
+                ? "Portal, widget, and paid automation features are available."
+                : hasBasicAccess
+                  ? "Widget and Basic access are available. Paid automation features are locked."
+                  : "No product access is currently available."
             }
           />
         </div>
@@ -158,28 +186,34 @@ export default async function PortalBillingPage({
         />
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Badge tone={currentPlanTone}>{subStatus}</Badge>
+          <Badge tone={currentPlanTone}>{planLabel}</Badge>
 
-          {isTrialing && !showTrialExpiredBox && (
+          {isTrialing && (
             <Badge tone="brand">
               Trial
               {trialEnd ? ` • ends ${formatDateTime(trialEnd)}` : ""}
             </Badge>
           )}
+
+          {trialEndedIntoBasic && <Badge tone="amber">Basic active</Badge>}
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           <div className="rounded-[22px] border border-border bg-white p-5">
             <p className="text-sm font-medium text-muted">Package access</p>
             <p className="mt-2 text-base font-semibold text-foreground">
-              {hasActiveSubscription
-                ? "LeadClaw is available"
-                : "Choose your next package"}
+              {hasFullSubscriptionAccess
+                ? "Full LeadClaw access"
+                : hasBasicAccess
+                  ? "Basic widget access"
+                  : "Access unavailable"}
             </p>
             <p className="mt-2 text-sm text-muted">
-              {hasActiveSubscription
-                ? "Your clinic can continue using portal and widget features."
-                : "Continue with Growth, move to free Basic, or upgrade to Pro."}
+              {hasFullSubscriptionAccess
+                ? "Your clinic can continue using widget, portal, and paid automation features."
+                : hasBasicAccess
+                  ? "Your clinic keeps the free Basic widget, while Growth and Pro unlock the paid automation features."
+                  : "Choose a plan to restore product access."}
             </p>
           </div>
 
@@ -190,14 +224,18 @@ export default async function PortalBillingPage({
                 ? "Trial period"
                 : currentPeriodEnd
                   ? "Billing cycle active"
-                  : "Timing unavailable"}
+                  : trialEndedIntoBasic
+                    ? "Basic plan active"
+                    : "Timing unavailable"}
             </p>
             <p className="mt-2 text-sm text-muted">
               {isTrialing && trialEnd
                 ? `Trial ends ${formatDateTime(trialEnd)}`
                 : currentPeriodEnd
                   ? `Current period ends ${formatDateTime(currentPeriodEnd)}`
-                  : "No billing date is currently available."}
+                  : trialEndedIntoBasic
+                    ? "Your account has automatically moved to Basic after trial expiry."
+                    : "No billing date is currently available."}
             </p>
           </div>
         </div>
@@ -207,15 +245,16 @@ export default async function PortalBillingPage({
         </div>
       </div>
 
-      {rawSubscriptionStatus === "past_due" && (
+      {showPastDueBox && (
         <div className="rounded-[24px] border border-amber-300 bg-amber-50 p-5">
           <h2 className="text-lg font-semibold text-amber-950">
             Payment issue detected
           </h2>
           <p className="mt-2 text-sm leading-7 text-amber-900">
-            Your package is still accessible right now, but there is a billing
-            issue that needs attention to avoid interruption. You can also move
-            to the free Basic package if you do not want to stay on a paid plan.
+            Your paid package is still accessible right now, but there is a
+            billing issue that needs attention to avoid interruption. You can
+            also remain on Basic if you do not want to continue with a paid
+            plan.
           </p>
           <div className="mt-4">
             <PortalPlanUpgrade email={user.email} />
@@ -223,41 +262,21 @@ export default async function PortalBillingPage({
         </div>
       )}
 
-      {showTrialExpiredBox && (
-        <div className="rounded-[24px] border border-amber-300 bg-amber-50 p-5">
-          <h2 className="text-lg font-semibold text-amber-950">
-            Your trial has ended
+      {showUpgradeBox && !showPastDueBox && (
+        <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-5">
+          <h2 className="text-lg font-semibold text-sky-950">
+            Upgrade when you’re ready
           </h2>
-          <p className="mt-2 text-sm leading-7 text-amber-900">
-            {trialEnd
-              ? `Your 7-day Growth trial ended on ${formatDateTime(trialEnd)}.`
-              : "Your 7-day Growth trial has ended."}{" "}
-            Choose the option that fits your clinic best: keep Growth, switch to
-            the free Basic package, or upgrade to Pro.
+          <p className="mt-2 text-sm leading-7 text-sky-900">
+            Your clinic is currently on Basic. Keep the free widget, move to
+            Growth for full automation, or upgrade to Pro for more advanced
+            support and performance features.
           </p>
           <div className="mt-4">
             <PortalPlanUpgrade email={user.email} />
           </div>
         </div>
       )}
-
-      {showUpgradeBox &&
-        !showTrialExpiredBox &&
-        rawSubscriptionStatus !== "past_due" &&
-        user.email && (
-          <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-5">
-            <h2 className="text-lg font-semibold text-sky-950">
-              Choose your next package
-            </h2>
-            <p className="mt-2 text-sm leading-7 text-sky-900">
-              Continue with full automation on Growth, upgrade to Pro for a more
-              advanced setup, or move to Basic if you only want the free widget.
-            </p>
-            <div className="mt-4">
-              <PortalPlanUpgrade email={user.email} />
-            </div>
-          </div>
-        )}
     </div>
   );
 }
