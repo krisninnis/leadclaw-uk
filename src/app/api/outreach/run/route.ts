@@ -299,6 +299,13 @@ export async function POST(req: Request) {
   const token = process.env.OUTREACH_RUN_TOKEN?.trim();
   const auth = req.headers.get("authorization") || "";
 
+  console.log("[outreach.run] auth debug", {
+    tokenPresent: Boolean(token),
+    tokenLength: token?.length || 0,
+    authStartsWithBearer: auth.startsWith("Bearer "),
+    authLength: auth.length,
+  });
+
   if (!token || auth !== `Bearer ${token}`) {
     return NextResponse.json(
       { ok: false, error: "unauthorized" },
@@ -307,7 +314,6 @@ export async function POST(req: Request) {
   }
 
   const admin = createAdminClient();
-
   if (!admin) {
     return NextResponse.json(
       { ok: false, error: "supabase_not_configured" },
