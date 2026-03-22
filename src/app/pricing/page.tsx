@@ -12,7 +12,6 @@ export const metadata: Metadata = {
     "Simple, transparent pricing for UK aesthetic clinics. Start free, try Growth for 7 days, upgrade when ready. From £79/month.",
 };
 const isEarlyAccess = process.env.EARLY_ACCESS_MODE === "true";
-
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
@@ -35,7 +34,7 @@ export default function PricingPage() {
       />
       <div className="space-y-0">
         <PricingHero />
-        <PricingGrid />
+        <PricingGrid isEarlyAccess={isEarlyAccess} />
         <PricingComparison />
         <PricingFaq />
         <PricingCta />

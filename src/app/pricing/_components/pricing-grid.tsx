@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { plans } from "../pricing-data";
+import EarlyAccessButton from "@/components/early-access-button";
 
 function CheckIcon() {
   return (
@@ -42,10 +43,7 @@ function mascotWrapClass(slug: "basic" | "growth" | "pro") {
 }
 
 function mascotImageClass(slug: "basic" | "growth" | "pro") {
-  if (slug === "growth") {
-    return "h-16 w-16 object-contain scale-110";
-  }
-
+  if (slug === "growth") return "h-16 w-16 object-contain scale-110";
   return "h-16 w-16 object-contain";
 }
 
@@ -60,33 +58,48 @@ function primaryLabel(slug: "basic" | "growth" | "pro") {
 }
 
 function supportCopy(slug: "basic" | "growth" | "pro") {
-  if (slug === "basic") {
-    return "Free forever • no card required";
-  }
-
-  if (slug === "growth") {
+  if (slug === "basic") return "Free forever • no card required";
+  if (slug === "growth")
     return "Try the full Growth package for 7 days • no card required";
-  }
-
   return "Try Pro free for 7 days • no card required";
+}
+
+function earlyAccessSupportCopy(slug: "basic" | "growth" | "pro") {
+  if (slug === "growth")
+    return "Free early access • founding clinic perks included";
+  return "Priority early access • locked-in founding price";
 }
 
 function planSummary(slug: "basic" | "growth" | "pro") {
   if (slug === "basic") {
     return "Built for clinics that want a simple free enquiry widget with self-serve setup.";
   }
-
   if (slug === "growth") {
-    return "Most clinics should start here to experience LeadClaw’s full automation and follow-up workflow.";
+    return "Most clinics should start here to experience LeadClaw's full automation and follow-up workflow.";
   }
-
   return "Built for clinics that want advanced automation, stronger performance insight, and premium support.";
 }
 
-export default function PricingGrid() {
+export default function PricingGrid({
+  isEarlyAccess,
+}: {
+  isEarlyAccess?: boolean;
+}) {
   return (
     <section className="section-shell pt-0">
       <div className="container-shell">
+        {isEarlyAccess && (
+          <div className="mb-8 rounded-[24px] border border-violet-200 bg-violet-50 p-5 text-center">
+            <p className="text-sm font-semibold text-violet-900">
+              🚀 Early Access Mode — Growth and Pro are free to join right now
+            </p>
+            <p className="mt-1 text-sm text-violet-800">
+              We are onboarding founding clinics free of charge. Paid plans
+              launch soon with locked-in founding pricing.
+            </p>
+          </div>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-3">
           {plans.map((plan) => (
             <article
@@ -107,7 +120,6 @@ export default function PricingGrid() {
                       glowClass(plan.slug),
                     ].join(" ")}
                   />
-
                   <div
                     className={[
                       "relative flex h-22 w-22 items-center justify-center overflow-hidden rounded-full border transition duration-300 hover:scale-[1.04]",
@@ -133,6 +145,11 @@ export default function PricingGrid() {
                   ].join(" ")}
                 >
                   {plan.name} • {plan.mascot}
+                  {isEarlyAccess && plan.slug !== "basic" && (
+                    <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
+                      EARLY ACCESS
+                    </span>
+                  )}
                 </div>
 
                 <h2 className="mt-4 text-2xl font-semibold tracking-tight text-foreground">
@@ -146,10 +163,19 @@ export default function PricingGrid() {
 
               <div className="mt-8 flex items-end justify-center gap-1">
                 <span className="text-5xl font-semibold tracking-tight text-foreground">
-                  {plan.price}
+                  {isEarlyAccess && plan.slug !== "basic" ? "Free" : plan.price}
                 </span>
-                <span className="pb-1 text-sm text-muted">{plan.period}</span>
+                {(!isEarlyAccess || plan.slug === "basic") && (
+                  <span className="pb-1 text-sm text-muted">{plan.period}</span>
+                )}
               </div>
+
+              {isEarlyAccess && plan.slug !== "basic" && (
+                <p className="mt-1 text-center text-xs text-violet-700 font-medium">
+                  then {plan.price}
+                  {plan.period} when paid plans launch
+                </p>
+              )}
 
               <p className="mt-3 text-center text-sm text-muted">
                 {planSummary(plan.slug)}
@@ -167,18 +193,27 @@ export default function PricingGrid() {
               </div>
 
               <div className="mt-8 text-center">
-                <Link
-                  href={primaryHref(plan.slug)}
-                  className={plan.buttonClass}
-                >
-                  {primaryLabel(plan.slug)}
-                </Link>
+                {isEarlyAccess && plan.slug !== "basic" ? (
+                  <EarlyAccessButton
+                    plan={plan.slug as "growth" | "pro"}
+                    label={`Join early access — ${plan.name}`}
+                  />
+                ) : (
+                  <Link
+                    href={primaryHref(plan.slug)}
+                    className={plan.buttonClass}
+                  >
+                    {primaryLabel(plan.slug)}
+                  </Link>
+                )}
 
                 <p className="mt-3 text-xs font-medium text-muted-2">
-                  {supportCopy(plan.slug)}
+                  {isEarlyAccess && plan.slug !== "basic"
+                    ? earlyAccessSupportCopy(plan.slug)
+                    : supportCopy(plan.slug)}
                 </p>
 
-                {plan.slug === "growth" ? (
+                {plan.slug === "growth" && !isEarlyAccess ? (
                   <p className="mt-2 text-xs text-muted-2">
                     After your trial, keep Growth, upgrade to Pro, or switch to
                     free Basic.
