@@ -423,3 +423,16 @@ drop policy if exists "deny_billing_notifications" on public.billing_notificatio
 create policy "deny_billing_notifications"
   on public.billing_notifications for all to authenticated
   using (false) with check (false);
+
+  create table if not exists enquiries (
+  id uuid primary key default gen_random_uuid(),
+  clinic_id uuid not null references clinics(id) on delete cascade,
+  name text,
+  email text,
+  phone text,
+  service text,
+  preferred_time text,
+  status text not null default 'new',
+  notes text,
+  created_at timestamptz not null default now()
+);

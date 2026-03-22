@@ -1,104 +1,65 @@
 "use client";
-
 import { useState } from "react";
-
-type PlanSlug = "basic" | "growth" | "pro";
 
 export default function PortalPlanUpgrade({
   email,
 }: {
   email?: string | null;
 }) {
-  const [plan, setPlan] = useState<PlanSlug>("growth");
-  const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
+  const earlyAccessMode =
+    process.env["NEXT_PUBLIC_EARLY_ACCESS_MODE"] === "true";
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
+    "idle",
+  );
 
-  async function activatePlan() {
-    if (plan === "basic") {
-      setStatus(
-        "Basic is free and keeps your widget live. Paid plans unlock automation and advanced features.",
-      );
-      return;
-    }
-
-    setLoading(true);
-    setStatus("Opening secure checkout…");
-
+  async function handleEarlyAccess() {
+    if (!email) return;
+    setStatus("loading");
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch("/api/early-access", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, email: email || "" }),
+        body: JSON.stringify({
+          email,
+          plan: "growth",
+          source: "portal_upgrade",
+        }),
       });
-
-      const data = await res.json();
-
-      if (!res.ok || !data?.url) {
-        setStatus(data?.error || "Checkout unavailable right now.");
-        return;
-      }
-
-      window.location.assign(data.url);
+      setStatus(res.ok ? "done" : "error");
     } catch {
-      setStatus("Checkout unavailable right now.");
-    } finally {
-      setLoading(false);
+      setStatus("error");
     }
   }
 
-  return (
-    <div className="rounded-xl border bg-white p-6 space-y-4">
-      <h2 className="text-lg font-semibold">Choose your package</h2>
-
-      <p className="text-sm text-slate-600">
-        Stay on Growth for full automation, upgrade to Pro for advanced support,
-        or move to Basic if you only want the free widget.
-      </p>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <select
-          className="rounded border px-3 py-2 text-sm"
-          value={plan}
-          onChange={(e) => setPlan(e.target.value as PlanSlug)}
-        >
-          <option value="basic">Basic — Free</option>
-          <option value="growth">Growth — Paid</option>
-          <option value="pro">Pro — Paid</option>
-        </select>
-
-        <button
-          onClick={activatePlan}
-          disabled={loading}
-          className="rounded-lg bg-slate-900 px-3 py-2 text-sm text-white disabled:opacity-50"
-        >
-          {loading
-            ? "Opening…"
-            : plan === "basic"
-              ? "Choose free Basic"
-              : "Activate monthly subscription"}
-        </button>
-      </div>
-
-      <div className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
-        {plan === "basic" ? (
-          <p>
-            Basic gives you the free AI receptionist widget with limited
-            functionality and no manual support.
-          </p>
-        ) : plan === "growth" ? (
-          <p>
-            Growth is the best option for most clinics and includes your core
-            automation and follow-up tools.
-          </p>
+  if (earlyAccessMode) {
+    return (
+      <div className="space-y-3">
+        {status === "done" ? (
+          <div className="rounded-[20px] border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
+            <p className="font-semibold">You are on the early access list</p>
+            <p className="mt-1">We will email you within 24 hours.</p>
+          </div>
         ) : (
-          <p>
-            Pro is for clinics that want advanced automation, premium support,
-            and stronger growth tooling.
-          </p>
+          <button
+            onClick={handleEarlyAccess}
+            disabled={status === "loading"}
+            className="button-primary"
+          >
+            {status === "loading" ? "Saving..." : "Join early access — Growth"}
+          </button>
         )}
+        <p className="text-xs text-muted">
+          Paid plans launch soon. Founding clinics get priority access and
+          locked-in pricing.
+        </p>
       </div>
+    );
+  }
 
-      {status && <p className="text-xs text-slate-600">{status}</p>}
-    </div>
+  // Normal Stripe flow when not in early access
+  return (
+    <a href="/portal/billing" className="button-primary">
+      View plans and upgrade
+    </a>
   );
 }
