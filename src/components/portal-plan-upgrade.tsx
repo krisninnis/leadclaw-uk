@@ -16,7 +16,7 @@ export default function PortalPlanUpgrade({
   async function activatePlan() {
     if (plan === "basic") {
       setStatus(
-        "Basic is free and does not require checkout. We will wire this option into your post-trial downgrade flow.",
+        "Basic is free and keeps your widget live. Paid plans unlock automation and advanced features.",
       );
       return;
     }

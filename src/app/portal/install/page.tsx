@@ -4,7 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildWidgetSnippet } from "@/lib/onboarding";
 import InstallSnippetCard from "@/components/install-snippet-card";
 import { SectionHeading } from "@/components/ui";
-import { hasFullLeadClawAccess } from "@/lib/subscription-access";
+import {
+  canUseLeadClawProduct,
+  hasFullLeadClawAccess,
+} from "@/lib/subscription-access";
 
 function formatDateTime(value: string | null) {
   if (!value) return "—";
@@ -45,6 +48,17 @@ export default async function PortalInstallPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("status, plan")
+    .eq("email", user.email || "")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!canUseLeadClawProduct(sub?.status, sub?.plan)) {
+    redirect("/portal/billing");
+  }
 
   const admin = createAdminClient();
 

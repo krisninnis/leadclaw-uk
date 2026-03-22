@@ -11,6 +11,18 @@ function normalizeEmail(value?: string | null) {
     .toLowerCase();
 }
 
+function normalizePlan(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
+function normalizeStatus(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toLowerCase();
+}
+
 type SubscriptionInput = {
   userId?: string | null;
   email?: string | null;
@@ -88,6 +100,16 @@ export async function upsertStripeSubscription(input: SubscriptionInput) {
       : null) ||
     null;
 
+  const normalizedStatus = normalizeStatus(input.status || existing?.status);
+  const incomingPlan = normalizePlan(input.plan);
+  const existingPlan = normalizePlan(existing?.plan);
+
+  const resolvedPlan =
+    incomingPlan ||
+    (["canceled", "unpaid", "incomplete_expired"].includes(normalizedStatus)
+      ? "basic"
+      : existingPlan || null);
+
   const row = {
     user_id: input.userId || existing?.user_id || null,
     email: normalizedEmail || normalizeEmail(existing?.email) || null,
@@ -95,8 +117,8 @@ export async function upsertStripeSubscription(input: SubscriptionInput) {
       input.customerId || existing?.stripe_customer_id || null,
     stripe_subscription_id: input.subscriptionId,
     stripe_price_id: input.priceId || null,
-    plan: input.plan || existing?.plan || null,
-    status: input.status || existing?.status || null,
+    plan: resolvedPlan,
+    status: normalizedStatus || null,
     trial_end: toIso(input.trialEnd),
     current_period_end: toIso(input.currentPeriodEnd),
     cancel_at_period_end: Boolean(input.cancelAtPeriodEnd),
