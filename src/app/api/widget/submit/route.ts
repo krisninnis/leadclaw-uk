@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getClientIp, widgetRateLimit } from "@/lib/rate-limit";
 import { canUseLeadClawProduct } from "@/lib/subscription-access";
+import { getAppUrl } from "@/lib/config";
 
 const schema = z.object({
   token: z.string().min(10),
@@ -222,8 +223,8 @@ export async function POST(req: Request) {
     if (isGrowthOrPro) {
       try {
         const retentionToken = process.env.RETENTION_INGEST_TOKEN?.trim();
-        const appUrl = process.env.APP_URL?.trim() || "http://localhost:3000";
 
+        const appUrl = getAppUrl();
         if (retentionToken) {
           await fetch(`${appUrl}/api/retention/ingest`, {
             method: "POST",
