@@ -47,7 +47,11 @@ export default async function PortalInstallPage() {
 
   const admin = createAdminClient();
 
-  let hasActiveSubscription = false;
+  let hasWidgetAccess = false;
+  let hasFullSubscriptionAccess = false;
+  let currentPlan = "basic";
+  let rawSubscriptionStatus = "none";
+
   let portalContext: {
     domain: string | null;
     siteStatus: string | null;
@@ -59,18 +63,20 @@ export default async function PortalInstallPage() {
   if (admin) {
     const { data: subscription } = await admin
       .from("subscriptions")
-      .select("status")
+      .select("status,plan")
       .eq("email", user.email || "")
       .order("updated_at", { ascending: false })
       .limit(1)
       .maybeSingle();
 
-    const rawSubscriptionStatus = String(
-      subscription?.status || "",
-    ).toLowerCase();
-    hasActiveSubscription = ["trialing", "active", "past_due"].includes(
+    rawSubscriptionStatus = String(subscription?.status || "").toLowerCase();
+    currentPlan = String(subscription?.plan || "basic").toLowerCase();
+
+    hasFullSubscriptionAccess = ["trialing", "active", "past_due"].includes(
       rawSubscriptionStatus,
     );
+
+    hasWidgetAccess = currentPlan === "basic" || hasFullSubscriptionAccess;
 
     if (user.email) {
       const { data: client } = await admin
@@ -120,15 +126,14 @@ export default async function PortalInstallPage() {
     }
   }
 
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
+  const appUrl = "https://leadclaw.uk";
   const widgetSnippet = portalContext?.widgetToken
     ? buildWidgetSnippet(appUrl, portalContext.widgetToken)
     : "";
   const snippetReady = widgetSnippet.trim().length > 0;
   const widgetDetected = Boolean(portalContext?.widgetLastSeenAt);
 
-  const widgetStatus = !hasActiveSubscription
+  const widgetStatus = !hasWidgetAccess
     ? "Paused"
     : widgetDetected
       ? "Live"
@@ -155,10 +160,12 @@ export default async function PortalInstallPage() {
             <div>
               <p className="text-sm font-semibold">{widgetStatus}</p>
               <p className="mt-1 text-sm opacity-90">
-                {hasActiveSubscription
+                {hasWidgetAccess
                   ? widgetDetected
                     ? "Your widget has been detected on a live website."
-                    : "Install and publish your snippet to start capturing leads."
+                    : currentPlan === "basic"
+                      ? "Your Basic widget is available. Install and publish it to start capturing enquiries."
+                      : "Install and publish your snippet to start capturing leads."
                   : "Your widget is paused until your subscription is reactivated."}
               </p>
             </div>
@@ -209,7 +216,7 @@ export default async function PortalInstallPage() {
           </div>
         )}
 
-        {!widgetDetected && snippetReady && hasActiveSubscription && (
+        {!widgetDetected && snippetReady && hasWidgetAccess && (
           <div className="mt-4 rounded-[22px] border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
             <p className="font-semibold">Widget not detected yet</p>
             <p className="mt-2 leading-7">
@@ -219,7 +226,7 @@ export default async function PortalInstallPage() {
           </div>
         )}
 
-        {!hasActiveSubscription && (
+        {!hasWidgetAccess && (
           <div className="mt-4 rounded-[22px] border border-rose-200 bg-rose-50 p-5 text-sm text-rose-900">
             <p className="font-semibold">Widget paused</p>
             <p className="mt-2 leading-7">
@@ -231,7 +238,7 @@ export default async function PortalInstallPage() {
         )}
       </div>
 
-      {hasActiveSubscription ? (
+      {hasWidgetAccess ? (
         <div className="card-premium p-6 md:p-8">
           <SectionHeading
             eyebrow="Install snippet"
@@ -274,13 +281,13 @@ export default async function PortalInstallPage() {
           <SectionHeading
             eyebrow="Install snippet"
             title="Snippet locked"
-            description="Reactivate your plan to unlock your website install code."
+            description="This install code is only unavailable while your account is fully blocked."
             maxWidth="lg"
           />
           <div className="mt-4 rounded-[24px] border border-dashed border-border bg-surface-2 p-6 text-sm text-muted">
-            Your install snippet is locked because your subscription is not
-            active. Once reactivated, this section will show your ready-to-paste
-            website code again.
+            Your install snippet is currently unavailable because your account
+            does not have widget access. Basic keeps the widget live, while
+            Growth and Pro unlock the paid automation features.
           </div>
         </div>
       )}
