@@ -1,13 +1,40 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutDashboard,
+  Flame,
+  Puzzle,
+  MessageCircle,
+  CreditCard,
+  Settings,
+  BookOpen,
+  BarChart2,
+  User,
+  Wrench,
+} from "lucide-react";
 
 type PortalLink = {
   href: string;
   label: string;
   icon: string;
 };
+
+const iconMap: Record<string, React.ReactNode> = {
+  dashboard: <LayoutDashboard size={18} />,
+  leads: <Flame size={18} />,
+  install: <Puzzle size={18} />,
+  support: <MessageCircle size={18} />,
+  billing: <CreditCard size={18} />,
+  settings: <Settings size={18} />,
+  resources: <BookOpen size={18} />,
+  activity: <BarChart2 size={18} />,
+  admin: <Wrench size={18} />,
+};
+
+function getIcon(label: string) {
+  return iconMap[label.toLowerCase()] ?? <LayoutDashboard size={18} />;
+}
 
 function isActive(pathname: string, href: string) {
   if (href === "/portal") return pathname === "/portal";
@@ -16,7 +43,7 @@ function isActive(pathname: string, href: string) {
 
 export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
   const pathname = usePathname() ?? "";
-  const totalItems = links.length + 1; // +1 for Profile
+  const totalItems = links.length + 1;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 backdrop-blur-xl lg:hidden">
@@ -26,7 +53,6 @@ export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
       >
         {links.map((link) => {
           const active = isActive(pathname, link.href);
-
           return (
             <Link
               key={`${link.href}-mobile`}
@@ -40,11 +66,11 @@ export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
             >
               <span
                 className={[
-                  "flex h-8 w-8 items-center justify-center rounded-full text-base transition-all",
+                  "flex h-8 w-8 items-center justify-center rounded-full transition-all",
                   active ? "bg-brand-soft" : "",
                 ].join(" ")}
               >
-                {link.icon}
+                {getIcon(link.label)}
               </span>
               <span>{link.label}</span>
             </Link>
@@ -62,11 +88,11 @@ export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
         >
           <span
             className={[
-              "flex h-8 w-8 items-center justify-center rounded-full text-base transition-all",
+              "flex h-8 w-8 items-center justify-center rounded-full transition-all",
               pathname.startsWith("/portal/profile") ? "bg-brand-soft" : "",
             ].join(" ")}
           >
-            👤
+            <User size={18} />
           </span>
           <span>Profile</span>
         </Link>
