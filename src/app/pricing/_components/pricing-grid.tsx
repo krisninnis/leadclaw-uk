@@ -41,6 +41,14 @@ function mascotWrapClass(slug: "basic" | "growth" | "pro") {
   return "border-cyan-100 bg-white shadow-lg";
 }
 
+function mascotImageClass(slug: "basic" | "growth" | "pro") {
+  if (slug === "growth") {
+    return "h-16 w-16 object-contain scale-110";
+  }
+
+  return "h-16 w-16 object-contain";
+}
+
 function primaryHref(slug: "basic" | "growth" | "pro") {
   if (slug === "basic") return "/signup?plan=basic";
   return `/free-trial?plan=${slug}`;
@@ -84,34 +92,34 @@ export default function PricingGrid() {
             <article
               key={plan.slug}
               className={[
-                "relative rounded-[28px] border p-6 pt-16 shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-[var(--shadow-card-hover)] md:p-8 md:pt-16",
+                "relative rounded-[28px] border p-6 pt-20 shadow-[var(--shadow-card)] transition duration-300 hover:-translate-y-1 hover:scale-[1.01] hover:shadow-[var(--shadow-card-hover)] md:p-8 md:pt-20",
                 plan.themeClass,
                 plan.featured
                   ? "ring-2 ring-violet-400/70 shadow-[0_18px_45px_rgba(139,92,246,0.14)]"
                   : "",
               ].join(" ")}
             >
-              <div className="absolute -top-10 left-1/2 z-10 -translate-x-1/2">
-                <div className="relative flex h-20 w-20 items-center justify-center">
+              <div className="absolute -top-12 left-1/2 z-10 -translate-x-1/2">
+                <div className="relative flex h-28 w-28 items-center justify-center">
                   <div
                     className={[
-                      "pointer-events-none absolute h-20 w-20 rounded-full blur-2xl transition duration-300",
+                      "pointer-events-none absolute h-28 w-28 rounded-full blur-3xl transition duration-300",
                       glowClass(plan.slug),
                     ].join(" ")}
                   />
 
                   <div
                     className={[
-                      "relative flex h-16 w-16 items-center justify-center rounded-full border transition duration-300 hover:scale-[1.04]",
+                      "relative flex h-22 w-22 items-center justify-center overflow-hidden rounded-full border transition duration-300 hover:scale-[1.04]",
                       mascotWrapClass(plan.slug),
                     ].join(" ")}
                   >
                     <Image
                       src={mascotSrc(plan.slug)}
                       alt={`${plan.name} mascot`}
-                      width={56}
-                      height={56}
-                      className="h-auto w-auto object-contain"
+                      width={80}
+                      height={80}
+                      className={mascotImageClass(plan.slug)}
                     />
                   </div>
                 </div>
