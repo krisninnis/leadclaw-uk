@@ -186,13 +186,17 @@ create table if not exists public.widget_tokens (
 );
 
 create table if not exists public.enquiries (
-  id uuid primary key default gen_random_uuid(),
-  clinic_id uuid not null references public.clinics(id) on delete cascade,
-  name text,
-  email text,
-  phone text,
-  created_at timestamptz not null default now()
-);
+    id uuid primary key default gen_random_uuid(),
+    clinic_id uuid not null references public.clinics(id) on delete cascade,
+    name text,
+    email text,
+    phone text,
+    service text,
+    preferred_time text,
+    status text not null default 'new',
+    notes text,
+    created_at timestamptz not null default now()
+  );
 
 create table if not exists public.onboarding_tasks (
   id uuid primary key default gen_random_uuid(),
@@ -424,15 +428,21 @@ create policy "deny_billing_notifications"
   on public.billing_notifications for all to authenticated
   using (false) with check (false);
 
-  create table if not exists enquiries (
+-- Early access signups
+create table if not exists public.early_access_signups (
   id uuid primary key default gen_random_uuid(),
-  clinic_id uuid not null references clinics(id) on delete cascade,
-  name text,
-  email text,
-  phone text,
-  service text,
-  preferred_time text,
-  status text not null default 'new',
-  notes text,
+  email text not null unique,
+  requested_plan text not null default 'growth',
+  source text not null default 'pricing',
   created_at timestamptz not null default now()
 );
+
+create index if not exists early_access_signups_email_idx
+  on public.early_access_signups (email);
+
+alter table public.early_access_signups enable row level security;
+
+drop policy if exists "service_role_only_early_access" on public.early_access_signups;
+create policy "service_role_only_early_access"
+  on public.early_access_signups for all to authenticated
+  using (false) with check (false);
