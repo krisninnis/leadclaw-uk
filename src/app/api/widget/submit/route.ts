@@ -181,7 +181,15 @@ export async function POST(req: Request) {
     const subscriptionStatus = subscriptionRow?.status || null;
     const subscriptionPlan =
       (subscriptionRow as { plan?: string } | null)?.plan || null;
-    const allowed = canUseLeadClawProduct(subscriptionStatus);
+
+    const allowed = canUseLeadClawProduct(subscriptionStatus, subscriptionPlan);
+
+    const normalizedPlan = String(subscriptionPlan || "").toLowerCase();
+    const normalizedStatus = String(subscriptionStatus || "").toLowerCase();
+
+    const isGrowthOrPro =
+      ["growth", "pro"].includes(normalizedPlan) &&
+      ["trialing", "active", "past_due"].includes(normalizedStatus);
 
     if (!allowed) {
       return NextResponse.json(
@@ -189,7 +197,6 @@ export async function POST(req: Request) {
         { status: 403, headers: corsHeaders },
       );
     }
-
     const enquiryPayload = {
       clinic_id: site.clinic_id,
       name: safeName,
@@ -212,18 +219,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Trigger retention follow-up sequence (Growth + Pro plans only)
-    const isGrowthOrPro = subscriptionPlan
-      ? ["growth", "pro"].includes(subscriptionPlan.toLowerCase())
-      : ["trialing", "active"].includes(
-          subscriptionStatus?.toLowerCase() || "",
-        );
-
     if (isGrowthOrPro) {
       try {
         const retentionToken = process.env.RETENTION_INGEST_TOKEN?.trim();
-        const appUrl =
-          process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.leadclaw.uk";
+        const appUrl = process.env.APP_URL?.trim() || "http://localhost:3000";
 
         if (retentionToken) {
           await fetch(`${appUrl}/api/retention/ingest`, {
