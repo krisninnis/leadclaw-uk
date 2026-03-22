@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildWidgetSnippet } from "@/lib/onboarding";
 import InstallSnippetCard from "@/components/install-snippet-card";
 import { SectionHeading } from "@/components/ui";
+import { hasFullLeadClawAccess } from "@/lib/subscription-access";
 
 function formatDateTime(value: string | null) {
   if (!value) return "—";

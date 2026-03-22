@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SectionHeading } from "@/components/ui";
+import { hasFullLeadClawAccess } from "@/lib/subscription-access";
 import {
   ENQUIRY_STATUS_OPTIONS,
   formatDateTime,
@@ -20,6 +21,18 @@ export default async function PortalLeadsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("status, plan")
+    .eq("email", user.email || "")
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!hasFullLeadClawAccess(sub?.status)) {
+    redirect("/portal/billing");
+  }
 
   const admin = createAdminClient();
 
