@@ -216,7 +216,7 @@ export default async function DemoPage({
           />
           <Script
             id="leadclaw-demo-widget"
-            src={`${appUrl}/api/widget/bootstrap.js`}
+            src={`${appUrl}/api/widget/bootstrap.js?token=${demoToken}`}
             strategy="afterInteractive"
           />
         </>
