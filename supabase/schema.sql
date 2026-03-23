@@ -446,3 +446,8 @@ drop policy if exists "service_role_only_early_access" on public.early_access_si
 create policy "service_role_only_early_access"
   on public.early_access_signups for all to authenticated
   using (false) with check (false);
+
+-- Migration: add notification preferences to onboarding_clients
+alter table public.onboarding_clients add column if not exists notify_whatsapp text;
+alter table public.onboarding_clients add column if not exists notify_sms text;
+alter table public.onboarding_clients add column if not exists notify_channels text[] not null default array['email'];
