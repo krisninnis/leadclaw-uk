@@ -130,6 +130,8 @@ export async function GET(req: NextRequest) {
 
   const appUrl =
     process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
+  const demoToken = process.env.NEXT_PUBLIC_DEMO_WIDGET_TOKEN?.trim() || "";
+  const isDemoMode = Boolean(demoToken && token === demoToken);
 
   const safeAppUrl = escapeForScript(appUrl);
   const safeToken = escapeForScript(token);
@@ -149,12 +151,14 @@ export async function GET(req: NextRequest) {
   const SITE_ID = \`${safeSiteId}\`;
   const CLINIC_DOMAIN = \`${safeClinicDomain}\`;
   const SITE_STATUS = \`${safeSiteStatus}\`;
+  const DEMO_MODE = ${isDemoMode ? "true" : "false"};
 
   const state = {
     open: false,
     submitted: false,
     loading: false,
     selectedIntent: "",
+    demoStep: 0,
   };
 
   const root = document.createElement("div");
@@ -460,7 +464,10 @@ export async function GET(req: NextRequest) {
     const launcher = document.createElement("button");
     launcher.className = "lcw-launcher";
     launcher.type = "button";
-    launcher.innerHTML = \`
+    launcher.innerHTML = DEMO_MODE ? \`
+      <span class="lcw-launcher-dot"></span>
+      <span>👋 See LeadClaw in action</span>
+    \` : \`
       <span class="lcw-launcher-dot"></span>
       <span>Ask about treatments, pricing or booking</span>
     \`;
@@ -476,7 +483,21 @@ export async function GET(req: NextRequest) {
 
       const header = document.createElement("div");
       header.className = "lcw-header";
-      header.innerHTML = \`
+      header.innerHTML = DEMO_MODE ? \`
+        <div class="lcw-header-top">
+          <div class="lcw-brand">
+            <div class="lcw-avatar">🦁</div>
+            <div class="lcw-brand-copy">
+              <p class="lcw-title">Cleo — LeadClaw Demo</p>
+              <p class="lcw-subtitle">See how your clinic captures leads</p>
+            </div>
+          </div>
+          <button class="lcw-close" type="button" aria-label="Close widget">×</button>
+        </div>
+        <div class="lcw-message">
+          Hi 👋 I'm Cleo, LeadClaw's demo assistant. I'll show you exactly what a patient sees when they visit your clinic website — and what lands in your portal. Ready?
+        </div>
+      \` : \`
         <div class="lcw-header-top">
           <div class="lcw-brand">
             <div class="lcw-avatar">LC</div>
@@ -488,7 +509,7 @@ export async function GET(req: NextRequest) {
           <button class="lcw-close" type="button" aria-label="Close widget">×</button>
         </div>
         <div class="lcw-message">
-         Hi 👋 Welcome\${CLINIC_DOMAIN ? " to " + CLINIC_DOMAIN : ""}. I can help with treatments, pricing, booking, or general questions. Leave your details and the clinic can follow up with the right information.
+          Hi 👋 Welcome\${CLINIC_DOMAIN ? " to " + CLINIC_DOMAIN : ""}. I can help with treatments, pricing, booking, or general questions. Leave your details and the clinic can follow up with the right information.
         </div>
       \`;
 
@@ -500,7 +521,54 @@ export async function GET(req: NextRequest) {
       const body = document.createElement("div");
       body.className = "lcw-body";
 
-      if (state.submitted) {
+      if (DEMO_MODE) {
+        if (state.demoStep === 0) {
+          body.innerHTML = \`
+            <div style="display:grid;gap:12px;padding:2px 0">
+              <p style="font-size:13px;color:#475569;line-height:1.6;">
+                Below is what a patient types when they visit your clinic website at 9pm. Click <strong>Send as patient</strong> to see the full flow.
+              </p>
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:14px;font-size:14px;color:#334155;line-height:1.6;">
+                💬 <em>"Hi, I'm interested in lip filler. How much does it cost?"</em>
+              </div>
+              <div style="display:grid;gap:8px;">
+                <input class="lcw-input" type="text" value="Sarah Jones" readonly style="background:#f8fafc;color:#64748b;" />
+                <input class="lcw-input" type="email" value="sarah@example.com" readonly style="background:#f8fafc;color:#64748b;" />
+                <input class="lcw-input" type="tel" value="07123 456789" readonly style="background:#f8fafc;color:#64748b;" />
+              </div>
+              <button class="lcw-submit" id="lcw-demo-send" type="button">Send as patient →</button>
+              <p class="lcw-mini">This simulates a real patient enquiry arriving on your site.</p>
+            </div>
+            <div class="lcw-footer">LeadClaw Demo Mode</div>
+          \`;
+          body.querySelector("#lcw-demo-send")?.addEventListener("click", () => {
+            state.demoStep = 1;
+            render();
+          });
+        } else {
+          body.innerHTML = \`
+            <div style="display:grid;gap:12px;padding:2px 0">
+              <div style="background:#ecfdf5;border:1px solid #bbf7d0;border-radius:16px;padding:14px;">
+                <p style="font-size:13px;font-weight:700;color:#15803d;margin:0 0 6px;">✓ Enquiry captured instantly</p>
+                <p style="font-size:13px;color:#166534;margin:0;line-height:1.6;">
+                  Sarah Jones just asked about lip filler. That enquiry is now in your LeadClaw portal — name, email, phone, and treatment interest — ready for follow-up.
+                </p>
+              </div>
+              <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:16px;padding:14px;">
+                <p style="font-size:13px;font-weight:700;color:#0369a1;margin:0 0 6px;">📧 Auto follow-up scheduled</p>
+                <p style="font-size:13px;color:#075985;margin:0;line-height:1.6;">
+                  On Growth plan, LeadClaw automatically emails Sarah in 1 hour if your team hasn't responded — so no lead goes cold.
+                </p>
+              </div>
+              <a href="/signup?plan=growth" class="lcw-submit" style="text-align:center;text-decoration:none;display:block;">
+                Start free — see your portal →
+              </a>
+              <p class="lcw-mini" style="text-align:center;">No card required • 7-day free trial</p>
+            </div>
+            <div class="lcw-footer">LeadClaw Demo Mode</div>
+          \`;
+        }
+      } else if (state.submitted) {
         body.innerHTML = \`
           <div class="lcw-success">
             <div class="lcw-success-badge">✓</div>
