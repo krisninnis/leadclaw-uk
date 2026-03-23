@@ -113,7 +113,12 @@ export async function GET(req: NextRequest) {
     subscriptionStatus = subscriptionRow?.status || null;
   }
 
-  const allowed = canUseLeadClawProduct(subscriptionStatus);
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
+  const demoToken = process.env.NEXT_PUBLIC_DEMO_WIDGET_TOKEN?.trim() || "";
+  const isDemoMode = Boolean(demoToken && token === demoToken);
+
+  const allowed = isDemoMode || canUseLeadClawProduct(subscriptionStatus);
 
   if (!allowed) {
     return new NextResponse(
@@ -127,12 +132,6 @@ export async function GET(req: NextRequest) {
       },
     );
   }
-
-  const appUrl =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leadclaw.uk";
-  const demoToken = process.env.NEXT_PUBLIC_DEMO_WIDGET_TOKEN?.trim() || "";
-  const isDemoMode = Boolean(demoToken && token === demoToken);
-
   const safeAppUrl = escapeForScript(appUrl);
   const safeToken = escapeForScript(token);
   const safeClinicId = escapeForScript(clinicId);
