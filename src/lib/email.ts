@@ -20,11 +20,18 @@ export type FounderAlertInput = {
   tags?: EmailTag[];
 };
 
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
+
 export async function isSuppressed(email: string): Promise<boolean> {
-  const normalized = email.trim().toLowerCase();
+  const normalized = normalizeEmail(email);
   const admin = createAdminClient();
 
-  if (!admin) return false;
+  if (!admin) {
+    console.error("[email] supabase_not_configured during suppression lookup");
+    return false;
+  }
 
   const { data, error } = await admin
     .from("email_suppressions")
@@ -32,12 +39,16 @@ export async function isSuppressed(email: string): Promise<boolean> {
     .eq("email", normalized)
     .maybeSingle();
 
-  if (error) return false;
+  if (error) {
+    console.error("[email] suppression lookup failed", error);
+    return false;
+  }
+
   return Boolean(data?.id);
 }
 
 export async function suppressEmail(email: string, reason = "unsubscribe") {
-  const normalized = email.trim().toLowerCase();
+  const normalized = normalizeEmail(email);
   const admin = createAdminClient();
 
   if (!admin) {
@@ -51,6 +62,8 @@ export async function suppressEmail(email: string, reason = "unsubscribe") {
     {
       email: normalized,
       reason,
+      source: "leadclaw_app",
+      suppressed_at: new Date().toISOString(),
     },
     {
       onConflict: "email",
