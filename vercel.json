@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/enquiries/follow-up/run",
-      "schedule": "*/30 * * * *"
+      "schedule": "30 9 * * *"
     }
   ]
 }
