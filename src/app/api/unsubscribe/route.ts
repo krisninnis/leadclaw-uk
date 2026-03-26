@@ -1,110 +1,98 @@
-import { NextResponse } from "next/server";
-import { suppressEmail } from "@/lib/email";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-function normalizeEmail(value: string) {
-  return value.trim().toLowerCase();
-}
+const supabaseUrl =
+  process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-function escapeHtml(value: string) {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function isValidEmail(value: string) {
-  return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value);
-}
-
-export async function GET(req: Request) {
-  const { searchParams } = new URL(req.url);
-  const rawEmail = searchParams.get("email");
-
-  if (!rawEmail) {
-    return NextResponse.json(
-      { ok: false, error: "missing_email" },
-      { status: 400 },
-    );
+function getSupabase() {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
   }
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
 
-  const email = normalizeEmail(rawEmail);
+function buildRedirectUrl(
+  request: NextRequest,
+  status: "success" | "invalid" | "error",
+  email?: string,
+) {
+  const url = new URL("/unsubscribed", request.url);
+  url.searchParams.set("status", status);
+  if (email) {
+    url.searchParams.set("email", email);
+  }
+  return url;
+}
 
-  if (!isValidEmail(email)) {
-    return NextResponse.json(
-      { ok: false, error: "invalid_email" },
-      { status: 400 },
-    );
+export async function GET(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const email = searchParams.get("email")?.trim().toLowerCase();
+
+  if (!email || !email.includes("@")) {
+    return NextResponse.redirect(buildRedirectUrl(request, "invalid"));
   }
 
   try {
-    await suppressEmail(email, "unsubscribe_link");
+    const supabase = getSupabase();
 
-    return new NextResponse(
-      `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Unsubscribed | LeadClaw</title>
-  </head>
-  <body style="margin:0;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-    <div style="max-width:640px;margin:48px auto;padding:24px;">
-      <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
-        <h1 style="margin:0 0 16px;font-size:28px;line-height:1.2;">You’re unsubscribed</h1>
-        <p style="margin:0 0 12px;font-size:16px;line-height:1.6;">
-          <strong>${escapeHtml(email)}</strong> has been removed from future LeadClaw outreach emails.
-        </p>
-        <p style="margin:0;font-size:14px;line-height:1.6;color:#475569;">
-          If this was a mistake, contact
-          <a href="mailto:privacy@leadclaw.uk" style="color:#2563eb;text-decoration:none;">privacy@leadclaw.uk</a>.
-        </p>
-      </div>
-    </div>
-  </body>
-</html>`,
+    await supabase.from("email_suppressions").upsert(
       {
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-store",
-        },
+        email,
+        reason: "unsubscribe_link",
+        source: "leadclaw_app",
+        suppressed_at: new Date().toISOString(),
       },
+      { onConflict: "email" },
     );
+
+    await supabase
+      .from("leads")
+      .update({
+        status: "suppressed",
+        pecr_reason: "Unsubscribed via email link",
+      })
+      .eq("contact_email", email);
+
+    return NextResponse.redirect(buildRedirectUrl(request, "success", email));
   } catch (error) {
-    console.error("[unsubscribe] failed", error);
+    console.error("Unsubscribe error:", error);
+    return NextResponse.redirect(buildRedirectUrl(request, "error", email));
+  }
+}
 
-    return new NextResponse(
-      `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Error | LeadClaw</title>
-  </head>
-  <body style="margin:0;background:#f8fafc;font-family:Arial,Helvetica,sans-serif;color:#0f172a;">
-    <div style="max-width:640px;margin:48px auto;padding:24px;">
-      <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
-        <h1 style="margin:0 0 16px;font-size:28px;line-height:1.2;">Unable to process unsubscribe</h1>
-        <p style="margin:0 0 12px;font-size:16px;line-height:1.6;">
-          We could not process your request right now.
-        </p>
-        <p style="margin:0;font-size:14px;line-height:1.6;color:#475569;">
-          Please email
-          <a href="mailto:privacy@leadclaw.uk" style="color:#2563eb;text-decoration:none;">privacy@leadclaw.uk</a>
-          and we’ll handle it manually.
-        </p>
-      </div>
-    </div>
-  </body>
-</html>`,
+export async function POST(request: NextRequest) {
+  try {
+    const formData = await request.formData();
+    const email = formData.get("email")?.toString().trim().toLowerCase();
+
+    if (!email || !email.includes("@")) {
+      return NextResponse.json({ error: "Invalid email" }, { status: 400 });
+    }
+
+    const supabase = getSupabase();
+
+    await supabase.from("email_suppressions").upsert(
       {
-        status: 500,
-        headers: {
-          "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-store",
-        },
+        email,
+        reason: "list_unsubscribe_post",
+        source: "leadclaw_app",
+        suppressed_at: new Date().toISOString(),
       },
+      { onConflict: "email" },
     );
+
+    await supabase
+      .from("leads")
+      .update({
+        status: "suppressed",
+        pecr_reason: "Unsubscribed via List-Unsubscribe-Post",
+      })
+      .eq("contact_email", email);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Unsubscribe POST error:", error);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
