@@ -208,9 +208,14 @@ export async function POST(req: Request) {
       status: "new",
     };
 
-    const { error: insertError } = await admin
+    const { data: insertedEnquiry, error: insertError } = await admin
       .from("enquiries")
-      .insert(enquiryPayload);
+      .insert({
+        ...enquiryPayload,
+        auto_reply_sent_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
 
     if (insertError) {
       console.error("[widget.submit] enquiry insert failed", insertError);
