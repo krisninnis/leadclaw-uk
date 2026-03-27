@@ -11,6 +11,14 @@
     {
       "path": "/api/enquiries/follow-up/run",
       "schedule": "30 9 * * *"
+    },
+    {
+      "path": "/api/appointments/remind/run",
+      "schedule": "45 9 * * *"
+    },
+    {
+      "path": "/api/appointments/review/run",
+      "schedule": "0 10 * * *"
     }
   ]
 }
