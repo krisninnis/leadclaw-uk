@@ -17,7 +17,7 @@ function escapeHtml(input: string) {
 }
 
 export async function POST(req: Request) {
-  const token = process.env.RETENTION_RUN_TOKEN?.trim();
+  const token = process.env.BILLING_RUN_TOKEN?.trim();
   const auth = req.headers.get("authorization") || "";
   const ua = (req.headers.get("user-agent") || "").toLowerCase();
   const isVercelCron = ua.includes("vercel-cron");
