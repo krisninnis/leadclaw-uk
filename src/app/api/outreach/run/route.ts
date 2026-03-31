@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { isSuppressed, sendEmail } from "@/lib/email";
@@ -296,15 +296,10 @@ function daysSince(dateString?: string | null) {
 }
 
 export async function POST(req: Request) {
+  const startedAt = Date.now();
+
   const token = process.env.OUTREACH_RUN_TOKEN?.trim();
   const auth = req.headers.get("authorization") || "";
-
-  console.log("[outreach.run] auth debug", {
-    tokenPresent: Boolean(token),
-    tokenLength: token?.length || 0,
-    authStartsWithBearer: auth.startsWith("Bearer "),
-    authLength: auth.length,
-  });
 
   if (!token || auth !== `Bearer ${token}`) {
     return NextResponse.json(
@@ -322,6 +317,15 @@ export async function POST(req: Request) {
   }
 
   const dailyCap = Number(process.env.OUTREACH_DAILY_CAP || 20);
+  const batchSize = Math.max(
+    1,
+    Math.min(Number(process.env.OUTREACH_BATCH_SIZE || 3), 6),
+  );
+  const perEmailDelayMs = Math.max(
+    0,
+    Math.min(Number(process.env.OUTREACH_PER_EMAIL_DELAY_MS || 50), 250),
+  );
+
   const dayStart = new Date();
   dayStart.setUTCHours(0, 0, 0, 0);
 
@@ -331,12 +335,21 @@ export async function POST(req: Request) {
     .eq("channel", "email")
     .eq("event_type", "sent")
     .gte("created_at", dayStart.toISOString())
-    .limit(1000);
+    .limit(100);
 
   const sentToday = (sentTodayRows || []).length;
-  const remaining = Math.max(0, dailyCap - sentToday);
+  const remainingDaily = Math.max(0, dailyCap - sentToday);
+  const remainingThisRun = Math.min(remainingDaily, batchSize);
 
-  if (remaining === 0) {
+  console.log("[outreach.run] starting", {
+    dailyCap,
+    sentToday,
+    remainingDaily,
+    batchSize,
+    remainingThisRun,
+  });
+
+  if (remainingThisRun === 0) {
     return NextResponse.json({
       ok: true,
       sentCount: 0,
@@ -346,6 +359,7 @@ export async function POST(req: Request) {
       capped: true,
       dailyCap,
       sentToday,
+      batchSize,
     });
   }
 
@@ -358,9 +372,10 @@ export async function POST(req: Request) {
     .not("contact_email", "is", null)
     .gte("score", 50)
     .order("score", { ascending: false })
-    .limit(100);
+    .limit(remainingThisRun * 4);
 
   if (error) {
+    console.error("[outreach.run] lead query failed", error);
     return NextResponse.json(
       { ok: false, error: error.message },
       { status: 500 },
@@ -373,8 +388,19 @@ export async function POST(req: Request) {
   let senderNotReady = false;
 
   for (const lead of leads || []) {
-    if (sent.length >= remaining) break;
+    if (sent.length >= remainingThisRun) break;
 
+    const totalElapsed = Date.now() - startedAt;
+    if (totalElapsed > 45000) {
+      console.warn("[outreach.run] stopping early to avoid timeout", {
+        totalElapsed,
+        sent: sent.length,
+        skipped: skipped.length,
+      });
+      break;
+    }
+
+    const leadStartedAt = Date.now();
     const email = normalizeEmail(lead.contact_email);
 
     if (senderNotReady) {
@@ -488,7 +514,18 @@ export async function POST(req: Request) {
         senderNotReady = true;
       }
 
-      await sleep(600);
+      if (perEmailDelayMs > 0) {
+        await sleep(perEmailDelayMs);
+      }
+
+      console.warn("[outreach.run] send failed", {
+        leadId: lead.id,
+        email,
+        err,
+        leadMs: Date.now() - leadStartedAt,
+        totalMs: Date.now() - startedAt,
+      });
+
       continue;
     }
 
@@ -516,13 +553,33 @@ export async function POST(req: Request) {
       })
       .eq("id", lead.id);
 
-    await sleep(600);
+    if (perEmailDelayMs > 0) {
+      await sleep(perEmailDelayMs);
+    }
+
+    console.log("[outreach.run] sent", {
+      leadId: lead.id,
+      email,
+      subject,
+      leadMs: Date.now() - leadStartedAt,
+      totalMs: Date.now() - startedAt,
+    });
   }
 
   await logSystemEvent({
     level: "info",
     category: "outreach",
     message: `Outreach run complete: sent=${sent.length}, skipped=${skipped.length}`,
+  });
+
+  console.log("[outreach.run] complete", {
+    sent: sent.length,
+    skipped: skipped.length,
+    totalMs: Date.now() - startedAt,
+    batchSize,
+    dailyCap,
+    sentTodayBeforeRun: sentToday,
+    sentTodayAfterRun: sentToday + sent.length,
   });
 
   return NextResponse.json({
@@ -534,5 +591,7 @@ export async function POST(req: Request) {
     capped: sentToday + sent.length >= dailyCap,
     dailyCap,
     sentToday: sentToday + sent.length,
+    batchSize,
+    totalMs: Date.now() - startedAt,
   });
 }
