@@ -121,7 +121,7 @@ export default function LoginForm({ next }: { next: string }) {
             Sign in to LeadClaw
           </h1>
           <p className="mt-3 text-sm text-muted">
-            Access your clinic workspace with Google, password, or magic link.
+            Access your workspace with Google, password, or magic link.
           </p>
         </div>
 

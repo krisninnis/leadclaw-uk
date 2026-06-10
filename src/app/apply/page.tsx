@@ -35,13 +35,13 @@ export default function ApplyPage() {
       <p className="text-slate-600">No phone call required. 3-5 minute form.</p>
 
       <form onSubmit={onSubmit} className="grid gap-4 rounded-xl border bg-white p-6 md:grid-cols-2">
-        <Input name="clinicName" label="Clinic name" required />
+        <Input name="clinicName" label="Business / workspace name" required />
         <Input name="contactName" label="Contact name" required />
         <Input name="email" label="Email" type="email" required />
         <Input name="phone" label="Phone" required />
         <Input name="city" label="City" required />
         <Input name="website" label="Website/Instagram" />
-        <Input name="services" label="Services offered" placeholder="Botox, whitening, spray tan" required />
+        <Input name="services" label="Workflows to automate" placeholder="Request capture, follow-ups, reports" required />
         <Input name="leadVolume" label="Approx leads per month" />
         <div className="md:col-span-2">
           <label className="mb-1 block text-sm font-medium">Notes</label>

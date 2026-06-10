@@ -30,7 +30,7 @@ export async function POST(req: Request) {
       `message=${data.message}`,
     ].join(' | ')
 
-    const { error } = await admin.from('applications').insert({
+    const { error } = await (admin as any).from('applications').insert({
       clinic_name: data.clinic,
       contact_name: data.name,
       email: data.email,
@@ -51,7 +51,7 @@ export async function POST(req: Request) {
 
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
 
-    await admin.from('system_events').insert({
+    await (admin as any).from('system_events').insert({
       level: issueType === 'complaint' ? 'warn' : 'info',
       category: issueType === 'complaint' ? 'complaint' : 'contact',
       message: `New ${issueType} request from ${data.email}`,

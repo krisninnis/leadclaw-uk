@@ -147,7 +147,7 @@ export default function Nav() {
                     LeadClaw
                   </p>
                   <p className="truncate text-xs text-muted">
-                    AI lead capture for clinics
+                    AI workflow automation
                   </p>
                 </div>
               )}

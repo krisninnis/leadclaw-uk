@@ -208,7 +208,8 @@ function SignupContent() {
             Start your free Basic plan
           </h1>
           <p className="mt-3 text-sm text-muted">
-            Get the free AI receptionist widget with a simple self-serve setup.
+            Get the free AI Receptionist intake widget with a simple
+            self-serve setup.
           </p>
           <p className="mt-2 text-xs font-medium text-muted-2">
             Free forever • no card required • upgrade to Growth or Pro anytime

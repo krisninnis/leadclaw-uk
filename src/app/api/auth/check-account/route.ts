@@ -7,6 +7,14 @@ const schema = z.object({
   email: z.string().email(),
 });
 
+type SubscriptionStatusRow = {
+  status: string | null;
+};
+
+type OnboardingClientIdRow = {
+  id: string;
+};
+
 export async function POST(req: Request) {
   const admin = createAdminClient();
 
@@ -22,7 +30,7 @@ export async function POST(req: Request) {
     const parsed = schema.parse(body);
     const email = parsed.email.trim().toLowerCase();
 
-    const { data: subscription } = await admin
+    const { data: subscription } = await (admin as any)
       .from("subscriptions")
       .select("status,updated_at")
       .eq("email", email)
@@ -30,18 +38,20 @@ export async function POST(req: Request) {
       .limit(1)
       .maybeSingle();
 
+    const latestSubscription = subscription as SubscriptionStatusRow | null;
+
     const hasProductAccess = canUseLeadClawProduct(
-      subscription?.status || null,
+      latestSubscription?.status || null,
     );
 
-    const { data: onboardingClient } = await admin
+    const { data: onboardingClient } = await (admin as any)
       .from("onboarding_clients")
       .select("id")
       .eq("contact_email", email)
       .limit(1)
       .maybeSingle();
 
-    const knownClient = Boolean(onboardingClient);
+    const knownClient = Boolean(onboardingClient as OnboardingClientIdRow | null);
 
     return NextResponse.json({
       ok: true,

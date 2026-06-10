@@ -7,6 +7,10 @@ import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+type ApplicationIdRow = {
+  id: string;
+};
+
 function planFromPriceId(priceId?: string | null) {
   if (!priceId) return null;
 
@@ -25,7 +29,7 @@ async function syncApplicationPlan(email: string, plan: "growth" | "pro") {
 
   const normalizedEmail = email.trim().toLowerCase();
 
-  const { data: existingRow } = await admin
+  const { data: existingRow } = await (admin as any)
     .from("applications")
     .select("id")
     .eq("email", normalizedEmail)
@@ -33,8 +37,13 @@ async function syncApplicationPlan(email: string, plan: "growth" | "pro") {
     .limit(1)
     .maybeSingle();
 
-  if (existingRow?.id) {
-    await admin.from("applications").update({ plan }).eq("id", existingRow.id);
+  const existingApplication = existingRow as ApplicationIdRow | null;
+
+  if (existingApplication?.id) {
+    await (admin as any)
+      .from("applications")
+      .update({ plan })
+      .eq("id", existingApplication.id);
   }
 }
 

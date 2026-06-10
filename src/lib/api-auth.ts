@@ -7,6 +7,10 @@ type AuthedUser = {
   email: string | null;
 };
 
+type ProfileRoleRow = {
+  role: string | null;
+};
+
 function jsonError(error: string, status: number) {
   return NextResponse.json({ ok: false, error }, { status });
 }
@@ -61,13 +65,13 @@ export async function requireAdmin(): Promise<
 
   const admin = createAdminClient();
   if (admin) {
-    const { data: profile } = await admin
+    const { data: profile } = await (admin as any)
       .from("profiles")
       .select("role")
       .eq("id", authed.user.id)
       .maybeSingle();
 
-    roleIsAdmin = profile?.role === "admin";
+    roleIsAdmin = (profile as ProfileRoleRow | null)?.role === "admin";
   }
 
   if (!emailIsAdmin && !roleIsAdmin) {

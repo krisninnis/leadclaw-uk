@@ -9,6 +9,11 @@ type HotDemoLead = {
   updated_at: string | null;
 };
 
+type OutreachEventRow = {
+  event_type: string | null;
+  lead_id: string | null;
+};
+
 export default async function OutreachDashboard() {
   const admin = createAdminClient();
 
@@ -16,22 +21,27 @@ export default async function OutreachDashboard() {
     return <div className="p-10">Supabase not configured</div>;
   }
 
-  const { data } = await admin.rpc("query", {
-    sql: `
-      select
-        count(*) filter (where event_type = 'sent') as emails_sent,
-        count(*) filter (where event_type = 'demo_visit') as demo_clicks,
-        count(distinct lead_id) filter (where event_type = 'demo_visit') as hot_leads,
-        round(
-          (
-            count(*) filter (where event_type = 'demo_visit')::numeric
-            / nullif(count(*) filter (where event_type = 'sent'), 0)
-          ) * 100,
-          2
-        ) as click_rate_percent
-      from outreach_events
-    `,
-  });
+  const { data: outreachEvents } = await admin
+    .from("outreach_events")
+    .select("event_type, lead_id")
+    .in("event_type", ["sent", "demo_visit"])
+    .limit(10000);
+
+  const events = (outreachEvents || []) as OutreachEventRow[];
+  const emailsSent = events.filter(
+    (event) => event.event_type === "sent",
+  ).length;
+  const demoClicks = events.filter(
+    (event) => event.event_type === "demo_visit",
+  ).length;
+  const hotLeadIds = new Set(
+    events
+      .filter((event) => event.event_type === "demo_visit" && event.lead_id)
+      .map((event) => event.lead_id),
+  );
+
+  const clickRate =
+    emailsSent > 0 ? Number(((demoClicks / emailsSent) * 100).toFixed(2)) : 0;
 
   const { data: hotDemoLeads } = await admin
     .from("leads")
@@ -40,11 +50,11 @@ export default async function OutreachDashboard() {
     .order("updated_at", { ascending: false })
     .limit(10);
 
-  const stats = data?.[0] || {
-    emails_sent: 0,
-    demo_clicks: 0,
-    hot_leads: 0,
-    click_rate_percent: 0,
+  const stats = {
+    emails_sent: emailsSent,
+    demo_clicks: demoClicks,
+    hot_leads: hotLeadIds.size,
+    click_rate_percent: clickRate,
   };
 
   const leads = (hotDemoLeads || []) as HotDemoLead[];
@@ -83,7 +93,7 @@ export default async function OutreachDashboard() {
             Hot Demo Leads
           </h2>
           <p className="mt-1 text-sm text-slate-600">
-            Clinics that viewed a personalised demo with a live widget.
+            Workspaces that viewed a personalised demo with a live widget.
           </p>
         </div>
 
@@ -96,7 +106,7 @@ export default async function OutreachDashboard() {
             <table className="w-full text-sm">
               <thead className="bg-slate-50 text-left text-slate-600">
                 <tr>
-                  <th className="px-6 py-3">Clinic</th>
+                  <th className="px-6 py-3">Workspace</th>
                   <th className="px-6 py-3">City</th>
                   <th className="px-6 py-3">Email</th>
                   <th className="px-6 py-3">Website</th>

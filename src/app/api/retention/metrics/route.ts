@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+type RetentionMetricRow = {
+  status: string | null
+  behavior: string | null
+  created_at: string | null
+}
+
 export async function GET(req: Request) {
   const token = process.env.RETENTION_METRICS_TOKEN?.trim() || process.env.RETENTION_RUN_TOKEN?.trim()
   const auth = req.headers.get('authorization') || ''
@@ -14,15 +20,15 @@ export async function GET(req: Request) {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
   const [tasksRes, eventsRes] = await Promise.all([
-    admin.from('retention_tasks').select('status,behavior,created_at').gte('created_at', since).limit(5000),
-    admin.from('retention_events').select('status,behavior,created_at').gte('created_at', since).limit(5000),
+    (admin as any).from('retention_tasks').select('status,behavior,created_at').gte('created_at', since).limit(5000),
+    (admin as any).from('retention_events').select('status,behavior,created_at').gte('created_at', since).limit(5000),
   ])
 
   if (tasksRes.error) return NextResponse.json({ ok: false, error: tasksRes.error.message }, { status: 500 })
   if (eventsRes.error) return NextResponse.json({ ok: false, error: eventsRes.error.message }, { status: 500 })
 
-  const tasks = tasksRes.data || []
-  const events = eventsRes.data || []
+  const tasks = (tasksRes.data || []) as RetentionMetricRow[]
+  const events = (eventsRes.data || []) as RetentionMetricRow[]
 
   const byBehavior = events.reduce<Record<string, { sent: number; skipped: number }>>((acc, e) => {
     const key = e.behavior || 'unknown'

@@ -8,6 +8,38 @@ import PortalChat from "@/components/portal-chat";
 import { Badge, SectionHeading, StatCard } from "@/components/ui";
 import ManageBillingButton from "@/components/manage-billing-button";
 
+type PortalSubscriptionRow = {
+  status: string | null;
+  plan: string | null;
+  trial_end: string | null;
+  current_period_end: string | null;
+};
+
+type IdRow = {
+  id: string;
+};
+
+type PortalSiteRow = {
+  id: string;
+  domain: string | null;
+  clinic_id: string | null;
+};
+
+type WidgetSeenRow = {
+  last_seen_at: string | null;
+};
+
+type RecentEnquiryRow = {
+  id: string;
+  name: string | null;
+  created_at: string | null;
+  status: string | null;
+};
+
+type EnquiryStatusOnlyRow = {
+  status: string | null;
+};
+
 function formatDateTime(value: string | null) {
   if (!value) return "—";
   return new Date(value).toLocaleString();
@@ -58,15 +90,10 @@ export default async function PortalPage({
   let lastLeadReceived: string | null = null;
   let newLeadsCount = 0;
   let bookedLeadsCount = 0;
-  let recentEnquiries: Array<{
-    id: string;
-    name: string | null;
-    created_at: string | null;
-    status: string | null;
-  }> = [];
+  let recentEnquiries: RecentEnquiryRow[] = [];
 
   if (admin) {
-    const { data: subscription } = await admin
+    const { data: subscription } = await (admin as any)
       .from("subscriptions")
       .select("status,plan,trial_end,current_period_end")
       .eq("email", user.email || "")
@@ -74,10 +101,12 @@ export default async function PortalPage({
       .limit(1)
       .maybeSingle();
 
-    if (subscription?.status) {
-      rawSubscriptionStatus = String(subscription.status).toLowerCase();
+    const latestSubscription = subscription as PortalSubscriptionRow | null;
 
-      const planLabel = subscription.plan
+    if (latestSubscription?.status) {
+      rawSubscriptionStatus = String(latestSubscription.status).toLowerCase();
+
+      const planLabel = latestSubscription.plan
         ? `${String(subscription.plan).toUpperCase()} • `
         : "";
       currentPlan = String(subscription.plan || "basic").toLowerCase();
@@ -97,7 +126,7 @@ export default async function PortalPage({
     }
 
     if (user.email) {
-      const { data: client } = await admin
+      const { data: client } = await (admin as any)
         .from("onboarding_clients")
         .select("id")
         .eq("contact_email", user.email)
@@ -105,35 +134,40 @@ export default async function PortalPage({
         .limit(1)
         .maybeSingle();
 
-      if (client?.id) {
-        const { data: site } = await admin
+      const onboardingClient = client as IdRow | null;
+
+      if (onboardingClient?.id) {
+        const { data: site } = await (admin as any)
           .from("onboarding_sites")
           .select("id,domain,clinic_id")
-          .eq("onboarding_client_id", client.id)
+          .eq("onboarding_client_id", onboardingClient.id)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        domain = site?.domain || null;
+        const onboardingSite = site as PortalSiteRow | null;
 
-        if (site?.id) {
-          const { data: tokenRow } = await admin
+        domain = onboardingSite?.domain || null;
+
+        if (onboardingSite?.id) {
+          const { data: tokenRow } = await (admin as any)
             .from("widget_tokens")
             .select("last_seen_at")
-            .eq("onboarding_site_id", site.id)
+            .eq("onboarding_site_id", onboardingSite.id)
             .eq("status", "active")
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
 
-          widgetLastSeenAt = tokenRow?.last_seen_at || null;
+          widgetLastSeenAt =
+            (tokenRow as WidgetSeenRow | null)?.last_seen_at || null;
         }
 
-        if (site?.clinic_id && hasActiveSubscription) {
-          const { data: enquiryRows } = await admin
+        if (onboardingSite?.clinic_id && hasActiveSubscription) {
+          const { data: enquiryRows } = await (admin as any)
             .from("enquiries")
             .select("id,name,status,created_at")
-            .eq("clinic_id", site.clinic_id)
+            .eq("clinic_id", onboardingSite.clinic_id)
             .order("created_at", { ascending: false })
             .limit(5);
 
@@ -155,26 +189,26 @@ export default async function PortalPage({
             { count: totalCount },
             { data: allRows },
           ] = await Promise.all([
-            admin
+            (admin as any)
               .from("enquiries")
               .select("*", { count: "exact", head: true })
-              .eq("clinic_id", site.clinic_id)
+              .eq("clinic_id", onboardingSite.clinic_id)
               .gte("created_at", sevenDaysAgo.toISOString()),
-            admin
+            (admin as any)
               .from("enquiries")
               .select("*", { count: "exact", head: true })
-              .eq("clinic_id", site.clinic_id),
-            admin
+              .eq("clinic_id", onboardingSite.clinic_id),
+            (admin as any)
               .from("enquiries")
               .select("status")
-              .eq("clinic_id", site.clinic_id)
+              .eq("clinic_id", onboardingSite.clinic_id)
               .limit(200),
           ]);
 
           leadsThisWeek = weeklyCount || 0;
           totalLeads = totalCount || 0;
 
-          const allStatuses = (allRows || []).map((row) =>
+          const allStatuses = ((allRows || []) as EnquiryStatusOnlyRow[]).map((row) =>
             String(row.status || "")
               .trim()
               .toLowerCase(),
@@ -211,7 +245,7 @@ export default async function PortalPage({
             <Badge tone="brand">Dashboard</Badge>
 
             <h1 className="mt-4 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
-              Welcome to your clinic workspace
+              Welcome to your workspace
             </h1>
 
             <p className="mt-4 max-w-2xl text-lg leading-8 text-muted">
@@ -234,13 +268,13 @@ export default async function PortalPage({
 
       <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-5">
         <h2 className="text-lg font-semibold text-sky-950">
-          Built with real clinic feedback
+          Built with real customer feedback
         </h2>
         <p className="mt-2 text-sm leading-7 text-sky-900">
-          LeadClaw is an early-stage product built closely with real clinic
+          LeadClaw is an early-stage product built closely with real customer
           feedback. If you spot an issue, want something improved, or have an
-          idea that would make the platform more useful for your clinic, please
-          send us a message. We review every report carefully and ship
+          idea that would make the platform more useful for your workspace,
+          please send us a message. We review every report carefully and ship
           improvements continuously.
         </p>
         <div className="mt-4">
@@ -324,20 +358,20 @@ export default async function PortalPage({
             hint={
               widgetDetected
                 ? "The widget has been seen on a live website."
-                : "Install your widget to begin capturing enquiries."
+            : "Install your widget to begin capturing requests."
             }
           />
 
           <StatCard
             label="Leads this week"
             value={String(leadsThisWeek)}
-            hint="New enquiries captured in the last 7 days."
+            hint="New requests captured in the last 7 days."
           />
 
           <StatCard
             label="Total leads"
             value={String(totalLeads)}
-            hint="All enquiries captured for your clinic."
+            hint="All requests captured for your workspace."
           />
         </div>
       </section>
@@ -348,7 +382,7 @@ export default async function PortalPage({
             <SectionHeading
               eyebrow="Overview"
               title="Recent lead activity"
-              description="A quick view of your latest enquiries and what needs attention."
+              description="A quick view of your latest requests and what needs attention."
               maxWidth="md"
             />
 
@@ -362,7 +396,7 @@ export default async function PortalPage({
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="font-medium text-foreground">
-                          {enquiry.name || "Unnamed enquiry"}
+                          {enquiry.name || "Unnamed request"}
                         </p>
                         <p className="mt-1 text-sm text-muted">
                           Received {formatDateTime(enquiry.created_at)}
@@ -388,7 +422,7 @@ export default async function PortalPage({
                   No live leads to show yet
                 </p>
                 <p className="mt-2 leading-7">
-                  Once your widget is installed and visitors submit enquiries,
+                  Once your widget is installed and visitors submit requests,
                   your lead inbox will start filling up.
                 </p>
                 <div className="mt-4">
@@ -427,7 +461,7 @@ export default async function PortalPage({
 
             <div className="card-premium p-6 md:p-8">
               <SectionHeading
-                eyebrow="Clinic status"
+                eyebrow="Workspace status"
                 title="Workspace summary"
                 description="A fast summary of your current product state."
                 maxWidth="md"

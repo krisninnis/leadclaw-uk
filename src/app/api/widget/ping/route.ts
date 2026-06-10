@@ -8,6 +8,25 @@ const schema = z.object({
   domain: z.string().min(1).max(255),
 });
 
+type WidgetTokenPingRow = {
+  id: string;
+  token: string | null;
+  status: string | null;
+  onboarding_site_id: string;
+};
+
+type OnboardingSiteClientRow = {
+  onboarding_client_id: string | null;
+};
+
+type OnboardingClientContactRow = {
+  contact_email: string | null;
+};
+
+type SubscriptionStatusRow = {
+  status: string | null;
+};
+
 function buildCorsHeaders(origin?: string | null) {
   return {
     "Access-Control-Allow-Origin": origin || "*",
@@ -45,7 +64,7 @@ export async function POST(req: Request) {
 
     const safeDomain = parsed.domain.trim().toLowerCase();
 
-    const { data: tokenRow, error: tokenError } = await admin
+    const { data: tokenRow, error: tokenError } = await (admin as any)
       .from("widget_tokens")
       .select("id,token,status,onboarding_site_id")
       .eq("token", parsed.token)
@@ -69,10 +88,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: site, error: siteError } = await admin
+    const widgetToken = tokenRow as WidgetTokenPingRow;
+
+    const { data: site, error: siteError } = await (admin as any)
       .from("onboarding_sites")
       .select("onboarding_client_id")
-      .eq("id", tokenRow.onboarding_site_id)
+      .eq("id", widgetToken.onboarding_site_id)
       .limit(1)
       .maybeSingle();
 
@@ -88,11 +109,13 @@ export async function POST(req: Request) {
     let clinicContactEmail: string | null = null;
     let subscriptionStatus: string | null = null;
 
-    if (site?.onboarding_client_id) {
-      const { data: client, error: clientError } = await admin
+    const onboardingSite = site as OnboardingSiteClientRow | null;
+
+    if (onboardingSite?.onboarding_client_id) {
+      const { data: client, error: clientError } = await (admin as any)
         .from("onboarding_clients")
         .select("contact_email")
-        .eq("id", site.onboarding_client_id)
+        .eq("id", onboardingSite.onboarding_client_id)
         .limit(1)
         .maybeSingle();
 
@@ -105,10 +128,13 @@ export async function POST(req: Request) {
         );
       }
 
-      clinicContactEmail = client?.contact_email?.trim().toLowerCase() || null;
+      const onboardingClient = client as OnboardingClientContactRow | null;
+
+      clinicContactEmail =
+        onboardingClient?.contact_email?.trim().toLowerCase() || null;
 
       if (clinicContactEmail) {
-        const { data: subscription, error: subscriptionError } = await admin
+        const { data: subscription, error: subscriptionError } = await (admin as any)
           .from("subscriptions")
           .select("status,updated_at")
           .eq("email", clinicContactEmail)
@@ -128,7 +154,9 @@ export async function POST(req: Request) {
           );
         }
 
-        subscriptionStatus = subscription?.status || null;
+        const latestSubscription = subscription as SubscriptionStatusRow | null;
+
+        subscriptionStatus = latestSubscription?.status || null;
       }
     }
 
@@ -144,13 +172,13 @@ export async function POST(req: Request) {
       );
     }
 
-    const { error: updateError } = await admin
+    const { error: updateError } = await (admin as any)
       .from("widget_tokens")
       .update({
         last_seen_at: new Date().toISOString(),
         last_seen_domain: safeDomain,
       })
-      .eq("id", tokenRow.id);
+      .eq("id", widgetToken.id);
 
     if (updateError) {
       console.error("[widget.ping] failed to update token", updateError);

@@ -1,4 +1,4 @@
-# Beauty AI Agent — Installation + Onboarding System
+# LeadClaw AI Workflow - Installation + Onboarding System
 
 ## 1) Install Options Matrix
 
@@ -10,15 +10,15 @@
 
 ## 2) WordPress Happy Path (Self-Serve)
 
-1. Install trusted header/footer plugin (e.g. WPCode).
+1. Install trusted header/footer plugin such as WPCode.
 2. Paste widget script in footer on all pages.
-3. Save and purge cache plugin + CDN.
-4. Set business settings (hours/services/pricing ranges/contact methods).
+3. Save and purge cache plugin plus CDN.
+4. Set workspace settings such as hours, services, pricing ranges, and contact methods.
 5. Test on desktop, incognito, and mobile.
 6. Confirm with screenshots:
    - snippet placement
    - live widget on homepage
-   - test conversation
+   - test request
    - mobile view
 
 Common fixes:
@@ -33,7 +33,7 @@ Common fixes:
 - domain
 - platform
 - contact email
-- services, hours, goals
+- workflow goals
 - preferred handoff channel
 
 ### Safe access model
@@ -46,50 +46,53 @@ Common fixes:
 ### Agent execution plan
 1. Validate access scope and backup/rollback path.
 2. Install snippet/plugin/tag based on platform.
-3. Verify script load + widget render.
-4. Run test enquiry flow.
+3. Verify script load and widget render.
+4. Run test request flow.
 5. If failure, rollback by removing snippet/plugin/tag and clearing cache.
 6. Generate handover report with proof and rollback record.
 
 ### Post-install activation
-Enable retention loops:
-- missed enquiry recovery
+Enable workflow loops:
+- request capture
 - unanswered follow-up
-- aftercare reassurance
-- rebooking nudges
-- dormant reactivation
+- data cleanup
+- document extraction
+- weekly reporting
+- dormant lead reactivation
 
 ## 4) Security + Compliance Checklist (Practical)
 
-- data minimization: store only contact + enquiry metadata required for automation
+- data minimization: store only contact and request metadata required for automation
 - consent notice in chat form/footer
 - no API keys in frontend snippets
 - audit logs for install/update/rollback actions
 - account separation per client/site/token
-- rate limiting + abuse protection on public APIs
-- do not store sensitive medical data/payment card details
+- rate limiting and abuse protection on public APIs
+- do not store sensitive medical data or payment card details
 
 ## 5) Client Onboarding Assets
 
 ### Welcome email
-Subject: Your AI assistant is ready to launch
+Subject: Your AI workflow assistant is ready to launch
 
 Hi {{ClientName}},
 
 Your assistant is ready for {{Domain}}.
 
-1) Add script snippet: {{WidgetScript}}
-2) Complete settings: {{SettingsLink}}
-3) Test in incognito/mobile and reply DONE
+1. Add script snippet: {{WidgetScript}}
+2. Complete settings: {{SettingsLink}}
+3. Test in incognito/mobile and reply DONE
 
 ### Non-technical explainer
-This assistant captures missed enquiries, follows up automatically, nudges clients to rebook, and sends aftercare messages so your team spends less time chasing and more time treating.
+This assistant captures requests, follows up automatically, helps organise
+incoming work, and reduces repetitive admin so your team can spend more time on
+the work that matters.
 
 ### Troubleshooting checklist
 - snippet installed on all pages
 - no duplicate snippet
 - cache/CDN purged
-- mobile + incognito tested
+- mobile and incognito tested
 - token/domain match
 - handoff channel configured
 
@@ -105,7 +108,7 @@ Versioning:
 Multi-site support:
 - one dashboard
 - per-site widget token
-- per-site settings + logs + retention schedules
+- per-site settings, logs, and workflow schedules
 
 ## 7) Autonomous Task List
 
@@ -116,7 +119,7 @@ On every signup:
 4. generate install package/snippet
 5. queue onboarding tasks
 6. run validation tests
-7. schedule retention automations
+7. schedule workflow automations
 8. generate handover report
 
 Implemented API routes:

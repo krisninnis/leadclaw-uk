@@ -17,7 +17,7 @@ export async function GET(req: Request) {
       body: 'Hi {{ClientName}},\\n\\nYour assistant is ready for {{Domain}}.\\n1) Add script: {{WidgetScript}}\\n2) Complete settings: {{SettingsLink}}\\n3) Test in incognito/mobile.\\n\\nReply DONE when complete.',
     },
     nonTechnicalExplainer:
-      'This assistant captures missed enquiries, follows up automatically, nudges clients to rebook at the right time, and sends aftercare check-ins to recover revenue with less manual chasing.',
+      'This assistant captures requests, follows up automatically, helps organise incoming work, and reduces repetitive admin with less manual chasing.',
     troubleshootingChecklist: [
       'Script is present on all pages (source view check).',
       'No duplicate widget snippet/tag.',

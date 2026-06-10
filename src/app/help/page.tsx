@@ -7,11 +7,11 @@ const platformGuides = [
   },
   {
     name: "Shopify",
-    body: "Go to Online Store → Themes → Edit code → theme.liquid and paste the snippet before the closing </body> tag.",
+    body: "Go to Online Store > Themes > Edit code > theme.liquid and paste the snippet before the closing </body> tag.",
   },
   {
     name: "Wix / Squarespace",
-    body: "Use the platform’s custom code injection area for footer scripts or body-end scripts.",
+    body: "Use the platform's custom code injection area for footer scripts or body-end scripts.",
   },
   {
     name: "Custom website",
@@ -21,9 +21,9 @@ const platformGuides = [
 
 const successChecks = [
   "The LeadClaw widget appears on your live website.",
-  "You can submit a fresh test enquiry from an incognito or private browser window.",
-  "The enquiry appears in your Portal lead inbox.",
-  "Your Portal starts showing live enquiry activity.",
+  "You can submit a fresh test request from an incognito or private browser window.",
+  "The request appears in your Portal lead inbox.",
+  "Your Portal starts showing live intake activity.",
 ];
 
 const troubleshootingItems = [
@@ -36,8 +36,8 @@ const troubleshootingItems = [
     body: "Use the live login page and avoid old localhost links or outdated saved bookmarks.",
   },
   {
-    title: "No enquiries showing",
-    body: "Confirm the widget appears on your live site and submit a brand-new test enquiry from a private browser session.",
+    title: "No requests showing",
+    body: "Confirm the widget appears on your live site and submit a brand-new test request from a private browser session.",
   },
   {
     title: "Install status not changing",
@@ -62,7 +62,7 @@ const faqs = [
   {
     question: "Where do I get my install code?",
     answer:
-      "Always copy your install snippet from your own Portal. Each snippet includes your clinic’s unique widget token.",
+      "Always copy your install snippet from your own Portal. Each snippet includes your workspace's unique widget token.",
   },
   {
     question: "How do I continue after the trial?",
@@ -90,11 +90,11 @@ export default function HelpPage() {
             Help &amp; setup
           </p>
           <h1 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
-            Install LeadClaw and start capturing enquiries
+            Install LeadClaw and start capturing requests
           </h1>
           <p className="mt-4 text-base leading-8 text-muted md:text-lg">
             Everything you need to get your widget live, test it properly, and
-            confirm your enquiries are flowing into your Portal.
+            confirm your requests are flowing into your Portal.
           </p>
         </div>
 
@@ -126,7 +126,7 @@ export default function HelpPage() {
             "Publish your website changes.",
             "Visit your live website.",
             "Open an incognito or private browser window.",
-            "Send a test enquiry and check that it appears in your Portal.",
+            "Send a test request and check that it appears in your Portal.",
           ].map((step, index) => (
             <li
               key={step}

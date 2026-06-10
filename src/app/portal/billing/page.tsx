@@ -4,6 +4,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import { Badge, SectionHeading, StatCard } from "@/components/ui";
 
+type PortalSubscriptionRow = {
+  status: string | null;
+  plan: string | null;
+  trial_end: string | null;
+  current_period_end: string | null;
+};
+
 function formatDateTime(value: string | null) {
   if (!value) return "—";
   return new Date(value).toLocaleString();
@@ -52,7 +59,7 @@ export default async function PortalBillingPage({
   let trialEndedIntoBasic = false;
 
   if (admin) {
-    const { data } = await admin
+    const { data } = await (admin as any)
       .from("subscriptions")
       .select("status,plan,trial_end,current_period_end")
       .eq("email", user.email || "")
@@ -60,11 +67,13 @@ export default async function PortalBillingPage({
       .limit(1)
       .maybeSingle();
 
-    if (data) {
-      rawSubscriptionStatus = String(data.status || "").toLowerCase();
-      currentPlan = normalizePlan(data.plan);
-      trialEnd = data.trial_end || null;
-      currentPeriodEnd = data.current_period_end || null;
+    const subscription = data as PortalSubscriptionRow | null;
+
+    if (subscription) {
+      rawSubscriptionStatus = String(subscription.status || "").toLowerCase();
+      currentPlan = normalizePlan(subscription.plan);
+      trialEnd = subscription.trial_end || null;
+      currentPeriodEnd = subscription.current_period_end || null;
 
       isTrialing = rawSubscriptionStatus === "trialing";
       isTrialExpired =
@@ -130,7 +139,7 @@ export default async function PortalBillingPage({
         <SectionHeading
           eyebrow="Billing"
           title="Manage your subscription"
-          description="Review your current plan, trial state, billing status, and the next best option for your clinic."
+          description="Review your current plan, trial state, billing status, and the next best option for your workspace."
           maxWidth="lg"
         />
 
@@ -140,9 +149,9 @@ export default async function PortalBillingPage({
             value={planLabel}
             hint={
               hasFullSubscriptionAccess
-                ? "Your clinic currently has full LeadClaw access."
+                ? "Your workspace currently has full LeadClaw access."
                 : hasBasicAccess
-                  ? "Your clinic is currently on the free Basic plan."
+                  ? "Your workspace is currently on the free Basic plan."
                   : "Your account does not currently have product access."
             }
           />
@@ -210,9 +219,9 @@ export default async function PortalBillingPage({
             </p>
             <p className="mt-2 text-sm text-muted">
               {hasFullSubscriptionAccess
-                ? "Your clinic can continue using widget, portal, and paid automation features."
+                ? "Your workspace can continue using widget, portal, and paid automation features."
                 : hasBasicAccess
-                  ? "Your clinic keeps the free Basic widget, while Growth and Pro unlock the paid automation features."
+                  ? "Your workspace keeps the free Basic widget, while Growth and Pro unlock the paid automation features."
                   : "Choose a plan to restore product access."}
             </p>
           </div>
@@ -268,7 +277,7 @@ export default async function PortalBillingPage({
             Upgrade when you’re ready
           </h2>
           <p className="mt-2 text-sm leading-7 text-sky-900">
-            Your clinic is currently on Basic. Keep the free widget, move to
+            Your workspace is currently on Basic. Keep the free widget, move to
             Growth for full automation, or upgrade to Pro for more advanced
             support and performance features.
           </p>

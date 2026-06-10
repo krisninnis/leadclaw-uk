@@ -125,7 +125,7 @@ export default function PortalChat() {
           </h2>
           <p className="mt-2 text-sm leading-7 text-muted">
             Send setup questions, onboarding updates, or anything you need help
-            with inside your clinic workspace.
+            with inside your workspace.
           </p>
         </div>
 

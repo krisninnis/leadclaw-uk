@@ -23,6 +23,28 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
+type WidgetTokenSubmitRow = {
+  onboarding_site_id: string;
+  status: string | null;
+};
+
+type OnboardingSiteSubmitRow = {
+  clinic_id: string | null;
+  onboarding_client_id: string | null;
+  domain: string | null;
+};
+
+type OnboardingClientContactRow = {
+  contact_email: string | null;
+  business_name: string | null;
+  client_name: string | null;
+};
+
+type SubscriptionPlanStatusRow = {
+  status: string | null;
+  plan: string | null;
+};
+
 function buildCorsHeaders(origin?: string | null) {
   return {
     "Access-Control-Allow-Origin": origin || "*",
@@ -46,7 +68,7 @@ function buildServiceValue(intent?: string | null, message?: string | null) {
   if (safeIntent) return safeIntent.slice(0, 255);
 
   const safeMessage = (message || "").trim();
-  if (!safeMessage) return "Website enquiry";
+  if (!safeMessage) return "Website request";
 
   return safeMessage.slice(0, 255);
 }
@@ -102,7 +124,7 @@ export async function POST(req: Request) {
     const safePageTitle = parsed.pageTitle?.trim() || null;
     const safeDomain = parsed.domain?.trim().toLowerCase() || null;
 
-    const { data: tokenRow, error: tokenError } = await admin
+    const { data: tokenRow, error: tokenError } = await (admin as any)
       .from("widget_tokens")
       .select("onboarding_site_id,status")
       .eq("token", parsed.token)
@@ -125,10 +147,12 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: site, error: siteError } = await admin
+    const widgetToken = tokenRow as WidgetTokenSubmitRow;
+
+    const { data: site, error: siteError } = await (admin as any)
       .from("onboarding_sites")
       .select("clinic_id,onboarding_client_id,domain")
-      .eq("id", tokenRow.onboarding_site_id)
+      .eq("id", widgetToken.onboarding_site_id)
       .limit(1)
       .maybeSingle();
 
@@ -140,21 +164,23 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!site?.clinic_id) {
+    const onboardingSite = site as OnboardingSiteSubmitRow | null;
+
+    if (!onboardingSite?.clinic_id) {
       return NextResponse.json(
         { ok: false, error: "clinic_not_found" },
         { status: 400, headers: corsHeaders },
       );
     }
 
-    let clinicName = "our clinic";
+    let clinicName = "our team";
     let clinicContactEmail: string | null = null;
 
-    if (site.onboarding_client_id) {
-      const { data: client, error: clientError } = await admin
+    if (onboardingSite.onboarding_client_id) {
+      const { data: client, error: clientError } = await (admin as any)
         .from("onboarding_clients")
         .select("contact_email,business_name,client_name")
-        .eq("id", site.onboarding_client_id)
+        .eq("id", onboardingSite.onboarding_client_id)
         .limit(1)
         .maybeSingle();
 
@@ -162,15 +188,18 @@ export async function POST(req: Request) {
         console.error("[widget.submit] client lookup failed", clientError);
       }
 
-      clinicContactEmail = client?.contact_email?.trim().toLowerCase() || null;
+      const onboardingClient = client as OnboardingClientContactRow | null;
+
+      clinicContactEmail =
+        onboardingClient?.contact_email?.trim().toLowerCase() || null;
       clinicName =
-        client?.business_name?.trim() ||
-        client?.client_name?.trim() ||
-        "our clinic";
+        onboardingClient?.business_name?.trim() ||
+        onboardingClient?.client_name?.trim() ||
+        "our team";
     }
 
     const { data: subscriptionRow } = clinicContactEmail
-      ? await admin
+      ? await (admin as any)
           .from("subscriptions")
           .select("status,email,plan")
           .eq("email", clinicContactEmail)
@@ -179,9 +208,9 @@ export async function POST(req: Request) {
           .maybeSingle()
       : { data: null };
 
-    const subscriptionStatus = subscriptionRow?.status || null;
-    const subscriptionPlan =
-      (subscriptionRow as { plan?: string } | null)?.plan || null;
+    const subscription = subscriptionRow as SubscriptionPlanStatusRow | null;
+    const subscriptionStatus = subscription?.status || null;
+    const subscriptionPlan = subscription?.plan || null;
 
     const allowed = canUseLeadClawProduct(subscriptionStatus, subscriptionPlan);
 
@@ -199,7 +228,7 @@ export async function POST(req: Request) {
       );
     }
     const enquiryPayload = {
-      clinic_id: site.clinic_id,
+      clinic_id: onboardingSite.clinic_id,
       name: safeName,
       email: safeEmail,
       phone: safePhone,
@@ -208,7 +237,7 @@ export async function POST(req: Request) {
       status: "new",
     };
 
-    const { data: insertedEnquiry, error: insertError } = await admin
+    const { data: insertedEnquiry, error: insertError } = await (admin as any)
       .from("enquiries")
       .insert({
         ...enquiryPayload,
@@ -266,12 +295,12 @@ export async function POST(req: Request) {
           await resend.emails.send({
             from: "LeadClaw <hello@leadclaw.uk>",
             to: clinicContactEmail,
-            subject: "New website enquiry received",
+            subject: "New website request received",
             html: `
               <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.5; color: #0f172a;">
-                <h2 style="margin-bottom: 12px;">New Enquiry Received</h2>
+                <h2 style="margin-bottom: 12px;">New Request Received</h2>
                 <p style="margin-bottom: 16px;">
-                  You have received a new website enquiry for <strong>${escapeHtml(
+                  You have received a new website request for <strong>${escapeHtml(
                     clinicName,
                   )}</strong>.
                 </p>
@@ -294,7 +323,7 @@ export async function POST(req: Request) {
                   <tr>
                     <td style="padding: 6px 12px 6px 0;"><strong>Intent:</strong></td>
                     <td style="padding: 6px 0;">${escapeHtml(
-                      safeIntent || "General enquiry",
+                      safeIntent || "General request",
                     )}</td>
                   </tr>
                   <tr>
@@ -319,13 +348,13 @@ export async function POST(req: Request) {
                 </p>
               </div>
             `,
-            text: `New website enquiry received
+            text: `New website request received
 
-Clinic: ${clinicName}
+Workspace: ${clinicName}
 Name: ${safeName}
 Email: ${safeEmail}
 Phone: ${safePhone || "Not provided"}
-Intent: ${safeIntent || "General enquiry"}
+Intent: ${safeIntent || "General request"}
 Message: ${safeMessage || "No message provided"}
 Page: ${safePageTitle || safePageUrl || safeDomain || "Not provided"}
 
@@ -348,8 +377,8 @@ Log into your LeadClaw portal to view the lead.`,
             <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.5; color: #0f172a;">
               <p>Hi ${escapeHtml(safeName)},</p>
               <p>Thanks for contacting <strong>${escapeHtml(clinicName)}</strong>.</p>
-              <p>We've received your enquiry and a member of the clinic team can follow up shortly.</p>
-              <p>If your enquiry is urgent, please contact the clinic directly.</p>
+              <p>We've received your request and a member of the team can follow up shortly.</p>
+              <p>If your request is urgent, please contact the business directly.</p>
               <p style="margin-top: 20px;">
                 Best regards,<br />
                 ${escapeHtml(clinicName)}
@@ -360,9 +389,9 @@ Log into your LeadClaw portal to view the lead.`,
 
 Thanks for contacting ${clinicName}.
 
-We've received your enquiry and a member of the clinic team can follow up shortly.
+We've received your request and a member of the team can follow up shortly.
 
-If your enquiry is urgent, please contact the clinic directly.
+If your request is urgent, please contact the business directly.
 
 Best regards,
 ${clinicName}`,

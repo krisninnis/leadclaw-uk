@@ -26,27 +26,27 @@ export default function NotificationStep({ onSave, onSkip }: Props) {
             Get notified instantly
           </h1>
           <p className="mt-3 text-sm text-muted">
-            Choose how you want to be alerted when a new enquiry arrives. Email
+            Choose how you want to be alerted when a new request arrives. Email
             is always on.
           </p>
         </div>
 
-        <div className="rounded-3xl border border-border bg-white p-6 shadow-sm space-y-5">
-          <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-3">
-            <span className="text-lg">✅</span>
+        <div className="space-y-5 rounded-3xl border border-border bg-white p-6 shadow-sm">
+          <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+            <span className="text-lg">OK</span>
             <div>
               <p className="text-sm font-semibold text-emerald-900">
                 Email notifications
               </p>
               <p className="text-xs text-emerald-700">
-                Always on — every new lead sent to your inbox
+                Always on - every new lead sent to your inbox
               </p>
             </div>
           </div>
 
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-foreground">
-              📱 WhatsApp number{" "}
+              WhatsApp number{" "}
               <span className="font-normal text-muted">(optional)</span>
             </label>
             <input
@@ -63,8 +63,7 @@ export default function NotificationStep({ onSave, onSkip }: Props) {
 
           <div className="space-y-2">
             <label className="block text-sm font-semibold text-foreground">
-              💬 SMS number{" "}
-              <span className="font-normal text-muted">(optional)</span>
+              SMS number <span className="font-normal text-muted">(optional)</span>
             </label>
             <input
               type="tel"
@@ -74,7 +73,7 @@ export default function NotificationStep({ onSave, onSkip }: Props) {
               className="input-premium w-full"
             />
             <p className="text-xs text-muted">
-              Get a text message for every new enquiry
+              Get a text message for every new request
             </p>
           </div>
 
@@ -84,15 +83,15 @@ export default function NotificationStep({ onSave, onSkip }: Props) {
             disabled={saving}
             className="button-primary w-full"
           >
-            {saving ? "Saving..." : "Save and go to portal →"}
+            {saving ? "Saving..." : "Save and go to portal"}
           </button>
 
           <button
             type="button"
             onClick={onSkip}
-            className="w-full text-sm text-center text-muted underline"
+            className="w-full text-center text-sm text-muted underline"
           >
-            Skip for now — set up later in settings
+            Skip for now - set up later in settings
           </button>
         </div>
       </div>

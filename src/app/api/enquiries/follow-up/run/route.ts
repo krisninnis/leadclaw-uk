@@ -7,6 +7,23 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
+type EnquiryFollowUpRow = {
+  id: string;
+  name: string;
+  email: string | null;
+  service: string | null;
+  clinic_id: string;
+};
+
+type OnboardingSiteRow = {
+  onboarding_client_id: string | null;
+};
+
+type OnboardingClientRow = {
+  business_name: string | null;
+  client_name: string | null;
+};
+
 function escapeHtml(input: string) {
   return input
     .replace(/&/g, "&amp;")
@@ -38,7 +55,7 @@ export async function POST(req: Request) {
   }
 
   // Find enquiries that:
-  // - are still "new" (clinic hasn't responded/updated them)
+  // - are still "new" (workspace has not responded/updated them)
   // - were created more than 2 hours ago
   // - haven't had a follow-up sent yet
   // - are eligible for follow-up
@@ -47,7 +64,7 @@ export async function POST(req: Request) {
     Date.now() - 24 * 60 * 60 * 1000,
   ).toISOString();
 
-  const { data: enquiries, error } = await admin
+  const { data: enquiries, error } = await (admin as any)
     .from("enquiries")
     .select(
       `
@@ -63,7 +80,7 @@ export async function POST(req: Request) {
     .eq("follow_up_eligible", true)
     .is("follow_up_sent_at", null)
     .lte("created_at", twoHoursAgo)
-    .gte("created_at", twentyFourHoursAgo) // don't follow up on very old enquiries
+    .gte("created_at", twentyFourHoursAgo) // do not follow up on very old requests
     .limit(50);
 
   if (error) {
@@ -76,34 +93,38 @@ export async function POST(req: Request) {
   const sent: string[] = [];
   const skipped: Array<{ id: string; reason: string }> = [];
 
-  for (const enquiry of enquiries || []) {
+  for (const enquiry of (enquiries || []) as EnquiryFollowUpRow[]) {
     if (!enquiry.email) {
       skipped.push({ id: enquiry.id, reason: "no_email" });
       continue;
     }
 
-    // Get clinic name for the email
-    let clinicName = "the clinic";
+    // Get workspace name for the email
+    let clinicName = "the business";
 
-    const { data: site } = await admin
+    const { data: site } = await (admin as any)
       .from("onboarding_sites")
       .select("onboarding_client_id")
       .eq("clinic_id", enquiry.clinic_id)
       .limit(1)
       .maybeSingle();
 
-    if (site?.onboarding_client_id) {
-      const { data: client } = await admin
+    const onboardingSite = site as OnboardingSiteRow | null;
+
+    if (onboardingSite?.onboarding_client_id) {
+      const { data: client } = await (admin as any)
         .from("onboarding_clients")
         .select("business_name,client_name,contact_email")
-        .eq("id", site.onboarding_client_id)
+        .eq("id", onboardingSite.onboarding_client_id)
         .limit(1)
         .maybeSingle();
 
+      const onboardingClient = client as OnboardingClientRow | null;
+
       clinicName =
-        client?.business_name?.trim() ||
-        client?.client_name?.trim() ||
-        "the clinic";
+        onboardingClient?.business_name?.trim() ||
+        onboardingClient?.client_name?.trim() ||
+        "the business";
     }
 
     if (!resend) {
@@ -115,18 +136,18 @@ export async function POST(req: Request) {
       await resend.emails.send({
         from: "LeadClaw <hello@leadclaw.uk>",
         to: enquiry.email,
-        subject: `Still thinking about it? — ${escapeHtml(clinicName)}`,
+        subject: `Still thinking about it? - ${escapeHtml(clinicName)}`,
         html: `
           <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #0f172a; max-width: 520px;">
             <p>Hi ${escapeHtml(enquiry.name)},</p>
             <p>
               Just a quick note to let you know that <strong>${escapeHtml(clinicName)}</strong> received 
-              your enquiry${enquiry.service ? ` about <strong>${escapeHtml(enquiry.service)}</strong>` : ""} 
+              your request${enquiry.service ? ` about <strong>${escapeHtml(enquiry.service)}</strong>` : ""}
               and the team will be in touch with you very soon.
             </p>
             <p>
-              In the meantime, if you have any questions or want to book directly, 
-              please don't hesitate to contact the clinic.
+              In the meantime, if you have any questions or want to follow up directly,
+              please don't hesitate to contact the business.
             </p>
             <p style="margin-top: 24px;">
               Best regards,<br/>
@@ -134,22 +155,22 @@ export async function POST(req: Request) {
             </p>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
             <p style="font-size: 12px; color: #94a3b8;">
-              You're receiving this because you submitted an enquiry through the ${escapeHtml(clinicName)} website.
+              You're receiving this because you submitted a request through the ${escapeHtml(clinicName)} website.
             </p>
           </div>
         `,
         text: `Hi ${enquiry.name},
 
-Just a quick note to let you know that ${clinicName} received your enquiry${enquiry.service ? ` about ${enquiry.service}` : ""} and the team will be in touch with you very soon.
+Just a quick note to let you know that ${clinicName} received your request${enquiry.service ? ` about ${enquiry.service}` : ""} and the team will be in touch with you very soon.
 
-In the meantime, if you have any questions or want to book directly, please don't hesitate to contact the clinic.
+In the meantime, if you have any questions or want to follow up directly, please don't hesitate to contact the business.
 
 Best regards,
 ${clinicName}`,
       });
 
       // Mark follow-up as sent
-      await admin
+      await (admin as any)
         .from("enquiries")
         .update({ follow_up_sent_at: new Date().toISOString() })
         .eq("id", enquiry.id);

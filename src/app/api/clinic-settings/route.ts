@@ -9,12 +9,26 @@ const schema = z.object({
   reminders_enabled: z.boolean().optional(),
 });
 
+type OnboardingClientIdRow = {
+  id: string;
+};
+
+type OnboardingSiteClinicRow = {
+  clinic_id: string | null;
+};
+
+type ClinicSettingsRow = {
+  google_review_url: string | null;
+  review_requests_enabled: boolean | null;
+  reminders_enabled: boolean | null;
+};
+
 async function getClinicId(
   userEmail: string,
   admin: ReturnType<typeof createAdminClient>,
 ) {
   if (!admin) return null;
-  const { data: client } = await admin
+  const { data: client } = await (admin as any)
     .from("onboarding_clients")
     .select("id")
     .eq("contact_email", userEmail)
@@ -22,17 +36,21 @@ async function getClinicId(
     .limit(1)
     .maybeSingle();
 
-  if (!client?.id) return null;
+  const onboardingClient = client as OnboardingClientIdRow | null;
 
-  const { data: site } = await admin
+  if (!onboardingClient?.id) return null;
+
+  const { data: site } = await (admin as any)
     .from("onboarding_sites")
     .select("clinic_id")
-    .eq("onboarding_client_id", client.id)
+    .eq("onboarding_client_id", onboardingClient.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  return site?.clinic_id || null;
+  const onboardingSite = site as OnboardingSiteClinicRow | null;
+
+  return onboardingSite?.clinic_id || null;
 }
 
 export async function GET() {
@@ -54,17 +72,19 @@ export async function GET() {
       { status: 404 },
     );
 
-  const { data } = await admin!
+  const { data } = await (admin as any)
     .from("clinic_settings")
     .select("google_review_url, review_requests_enabled, reminders_enabled")
     .eq("clinic_id", clinicId)
     .maybeSingle();
 
+  const settings = data as ClinicSettingsRow | null;
+
   return NextResponse.json({
     ok: true,
-    google_review_url: data?.google_review_url || null,
-    review_requests_enabled: data?.review_requests_enabled ?? true,
-    reminders_enabled: data?.reminders_enabled ?? true,
+    google_review_url: settings?.google_review_url || null,
+    review_requests_enabled: settings?.review_requests_enabled ?? true,
+    reminders_enabled: settings?.reminders_enabled ?? true,
   });
 }
 
@@ -91,7 +111,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = schema.parse(body);
 
-    const { error } = await admin!
+    const { error } = await (admin as any)
       .from("clinic_settings")
       .upsert(
         {

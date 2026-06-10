@@ -1,4 +1,4 @@
-# Deploy Checklist — Clinic Retention Engine
+# Deploy Checklist - Workflow Automation Engine
 
 ## 1) Database
 - [ ] Run latest `supabase/schema.sql`
@@ -21,10 +21,13 @@
   - Header: `Authorization: Bearer <RETENTION_RUN_TOKEN>`
 
 ## 4) Trigger Wiring (from your app/events)
-- [ ] New enquiry -> `triggerType=enquiry_received`
-- [ ] Treatment completed -> `triggerType=treatment_completed`
+- [ ] New request -> `triggerType=enquiry_received`
+- [ ] Completed service -> `triggerType=treatment_completed`
 - [ ] Hesitation detected -> `triggerType=consultation_hesitation`
 - [ ] Dormant segment -> `triggerType=client_dormant`
+
+Legacy trigger names are retained for compatibility until a later schema/API
+migration.
 
 ## 5) Smoke Tests
 - [ ] Call `/api/retention/ingest` with test payload
@@ -34,7 +37,7 @@
 - [ ] Verify metrics via `GET /api/retention/metrics`
 
 ## 6) Guardrails
-- [ ] Keep message templates short + no-pressure
+- [ ] Keep message templates short and low-pressure
 - [ ] No booking engine features added
 - [ ] No heavy CRM coupling unless required
 - [ ] Maintain suppression/unsubscribe handling
@@ -45,4 +48,4 @@
   - `.venv\Scripts\python run.py --help`
   - `.venv\Scripts\python places_run.py --help`
   - `.venv\Scripts\python places_batch.py --help`
-- [ ] Ensure `.env` has Supabase + (optional) Google Places key
+- [ ] Ensure `.env` has Supabase and optional Google Places key

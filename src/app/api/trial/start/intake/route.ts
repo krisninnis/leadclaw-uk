@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     created_at: new Date().toISOString(),
   };
 
-  const { error } = await admin.from("applications").insert(payload);
+  const { error } = await (admin as any).from("applications").insert(payload);
 
   if (error) {
     return NextResponse.json(

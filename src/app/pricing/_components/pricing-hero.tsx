@@ -7,16 +7,16 @@ export default function PricingHero() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="badge-soft mb-5">
             <span className="h-2 w-2 rounded-full bg-brand" />
-            Simple SaaS pricing for UK aesthetic clinics
+            Simple SaaS pricing for AI workflows
           </div>
 
           <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Choose the LeadClaw plan that fits your clinic growth stage.
+            Choose the LeadClaw plan that fits your team's workflow stage.
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted sm:text-xl">
-            Every plan is built to help your clinic capture missed website
-            enquiries and turn more visitor interest into follow-up-ready leads.
+            Every plan helps your business capture requests, organise work, and
+            reduce repetitive follow-up and admin.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -29,7 +29,8 @@ export default function PricingHero() {
           </div>
 
           <p className="mt-5 text-sm text-muted">
-            One recovered treatment enquiry can often justify the monthly cost.
+            One saved admin hour or recovered follow-up can often justify the
+            monthly cost.
           </p>
         </div>
       </div>

@@ -59,7 +59,7 @@ export default function ContactPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Your name" value={form.name} onChange={(v) => setForm({ ...form, name: v })} required />
           <Field label="Email" type="email" value={form.email} onChange={(v) => setForm({ ...form, email: v })} required />
-          <Field label="Clinic / business" value={form.clinic} onChange={(v) => setForm({ ...form, clinic: v })} required />
+          <Field label="Business / workspace" value={form.clinic} onChange={(v) => setForm({ ...form, clinic: v })} required />
           <Field label="Website" value={form.website} onChange={(v) => setForm({ ...form, website: v })} />
         </div>
 

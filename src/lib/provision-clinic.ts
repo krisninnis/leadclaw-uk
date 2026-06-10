@@ -22,6 +22,27 @@ type ProvisionClinicWorkspaceResult = {
   domain: string | null;
 };
 
+type ApplicationProvisionRow = {
+  clinic_name: string | null;
+  website: string | null;
+  services: string | null;
+  city: string | null;
+  contact_name: string | null;
+};
+
+type IdRow = {
+  id: string;
+};
+
+type ExistingSiteRow = {
+  id: string;
+  clinic_id: string | null;
+};
+
+type WidgetTokenRow = {
+  token: string | null;
+};
+
 export async function provisionClinicWorkspace(
   input: ProvisionClinicWorkspaceInput,
 ): Promise<ProvisionClinicWorkspaceResult> {
@@ -41,7 +62,7 @@ export async function provisionClinicWorkspace(
     input.subscriptionStatus ??
     (resolvedPlan === "basic" ? "active" : "trialing");
 
-  const { data: latestApp } = await admin
+  const { data: latestApp } = await (admin as any)
     .from("applications")
     .select("clinic_name,website,services,city,contact_name")
     .eq("email", email)
@@ -49,12 +70,16 @@ export async function provisionClinicWorkspace(
     .limit(1)
     .maybeSingle();
 
+  const latestApplication = latestApp as ApplicationProvisionRow | null;
+
   const clinicName = String(
-    latestApp?.clinic_name || input.fallbackClinicName || "Clinic Client",
+    latestApplication?.clinic_name ||
+      input.fallbackClinicName ||
+      "Workspace Client",
   ).trim();
 
   const rawWebsite = String(
-    latestApp?.website || input.fallbackDomain || "",
+    latestApplication?.website || input.fallbackDomain || "",
   ).trim();
 
   const domain = rawWebsite ? normalizeDomain(rawWebsite) : "test.leadclaw.uk";
@@ -80,11 +105,11 @@ export async function provisionClinicWorkspace(
   matchedUserName =
     String(matchedUser?.user_metadata?.name || "").trim() ||
     String(matchedUser?.user_metadata?.full_name || "").trim() ||
-    String(latestApp?.contact_name || "").trim() ||
+    String(latestApplication?.contact_name || "").trim() ||
     null;
 
   if (ownerUserId) {
-    const { error: profileUpsertError } = await admin.from("profiles").upsert(
+    const { error: profileUpsertError } = await (admin as any).from("profiles").upsert(
       {
         id: ownerUserId,
         role: "client",
@@ -92,8 +117,8 @@ export async function provisionClinicWorkspace(
         phone: null,
         clinic_name: clinicName || null,
         email: matchedUserEmail,
-        city: latestApp?.city || null,
-        services: latestApp?.services || null,
+        city: latestApplication?.city || null,
+        services: latestApplication?.services || null,
       },
       { onConflict: "id" },
     );
@@ -104,7 +129,7 @@ export async function provisionClinicWorkspace(
   }
 
   // 1) onboarding client
-  const { data: existingClient } = await admin
+  const { data: existingClient } = await (admin as any)
     .from("onboarding_clients")
     .select("id")
     .eq("contact_email", email)
@@ -112,10 +137,10 @@ export async function provisionClinicWorkspace(
     .limit(1)
     .maybeSingle();
 
-  let clientId = existingClient?.id || null;
+  let clientId = (existingClient as IdRow | null)?.id || null;
 
   if (!clientId) {
-    const { data: insertedClient, error } = await admin
+    const { data: insertedClient, error } = await (admin as any)
       .from("onboarding_clients")
       .insert({
         client_name: clinicName,
@@ -127,14 +152,14 @@ export async function provisionClinicWorkspace(
       .single();
 
     if (error) throw new Error(error.message);
-    clientId = insertedClient.id;
+    clientId = (insertedClient as IdRow).id;
   }
 
   // 2) clinic
   let clinicId: string | null = null;
 
   if (ownerUserId) {
-    const { data: existingClinicByOwner } = await admin
+    const { data: existingClinicByOwner } = await (admin as any)
       .from("clinics")
       .select("id")
       .eq("owner_user_id", ownerUserId)
@@ -142,11 +167,11 @@ export async function provisionClinicWorkspace(
       .limit(1)
       .maybeSingle();
 
-    clinicId = existingClinicByOwner?.id || null;
+    clinicId = (existingClinicByOwner as IdRow | null)?.id || null;
   }
 
   if (!clinicId) {
-    const { data: existingClinicByName } = await admin
+    const { data: existingClinicByName } = await (admin as any)
       .from("clinics")
       .select("id")
       .eq("name", clinicName)
@@ -154,11 +179,11 @@ export async function provisionClinicWorkspace(
       .limit(1)
       .maybeSingle();
 
-    clinicId = existingClinicByName?.id || null;
+    clinicId = (existingClinicByName as IdRow | null)?.id || null;
   }
 
   if (!clinicId) {
-    const { data: insertedClinic, error } = await admin
+    const { data: insertedClinic, error } = await (admin as any)
       .from("clinics")
       .insert({
         name: clinicName,
@@ -170,7 +195,7 @@ export async function provisionClinicWorkspace(
       .single();
 
     if (error) throw new Error(error.message);
-    clinicId = insertedClinic.id;
+    clinicId = (insertedClinic as IdRow).id;
   } else {
     const clinicUpdate: Record<string, unknown> = {
       subscription_status: resolvedSubscriptionStatus,
@@ -181,7 +206,7 @@ export async function provisionClinicWorkspace(
       clinicUpdate.owner_user_id = ownerUserId;
     }
 
-    const { error: clinicUpdateError } = await admin
+    const { error: clinicUpdateError } = await (admin as any)
       .from("clinics")
       .update(clinicUpdate)
       .eq("id", clinicId);
@@ -192,7 +217,7 @@ export async function provisionClinicWorkspace(
   // 3) site
   let siteId: string | null = null;
 
-  const { data: existingSite } = await admin
+  const { data: existingSite } = await (admin as any)
     .from("onboarding_sites")
     .select("id,clinic_id")
     .eq("onboarding_client_id", clientId)
@@ -201,11 +226,13 @@ export async function provisionClinicWorkspace(
     .limit(1)
     .maybeSingle();
 
-  if (existingSite?.id) {
-    siteId = existingSite.id;
+  const existingSiteRow = existingSite as ExistingSiteRow | null;
 
-    if (!existingSite.clinic_id && clinicId) {
-      const { error: siteUpdateError } = await admin
+  if (existingSiteRow?.id) {
+    siteId = existingSiteRow.id;
+
+    if (!existingSiteRow.clinic_id && clinicId) {
+      const { error: siteUpdateError } = await (admin as any)
         .from("onboarding_sites")
         .update({ clinic_id: clinicId })
         .eq("id", siteId);
@@ -213,7 +240,7 @@ export async function provisionClinicWorkspace(
       if (siteUpdateError) throw new Error(siteUpdateError.message);
     }
   } else {
-    const { data: insertedSite, error } = await admin
+    const { data: insertedSite, error } = await (admin as any)
       .from("onboarding_sites")
       .insert({
         onboarding_client_id: clientId,
@@ -221,13 +248,13 @@ export async function provisionClinicWorkspace(
         domain,
         platform: "custom",
         settings: {
-          services: latestApp?.services
-            ? String(latestApp.services)
+          services: latestApplication?.services
+            ? String(latestApplication.services)
                 .split(",")
                 .map((s) => s.trim())
                 .filter(Boolean)
             : [],
-          city: latestApp?.city || null,
+          city: latestApplication?.city || null,
           signup_mode: "autonomous_provision",
           plan: resolvedPlan,
         },
@@ -237,14 +264,14 @@ export async function provisionClinicWorkspace(
       .single();
 
     if (error) throw new Error(error.message);
-    siteId = insertedSite.id;
+    siteId = (insertedSite as IdRow).id;
   }
 
   // 4) widget token
   let widgetToken: string | null = null;
 
   if (siteId) {
-    const { data: existingToken } = await admin
+    const { data: existingToken } = await (admin as any)
       .from("widget_tokens")
       .select("token")
       .eq("onboarding_site_id", siteId)
@@ -253,12 +280,14 @@ export async function provisionClinicWorkspace(
       .limit(1)
       .maybeSingle();
 
-    if (existingToken?.token) {
-      widgetToken = existingToken.token;
+    const existingWidgetToken = existingToken as WidgetTokenRow | null;
+
+    if (existingWidgetToken?.token) {
+      widgetToken = existingWidgetToken.token;
     } else {
       widgetToken = randomBytes(24).toString("hex");
 
-      const { error } = await admin.from("widget_tokens").insert({
+      const { error } = await (admin as any).from("widget_tokens").insert({
         onboarding_site_id: siteId,
         token: widgetToken,
         status: "active",
@@ -268,14 +297,14 @@ export async function provisionClinicWorkspace(
     }
 
     // 5) onboarding tasks
-    const { data: existingTasks } = await admin
+    const { data: existingTasks } = await (admin as any)
       .from("onboarding_tasks")
       .select("id")
       .eq("onboarding_site_id", siteId)
       .limit(1);
 
     if (!existingTasks || existingTasks.length === 0) {
-      const { error } = await admin.from("onboarding_tasks").insert(
+      const { error } = await (admin as any).from("onboarding_tasks").insert(
         AUTONOMOUS_TASK_ORDER.map((taskType, idx) => ({
           onboarding_site_id: siteId,
           task_type: taskType,

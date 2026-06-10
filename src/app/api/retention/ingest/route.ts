@@ -5,6 +5,10 @@ import { treatmentIntervalDays } from '@/lib/retention'
 
 type TriggerType = 'enquiry_received' | 'treatment_completed' | 'consultation_hesitation' | 'client_dormant'
 
+type IdRow = {
+  id: string
+}
+
 function plusHours(hours: number) {
   return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString()
 }
@@ -40,9 +44,9 @@ export async function POST(req: Request) {
   const phone = body.phone?.trim() || null
   if (!email && !phone) return NextResponse.json({ ok: false, error: 'email_or_phone_required' }, { status: 400 })
 
-  const key = email || phone
+  const key = (email || phone) as string
 
-  const { data: existing } = await admin
+  const { data: existing } = await (admin as any)
     .from('retention_clients')
     .select('id')
     .eq('external_key', key)
@@ -60,13 +64,14 @@ export async function POST(req: Request) {
     updated_at: new Date().toISOString(),
   }
 
-  let clientId = existing?.id as string | undefined
+  let clientId = (existing as IdRow | null)?.id
   if (clientId) {
-    await admin.from('retention_clients').update(payload).eq('id', clientId)
+    await (admin as any).from('retention_clients').update(payload).eq('id', clientId)
   } else {
-    const { data: inserted, error } = await admin.from('retention_clients').insert(payload).select('id').single()
-    if (error || !inserted?.id) return NextResponse.json({ ok: false, error: error?.message || 'client_insert_failed' }, { status: 500 })
-    clientId = inserted.id
+    const { data: inserted, error } = await (admin as any).from('retention_clients').insert(payload).select('id').single()
+    const insertedClient = inserted as IdRow | null
+    if (error || !insertedClient?.id) return NextResponse.json({ ok: false, error: error?.message || 'client_insert_failed' }, { status: 500 })
+    clientId = insertedClient.id
   }
 
   const tasks: Array<{ behavior: string; due_at: string }> = []
@@ -93,7 +98,7 @@ export async function POST(req: Request) {
   }
 
   if (tasks.length > 0) {
-    await admin.from('retention_tasks').insert(
+    await (admin as any).from('retention_tasks').insert(
       tasks.map((t) => ({
         retention_client_id: clientId,
         behavior: t.behavior,

@@ -8,6 +8,35 @@ import {
 } from "@/lib/retention";
 import { hasFullLeadClawAccess } from "@/lib/subscription-access";
 
+type RetentionClientRow = {
+  id: string;
+  client_name: string | null;
+  email: string | null;
+  phone: string | null;
+  service: string | null;
+  clinic_name: string | null;
+  objection: string | null;
+};
+
+type RetentionTaskRow = {
+  id: string;
+  behavior: string;
+  retention_client_id: string;
+  retention_clients: RetentionClientRow | RetentionClientRow[] | null;
+};
+
+type OnboardingClientAccessRow = {
+  contact_email: string | null;
+};
+
+type SubscriptionAccessRow = {
+  status: string | null;
+};
+
+type IdRow = {
+  id: string;
+};
+
 export async function POST(req: Request) {
   const token = process.env.RETENTION_RUN_TOKEN?.trim();
   const auth = req.headers.get("authorization") || "";
@@ -31,7 +60,7 @@ export async function POST(req: Request) {
 
   const now = new Date().toISOString();
 
-  const { data: rows, error } = await admin
+  const { data: rows, error } = await (admin as any)
     .from("retention_tasks")
     .select(
       "id,behavior,retention_client_id,retention_clients(id,client_name,email,phone,service,clinic_name,objection)",
@@ -51,13 +80,13 @@ export async function POST(req: Request) {
   const sent: string[] = [];
   const skipped: Array<{ id: string; reason: string }> = [];
 
-  for (const row of rows || []) {
+  for (const row of (rows || []) as RetentionTaskRow[]) {
     const client = Array.isArray(row.retention_clients)
       ? row.retention_clients[0]
       : row.retention_clients;
 
     if (!client) {
-      await admin
+      await (admin as any)
         .from("retention_tasks")
         .update({ status: "failed", error: "client_not_found" })
         .eq("id", row.id);
@@ -73,7 +102,7 @@ export async function POST(req: Request) {
     let clinicHasFullAccess = false;
 
     if (client.clinic_name) {
-      const { data: onboardingClient } = await admin
+      const { data: onboardingClient } = await (admin as any)
         .from("onboarding_clients")
         .select("contact_email,business_name,client_name")
         .or(
@@ -83,13 +112,14 @@ export async function POST(req: Request) {
         .limit(1)
         .maybeSingle();
 
+      const matchedClient = onboardingClient as OnboardingClientAccessRow | null;
       const clinicEmail =
-        String(onboardingClient?.contact_email || "")
+        String(matchedClient?.contact_email || "")
           .trim()
           .toLowerCase() || null;
 
       if (clinicEmail) {
-        const { data: subscription } = await admin
+        const { data: subscription } = await (admin as any)
           .from("subscriptions")
           .select("status,plan")
           .eq("email", clinicEmail)
@@ -97,7 +127,9 @@ export async function POST(req: Request) {
           .limit(1)
           .maybeSingle();
 
-        clinicHasFullAccess = hasFullLeadClawAccess(subscription?.status);
+        const latestSubscription = subscription as SubscriptionAccessRow | null;
+
+        clinicHasFullAccess = hasFullLeadClawAccess(latestSubscription?.status);
       }
     }
 
@@ -107,7 +139,7 @@ export async function POST(req: Request) {
         reason: "subscription_no_longer_full_access",
       });
 
-      await admin
+      await (admin as any)
         .from("retention_tasks")
         .update({
           status: "skipped",
@@ -121,7 +153,7 @@ export async function POST(req: Request) {
     // idempotency / anti-spam guard
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: recent } = await admin
+    const { data: recent } = await (admin as any)
       .from("retention_events")
       .select("id")
       .eq("retention_client_id", row.retention_client_id)
@@ -131,10 +163,10 @@ export async function POST(req: Request) {
       .limit(1)
       .maybeSingle();
 
-    if (recent?.id) {
+    if ((recent as IdRow | null)?.id) {
       skipped.push({ id: row.id, reason: "duplicate_recent_send" });
 
-      await admin
+      await (admin as any)
         .from("retention_tasks")
         .update({ status: "skipped", error: "duplicate_recent_send" })
         .eq("id", row.id);
@@ -176,7 +208,7 @@ export async function POST(req: Request) {
       skipped.push({ id: row.id, reason: finalReason });
     }
 
-    await admin.from("retention_events").insert({
+    await (admin as any).from("retention_events").insert({
       retention_task_id: row.id,
       retention_client_id: row.retention_client_id,
       behavior,
@@ -185,7 +217,7 @@ export async function POST(req: Request) {
       payload: { subject: rendered.subject, text: rendered.text },
     });
 
-    await admin
+    await (admin as any)
       .from("retention_tasks")
       .update({
         status: delivered ? "sent" : "skipped",

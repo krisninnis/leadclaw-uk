@@ -8,6 +8,15 @@ import NotificationStep from "./_components/notification-step";
 type PlanSlug = "growth";
 const TRIAL_INTAKE_KEY = "leadclaw_trial_intake";
 
+type TrialIntakeInput = {
+  clinicName: string;
+  contactName: string;
+  email: string;
+  website: string;
+  phone: string;
+  city: string;
+};
+
 function normalizePlan(_value: string | null): PlanSlug {
   return "growth";
 }
@@ -23,14 +32,14 @@ function FreeTrialContent() {
   const [step, setStep] = useState<"signup" | "notifications">("signup");
   const [signedUpEmail, setSignedUpEmail] = useState("");
 
-  function buildIntake() {
+  function buildIntake(input: TrialIntakeInput) {
     return {
-      clinicName: "",
-      contactName: "",
-      email: signedUpEmail,
-      website: "",
-      phone: "",
-      city: "",
+      clinicName: input.clinicName.trim(),
+      contactName: input.contactName.trim(),
+      email: input.email.trim().toLowerCase() || signedUpEmail,
+      website: input.website.trim(),
+      phone: input.phone.trim(),
+      city: input.city.trim(),
       plan: selectedPlan,
       createdAt: new Date().toISOString(),
     };

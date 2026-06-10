@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isSuppressed, sendEmail } from '@/lib/email'
 
+type NewsletterSubscriberRow = {
+  email: string | null;
+  name: string | null;
+};
+
 export async function POST(req: Request) {
   const token = process.env.OUTREACH_RUN_TOKEN
   const auth = req.headers.get('authorization') || ''
@@ -16,12 +21,12 @@ export async function POST(req: Request) {
   const subject = body.subject || 'LeadClaw Weekly Update'
   const content = body.content || 'This week: product updates, wins, and what is shipping next.'
 
-  const { data: subs } = await admin.from('newsletter_subscribers').select('email,name').eq('status', 'active').limit(200)
+  const { data: subs } = await (admin as any).from('newsletter_subscribers').select('email,name').eq('status', 'active').limit(200)
 
   let sent = 0
   let skipped = 0
 
-  for (const sub of subs || []) {
+  for (const sub of (subs || []) as NewsletterSubscriberRow[]) {
     const email = String(sub.email || '').toLowerCase()
     if (!email) continue
 
@@ -44,7 +49,7 @@ export async function POST(req: Request) {
     else skipped++
   }
 
-  await admin.from('newsletter_issues').insert({
+  await (admin as any).from('newsletter_issues').insert({
     subject,
     content_markdown: content,
     status: 'sent',

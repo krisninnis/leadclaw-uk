@@ -20,6 +20,10 @@ export type FounderAlertInput = {
   tags?: EmailTag[];
 };
 
+type EmailSuppressionRow = {
+  id: string;
+};
+
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
@@ -33,7 +37,7 @@ export async function isSuppressed(email: string): Promise<boolean> {
     return false;
   }
 
-  const { data, error } = await admin
+  const { data, error } = await (admin as any)
     .from("email_suppressions")
     .select("id")
     .eq("email", normalized)
@@ -44,7 +48,7 @@ export async function isSuppressed(email: string): Promise<boolean> {
     return false;
   }
 
-  return Boolean(data?.id);
+  return Boolean((data as EmailSuppressionRow | null)?.id);
 }
 
 export async function suppressEmail(email: string, reason = "unsubscribe") {
@@ -58,7 +62,7 @@ export async function suppressEmail(email: string, reason = "unsubscribe") {
     };
   }
 
-  return admin.from("email_suppressions").upsert(
+  return (admin as any).from("email_suppressions").upsert(
     {
       email: normalized,
       reason,

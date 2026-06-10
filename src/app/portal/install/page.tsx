@@ -9,6 +9,27 @@ import {
   hasFullLeadClawAccess,
 } from "@/lib/subscription-access";
 
+type SubscriptionPlanStatusRow = {
+  status: string | null;
+  plan: string | null;
+};
+
+type IdRow = {
+  id: string;
+};
+
+type PortalInstallSiteRow = {
+  id: string;
+  domain: string | null;
+  status: string | null;
+};
+
+type WidgetTokenInstallRow = {
+  token: string | null;
+  last_seen_at: string | null;
+  last_seen_domain: string | null;
+};
+
 function formatDateTime(value: string | null) {
   if (!value) return "—";
   return new Date(value).toLocaleString();
@@ -48,7 +69,7 @@ export default async function PortalInstallPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
-  const { data: sub } = await supabase
+  const { data: sub } = await (supabase as any)
     .from("subscriptions")
     .select("status, plan")
     .eq("email", user.email || "")
@@ -56,7 +77,9 @@ export default async function PortalInstallPage() {
     .limit(1)
     .maybeSingle();
 
-  if (!canUseLeadClawProduct(sub?.status, sub?.plan)) {
+  const subscriptionAccess = sub as SubscriptionPlanStatusRow | null;
+
+  if (!canUseLeadClawProduct(subscriptionAccess?.status, subscriptionAccess?.plan)) {
     redirect("/portal/billing");
   }
 
@@ -76,7 +99,7 @@ export default async function PortalInstallPage() {
   } | null = null;
 
   if (admin) {
-    const { data: subscription } = await admin
+    const { data: subscription } = await (admin as any)
       .from("subscriptions")
       .select("status,plan")
       .eq("email", user.email || "")
@@ -84,8 +107,10 @@ export default async function PortalInstallPage() {
       .limit(1)
       .maybeSingle();
 
-    rawSubscriptionStatus = String(subscription?.status || "").toLowerCase();
-    currentPlan = String(subscription?.plan || "basic").toLowerCase();
+    const latestSubscription = subscription as SubscriptionPlanStatusRow | null;
+
+    rawSubscriptionStatus = String(latestSubscription?.status || "").toLowerCase();
+    currentPlan = String(latestSubscription?.plan || "basic").toLowerCase();
 
     hasFullSubscriptionAccess = ["trialing", "active", "past_due"].includes(
       rawSubscriptionStatus,
@@ -94,7 +119,7 @@ export default async function PortalInstallPage() {
     hasWidgetAccess = currentPlan === "basic" || hasFullSubscriptionAccess;
 
     if (user.email) {
-      const { data: client } = await admin
+      const { data: client } = await (admin as any)
         .from("onboarding_clients")
         .select("id")
         .eq("contact_email", user.email)
@@ -102,37 +127,42 @@ export default async function PortalInstallPage() {
         .limit(1)
         .maybeSingle();
 
-      if (client?.id) {
-        const { data: site } = await admin
+      const onboardingClient = client as IdRow | null;
+
+      if (onboardingClient?.id) {
+        const { data: site } = await (admin as any)
           .from("onboarding_sites")
           .select("id,domain,status")
-          .eq("onboarding_client_id", client.id)
+          .eq("onboarding_client_id", onboardingClient.id)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
+        const onboardingSite = site as PortalInstallSiteRow | null;
         let widgetToken: string | null = null;
         let widgetLastSeenAt: string | null = null;
         let widgetLastSeenDomain: string | null = null;
 
-        if (site?.id) {
-          const { data: tokenRow } = await admin
+        if (onboardingSite?.id) {
+          const { data: tokenRow } = await (admin as any)
             .from("widget_tokens")
             .select("token,last_seen_at,last_seen_domain")
-            .eq("onboarding_site_id", site.id)
+            .eq("onboarding_site_id", onboardingSite.id)
             .eq("status", "active")
             .order("created_at", { ascending: false })
             .limit(1)
             .maybeSingle();
 
-          widgetToken = tokenRow?.token || null;
-          widgetLastSeenAt = tokenRow?.last_seen_at || null;
-          widgetLastSeenDomain = tokenRow?.last_seen_domain || null;
+          const widgetTokenRow = tokenRow as WidgetTokenInstallRow | null;
+
+          widgetToken = widgetTokenRow?.token || null;
+          widgetLastSeenAt = widgetTokenRow?.last_seen_at || null;
+          widgetLastSeenDomain = widgetTokenRow?.last_seen_domain || null;
         }
 
         portalContext = {
-          domain: site?.domain || null,
-          siteStatus: site?.status || null,
+          domain: onboardingSite?.domain || null,
+          siteStatus: onboardingSite?.status || null,
           widgetToken,
           widgetLastSeenAt,
           widgetLastSeenDomain,
@@ -179,8 +209,8 @@ export default async function PortalInstallPage() {
                   ? widgetDetected
                     ? "Your widget has been detected on a live website."
                     : currentPlan === "basic"
-                      ? "Your Basic widget is available. Install and publish it to start capturing enquiries."
-                      : "Install and publish your snippet to start capturing leads."
+                      ? "Your Basic widget is available. Install and publish it to start capturing requests."
+                      : "Install and publish your snippet to start capturing requests."
                   : "Your widget is paused until your subscription is reactivated."}
               </p>
             </div>
@@ -258,7 +288,7 @@ export default async function PortalInstallPage() {
           <SectionHeading
             eyebrow="Install snippet"
             title="Your website code"
-            description="Paste this on your website to activate your LeadClaw enquiry widget."
+            description="Paste this on your website to activate your LeadClaw intake widget."
             maxWidth="lg"
           />
 

@@ -14,6 +14,19 @@ import {
   type EnquiryRow,
 } from "../_lib/shared";
 
+type SubscriptionStatusRow = {
+  status: string | null;
+  plan?: string | null;
+};
+
+type IdRow = {
+  id: string;
+};
+
+type ClinicIdRow = {
+  clinic_id: string | null;
+};
+
 export default async function PortalLeadsPage() {
   const supabase = await createClient();
   const {
@@ -22,7 +35,7 @@ export default async function PortalLeadsPage() {
 
   if (!user) redirect("/login");
 
-  const { data: sub } = await supabase
+  const { data: sub } = await (supabase as any)
     .from("subscriptions")
     .select("status, plan")
     .eq("email", user.email || "")
@@ -30,7 +43,9 @@ export default async function PortalLeadsPage() {
     .limit(1)
     .maybeSingle();
 
-  if (!hasFullLeadClawAccess(sub?.status)) {
+  const subscriptionAccess = sub as SubscriptionStatusRow | null;
+
+  if (!hasFullLeadClawAccess(subscriptionAccess?.status)) {
     redirect("/portal/billing");
   }
 
@@ -40,7 +55,7 @@ export default async function PortalLeadsPage() {
   let enquiries: EnquiryRow[] = [];
 
   if (admin) {
-    const { data: subscription } = await admin
+    const { data: subscription } = await (admin as any)
       .from("subscriptions")
       .select("status")
       .eq("email", user.email || "")
@@ -48,15 +63,16 @@ export default async function PortalLeadsPage() {
       .limit(1)
       .maybeSingle();
 
+    const latestSubscription = subscription as SubscriptionStatusRow | null;
     const rawSubscriptionStatus = String(
-      subscription?.status || "",
+      latestSubscription?.status || "",
     ).toLowerCase();
     hasActiveSubscription = ["trialing", "active", "past_due"].includes(
       rawSubscriptionStatus,
     );
 
     if (user.email) {
-      const { data: client } = await admin
+      const { data: client } = await (admin as any)
         .from("onboarding_clients")
         .select("id")
         .eq("contact_email", user.email)
@@ -64,20 +80,24 @@ export default async function PortalLeadsPage() {
         .limit(1)
         .maybeSingle();
 
-      if (client?.id && hasActiveSubscription) {
-        const { data: site } = await admin
+      const onboardingClient = client as IdRow | null;
+
+      if (onboardingClient?.id && hasActiveSubscription) {
+        const { data: site } = await (admin as any)
           .from("onboarding_sites")
           .select("clinic_id")
-          .eq("onboarding_client_id", client.id)
+          .eq("onboarding_client_id", onboardingClient.id)
           .order("created_at", { ascending: false })
           .limit(1)
           .maybeSingle();
 
-        if (site?.clinic_id) {
-          const { data: enquiryRows } = await admin
+        const onboardingSite = site as ClinicIdRow | null;
+
+        if (onboardingSite?.clinic_id) {
+          const { data: enquiryRows } = await (admin as any)
             .from("enquiries")
             .select("id,name,email,phone,status,service,notes,created_at")
-            .eq("clinic_id", site.clinic_id)
+            .eq("clinic_id", onboardingSite.clinic_id)
             .order("created_at", { ascending: false })
             .limit(100);
 
@@ -108,7 +128,7 @@ export default async function PortalLeadsPage() {
       <div className="card-premium p-6 md:p-8">
         <SectionHeading
           eyebrow="Lead inbox"
-          title="Manage your enquiries"
+          title="Manage your requests"
           description="View, update, and track the latest leads captured through your LeadClaw widget."
           maxWidth="lg"
         />
@@ -116,28 +136,28 @@ export default async function PortalLeadsPage() {
         {hasActiveSubscription ? (
           <div className="mt-6 grid gap-4 md:grid-cols-4">
             <div className="rounded-[22px] border border-border bg-white p-5">
-              <p className="text-sm font-medium text-muted">Total enquiries</p>
+              <p className="text-sm font-medium text-muted">Total requests</p>
               <p className="mt-2 text-2xl font-semibold text-foreground">
                 {enquiries.length}
               </p>
             </div>
 
             <div className="rounded-[22px] border border-border bg-white p-5">
-              <p className="text-sm font-medium text-muted">New enquiries</p>
+              <p className="text-sm font-medium text-muted">New requests</p>
               <p className="mt-2 text-2xl font-semibold text-foreground">
                 {newLeadsCount}
               </p>
             </div>
 
             <div className="rounded-[22px] border border-border bg-white p-5">
-              <p className="text-sm font-medium text-muted">Booked enquiries</p>
+              <p className="text-sm font-medium text-muted">Completed requests</p>
               <p className="mt-2 text-2xl font-semibold text-foreground">
                 {bookedLeadsCount}
               </p>
             </div>
 
             <div className="rounded-[22px] border border-border bg-white p-5">
-              <p className="text-sm font-medium text-muted">Lost enquiries</p>
+              <p className="text-sm font-medium text-muted">Lost requests</p>
               <p className="mt-2 text-2xl font-semibold text-rose-500">
                 {lostLeadsCount}
               </p>
@@ -149,7 +169,7 @@ export default async function PortalLeadsPage() {
       <div className="card-premium p-6 md:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <SectionHeading
-            eyebrow="Enquiries"
+            eyebrow="Requests"
             title="Latest leads"
             description="Keep your follow-up organised and update lead status as you work through your inbox."
             maxWidth="md"
@@ -175,7 +195,7 @@ export default async function PortalLeadsPage() {
                   <div>Name</div>
                   <div>Email</div>
                   <div>Phone</div>
-                  <div>Enquiry</div>
+                  <div>Request</div>
                   <div>Status</div>
                   <div>Notes</div>
                   <div>Received</div>
@@ -382,8 +402,8 @@ export default async function PortalLeadsPage() {
             <div className="mt-6 rounded-[24px] border border-dashed border-border bg-surface-2 p-6 text-sm text-muted">
               <p className="font-medium text-foreground">No live leads yet</p>
               <p className="mt-2 leading-7">
-                Once your widget is installed and visitors start submitting
-                enquiries, they will appear here.
+                  Once your widget is installed and visitors start submitting
+                  requests, they will appear here.
               </p>
             </div>
           )
@@ -392,7 +412,7 @@ export default async function PortalLeadsPage() {
             <p className="font-medium text-foreground">Lead inbox locked</p>
             <p className="mt-2 leading-7">
               Reactivate or upgrade your package to view and manage live
-              enquiries.
+              requests.
             </p>
           </div>
         )}

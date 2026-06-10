@@ -1,30 +1,31 @@
 # LeadClaw.uk
 
-## Automation OS for UK Beauty & Aesthetic Clinics
+## AI workflow automation suite for busy businesses
 
-LeadClaw is a vertical SaaS platform built for UK aesthetic and beauty clinics.  
-It combines automated enquiry capture, retention automation, lead generation, onboarding automation, and subscription billing into one operational system.
+LeadClaw helps businesses capture requests, organise operational work, automate
+follow-ups, and save hours on repetitive admin and data tasks with AI.
 
 **Live Platform:** https://leadclaw.uk
 
 ---
 
-# 🚀 What LeadClaw Does
+## What LeadClaw Does
 
-LeadClaw reduces missed enquiries, manual follow-ups, and admin overload with structured automation:
+LeadClaw combines lightweight intake capture with practical AI workflow tools:
 
-- Automated website enquiry capture
-- Trial → paid subscription automation
-- Retention lifecycle workflows
-- Lead scoring + outreach engine
-- Automated onboarding installs
+- AI Receptionist for website request capture
+- Lead Tracker for workspace visibility
+- Follow-Up Assistant for reminders and next steps
+- Data Cleaner for messy forms, lists, and notes
+- Document Extractor for structured detail capture
+- Weekly Report Bot for recurring operational summaries
 - Stripe subscription lifecycle management
 - Admin operations dashboard
-- Compliance logging + audit trail
+- Compliance logging and audit trail
 
 ---
 
-# 🏗 System Architecture
+## System Architecture
 
 LeadClaw is made up of two main parts:
 
@@ -33,15 +34,18 @@ LeadClaw is made up of two main parts:
    - Supabase
    - Stripe
    - Admin analytics dashboard
-   - Website widget / enquiry capture
+   - Website widget and request capture
    - Outreach tracking
 
-2. **Lead generation pipeline**
+2. **Lead generation and workflow pipeline**
    - Python
    - Google Places API
    - Enrichment scripts
    - Deduplication
    - Outreach trigger
+
+Legacy database and API names such as `clinics`, `clinic_id`, and `enquiries`
+are intentionally retained for compatibility during the positioning revamp.
 
 ## System Flow
 
@@ -55,12 +59,12 @@ flowchart TD
     F --> G[Outreach events table]
     G --> H[Admin analytics dashboard]
 
-    I[Website widget] --> J[Enquiries table]
-    J --> K[Clinic notification email]
+    I[Website widget] --> J[Requests stored in legacy enquiries table]
+    J --> K[Workspace notification email]
     J --> H
 
     L[Stripe checkout] --> M[Subscriptions]
-    M --> N[Portal access / billing state]
+    M --> N[Portal access and billing state]
     N --> H
 
     O[GitHub Actions / local scheduler] --> B

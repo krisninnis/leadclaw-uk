@@ -7,11 +7,13 @@ import { faqs } from "./pricing-data";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "LeadClaw Pricing | AI Front Desk for UK Aesthetic Clinics",
+  title: "LeadClaw Pricing | AI workflow automation",
   description:
-    "Simple, transparent pricing for UK aesthetic clinics. Start free, try Growth for 7 days, upgrade when ready. From £79/month.",
+    "Simple pricing for LeadClaw's AI workflow automation suite. Start free, try Growth for 7 days, and upgrade when your team is ready.",
 };
+
 const isEarlyAccess = process.env.EARLY_ACCESS_MODE === "true";
+
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",

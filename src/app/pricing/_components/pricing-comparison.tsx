@@ -12,46 +12,46 @@ export default function PricingComparison() {
                   Which plan is right for you?
                 </p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                  Pick the plan that matches your clinic’s current stage.
+                  Pick the plan that matches your team's current workflow.
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-muted">
-                  Starter is ideal for smaller clinics. Growth is the best fit
-                  for most clinics. Pro is for clinics that want a stronger
-                  flagship setup and premium positioning.
+                  Basic is for simple request capture. Growth adds core
+                  follow-up automation. Pro is for teams that need more advanced
+                  extraction, reporting, and support.
                 </p>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-[24px] border border-amber-200 bg-amber-50/80 p-5">
-                  <p className="text-sm font-medium text-amber-800">Starter</p>
+                  <p className="text-sm font-medium text-amber-800">Basic</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-                    Get started
+                    Capture requests
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    Best for clinics starting to formalise their website lead
-                    capture.
+                    Best for businesses starting with a lightweight intake
+                    widget and lead inbox.
                   </p>
                 </div>
 
                 <div className="rounded-[24px] border border-violet-200 bg-violet-50/80 p-5">
                   <p className="text-sm font-medium text-violet-800">Growth</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-                    Best overall fit
+                    Automate follow-up
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    The strongest all-round choice for clinics wanting more
-                    premium workflow support.
+                    The strongest all-round choice for teams ready to automate
+                    common intake and follow-up work.
                   </p>
                 </div>
 
                 <div className="rounded-[24px] border border-cyan-200 bg-cyan-50/80 p-5">
                   <p className="text-sm font-medium text-cyan-800">Pro</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-                    Premium setup
+                    Extend workflows
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    Ideal for ambitious clinics that want the most premium plan
-                    presentation.
+                    Ideal for teams that need document extraction, reporting,
+                    analytics, and priority onboarding.
                   </p>
                 </div>
               </div>
@@ -67,18 +67,19 @@ export default function PricingComparison() {
               Compare plans
             </p>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              A clear view of what changes as your clinic grows
+              A clear view of what changes as your workflows grow
             </h2>
             <p className="mt-4 text-lg leading-8 text-muted">
-              Keep the choice simple. Every plan captures enquiries. The
-              difference is how premium and growth-oriented your setup becomes.
+              Keep the choice simple. Every plan captures requests. The
+              difference is how much automation, reporting, and support your
+              workspace needs.
             </p>
           </div>
 
           <div className="mt-10 overflow-hidden rounded-[28px] border border-border bg-white shadow-[var(--shadow-card)]">
             <div className="grid grid-cols-4 border-b border-border bg-surface-2 text-sm font-semibold text-foreground">
               <div className="p-4 md:p-5">Feature</div>
-              <div className="p-4 text-center md:p-5">Starter</div>
+              <div className="p-4 text-center md:p-5">Basic</div>
               <div className="bg-violet-50/70 p-4 text-center md:p-5">
                 Growth
               </div>

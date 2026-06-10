@@ -30,7 +30,7 @@ export const plans: PricingPlan[] = [
     price: "Free",
     period: "",
     description:
-      "A simple AI receptionist widget to capture enquiries. No automation included.",
+      "A simple AI Receptionist widget for capturing requests on your website. No advanced automation included.",
     mascot: "Fox",
     themeClass:
       "border-amber-200 bg-[linear-gradient(180deg,rgba(255,251,235,0.95),rgba(255,255,255,0.96))]",
@@ -38,22 +38,22 @@ export const plans: PricingPlan[] = [
     buttonClass:
       "inline-flex items-center justify-center rounded-full bg-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-amber-600",
     features: [
-      "AI website enquiry widget",
-      "Basic lead capture",
+      "AI website intake widget",
+      "Basic request capture",
       "Limited monthly conversations",
-      "No automated follow-ups",
-      "No missed call recovery",
-      "Self-setup only",
+      "Workspace lead inbox",
+      "Self-setup install guide",
+      "Upgrade when you need automations",
     ],
-    cta: "/free-trial?plan=growth",
+    cta: "/signup?plan=basic",
   },
   {
     name: "Growth",
     slug: "growth",
-    price: "£79",
+    price: "GBP 79",
     period: "/month",
     description:
-      "Turn missed enquiries into booked appointments with automation and follow-up.",
+      "AI workflows for capturing requests, tracking leads, and automating follow-ups.",
     mascot: "Panther",
     themeClass:
       "border-violet-200 bg-[linear-gradient(180deg,rgba(248,245,255,0.96),rgba(255,255,255,0.96))]",
@@ -64,10 +64,10 @@ export const plans: PricingPlan[] = [
     features: [
       "Everything in Basic",
       "Unlimited AI conversations",
-      "Automated follow-ups (email/SMS)",
-      "Missed call → instant text reply",
+      "Follow-Up Assistant workflows",
       "Lead notifications",
-      "Clinic lead dashboard",
+      "Lead Tracker workspace",
+      "Data Cleaner for messy inputs",
       "7-day free trial included",
     ],
     cta: "/free-trial?plan=growth",
@@ -75,10 +75,10 @@ export const plans: PricingPlan[] = [
   {
     name: "Pro",
     slug: "pro",
-    price: "£149",
+    price: "GBP 149",
     period: "/month",
     description:
-      "Advanced automation and performance tools for clinics serious about growth.",
+      "Advanced automation and reporting tools for teams with more complex operations.",
     mascot: "Dragon",
     themeClass:
       "border-cyan-200 bg-[linear-gradient(180deg,rgba(236,254,255,0.96),rgba(255,255,255,0.96))]",
@@ -88,10 +88,11 @@ export const plans: PricingPlan[] = [
     features: [
       "Everything in Growth",
       "Advanced automation flows",
-      "Multi-location support",
+      "Document Extractor workflows",
+      "Weekly Report Bot",
       "Performance analytics dashboard",
       "Priority onboarding support",
-      "Custom AI tuning for your clinic",
+      "Custom AI tuning for your workspace",
     ],
     cta: "/free-trial?plan=pro",
   },
@@ -99,20 +100,28 @@ export const plans: PricingPlan[] = [
 
 export const comparisonRows: ComparisonRow[] = [
   {
-    label: "AI website widget",
+    label: "AI Receptionist widget",
     values: ["Included", "Included", "Included"],
   },
   {
-    label: "Lead capture",
+    label: "Request capture",
     values: ["Basic", "Advanced", "Advanced"],
   },
   {
     label: "Automated follow-ups",
-    values: ["—", "Included", "Included"],
+    values: ["Not included", "Included", "Included"],
   },
   {
-    label: "Missed call recovery",
-    values: ["—", "Included", "Included"],
+    label: "Data Cleaner",
+    values: ["Not included", "Included", "Included"],
+  },
+  {
+    label: "Document Extractor",
+    values: ["Not included", "Not included", "Included"],
+  },
+  {
+    label: "Weekly Report Bot",
+    values: ["Not included", "Not included", "Included"],
   },
   {
     label: "Monthly conversations",
@@ -128,7 +137,7 @@ export const faqs: PricingFaq[] = [
   {
     question: "How does the free trial work?",
     answer:
-      "You start on the Growth plan for 7 days. This lets you experience full automation, lead capture, and follow-ups before deciding to continue.",
+      "You start on the Growth plan for 7 days. This lets you experience core workflow automation, request capture, and follow-ups before deciding to continue.",
   },
   {
     question: "What happens after the 7-day trial?",
@@ -138,11 +147,11 @@ export const faqs: PricingFaq[] = [
   {
     question: "Do I need a new website?",
     answer:
-      "No. LeadClaw works with your existing clinic website using a lightweight widget.",
+      "No. LeadClaw works with your existing business website using a lightweight widget.",
   },
   {
-    question: "Can this actually generate bookings?",
+    question: "Can this help my team save admin time?",
     answer:
-      "Yes. The system captures and follows up with missed enquiries automatically, helping turn more visitors into booked appointments.",
+      "Yes. LeadClaw captures requests, keeps work visible, and automates routine follow-ups so your team spends less time chasing details manually.",
   },
 ];

@@ -24,6 +24,10 @@ type IntakePayload = {
   handoffMethod?: string
 }
 
+type IdRow = {
+  id: string
+}
+
 export async function POST(req: Request) {
   const token = process.env.ONBOARDING_API_TOKEN?.trim()
   const auth = req.headers.get('authorization') || ''
@@ -48,15 +52,15 @@ export async function POST(req: Request) {
     handoffMethod: body.handoffMethod || null,
   }
 
-  const { data: existingClient } = await admin
+  const { data: existingClient } = await (admin as any)
     .from('onboarding_clients')
     .select('id')
     .eq('contact_email', body.contactEmail || '')
     .maybeSingle()
 
-  let clientId = existingClient?.id as string | undefined
+  let clientId = (existingClient as IdRow | null)?.id
   if (!clientId) {
-    const { data: inserted, error } = await admin
+    const { data: inserted, error } = await (admin as any)
       .from('onboarding_clients')
       .insert({
         client_name: body.clientName || body.businessName || domain,
@@ -67,11 +71,12 @@ export async function POST(req: Request) {
       .select('id')
       .single()
 
-    if (error || !inserted?.id) return NextResponse.json({ ok: false, error: error?.message || 'client_insert_failed' }, { status: 500 })
-    clientId = inserted.id
+    const insertedClient = inserted as IdRow | null
+    if (error || !insertedClient?.id) return NextResponse.json({ ok: false, error: error?.message || 'client_insert_failed' }, { status: 500 })
+    clientId = insertedClient.id
   }
 
-  const { data: siteInserted, error: siteError } = await admin
+  const { data: siteInserted, error: siteError } = await (admin as any)
     .from('onboarding_sites')
     .insert({
       onboarding_client_id: clientId,
@@ -83,18 +88,19 @@ export async function POST(req: Request) {
     .select('id')
     .single()
 
-  if (siteError || !siteInserted?.id) return NextResponse.json({ ok: false, error: siteError?.message || 'site_insert_failed' }, { status: 500 })
+  const insertedSite = siteInserted as IdRow | null
+  if (siteError || !insertedSite?.id) return NextResponse.json({ ok: false, error: siteError?.message || 'site_insert_failed' }, { status: 500 })
 
-  const siteId = siteInserted.id as string
+  const siteId = insertedSite.id
   const widgetToken = randomBytes(24).toString('hex')
 
-  await admin.from('widget_tokens').insert({
+  await (admin as any).from('widget_tokens').insert({
     onboarding_site_id: siteId,
     token: widgetToken,
     status: 'active',
   })
 
-  await admin.from('onboarding_tasks').insert(
+  await (admin as any).from('onboarding_tasks').insert(
     AUTONOMOUS_TASK_ORDER.map((taskType, idx) => ({
       onboarding_site_id: siteId,
       task_type: taskType,

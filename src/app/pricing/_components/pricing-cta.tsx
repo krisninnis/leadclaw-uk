@@ -10,11 +10,11 @@ export default function PricingCta() {
               Ready to choose a plan?
             </p>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
-              Start free, try full automation, and upgrade when your clinic is
-              ready.
+              Start free, try full automation, and upgrade when your workspace
+              is ready.
             </h2>
             <p className="mt-5 text-lg leading-8 text-muted">
-              Start on a 7-day Growth trial to experience the full LeadClaw
+              Start on a 7-day Growth trial to experience the core LeadClaw
               workflow, then keep Growth, upgrade to Pro, or switch to the free
               Basic plan.
             </p>

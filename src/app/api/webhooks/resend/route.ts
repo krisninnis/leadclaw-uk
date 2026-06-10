@@ -23,6 +23,10 @@ type LeadRow = {
   notes: string | null;
 };
 
+type IdRow = {
+  id: string;
+};
+
 const NOT_INTERESTED = [
   "not interested",
   "no thanks",
@@ -78,7 +82,7 @@ async function findLeadId(
 
   const emailId = String(payload.email_id || payload.id || "");
   if (emailId) {
-    const { data } = await admin
+    const { data } = await (admin as any)
       .from("outreach_events")
       .select("lead_id,payload,created_at")
       .eq("event_type", "sent")
@@ -95,7 +99,7 @@ async function findLeadId(
 
   const to = normalizeEmail(payload.to || payload.email || payload.recipient);
   if (to) {
-    const { data } = await admin
+    const { data } = await (admin as any)
       .from("leads")
       .select("id")
       .eq("contact_email", to)
@@ -103,7 +107,9 @@ async function findLeadId(
       .limit(1)
       .maybeSingle();
 
-    if (data?.id) return data.id as string;
+    const lead = data as IdRow | null;
+
+    if (lead?.id) return lead.id;
   }
 
   return null;
@@ -151,7 +157,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, matchedLead: false });
   }
 
-  await admin.from("outreach_events").insert({
+  await (admin as any).from("outreach_events").insert({
     lead_id: leadId,
     channel: "email",
     event_type: `resend_${eventType.replace(/[^a-z0-9_.-]/gi, "_")}`,
@@ -165,7 +171,7 @@ export async function POST(req: Request) {
   if (eventType.includes("reply") || replyText) {
     const status = classifyReply(replyText);
 
-    const { data: lead } = await admin
+    const { data: lead } = await (admin as any)
       .from("leads")
       .select("notes")
       .eq("id", leadId)
@@ -191,7 +197,7 @@ export async function POST(req: Request) {
       updated_via: "resend_webhook",
     };
 
-    await admin
+    await (admin as any)
       .from("leads")
       .update({
         status,
@@ -200,7 +206,7 @@ export async function POST(req: Request) {
       })
       .eq("id", leadId);
 
-    await admin.from("outreach_events").insert({
+    await (admin as any).from("outreach_events").insert({
       lead_id: leadId,
       channel: "email",
       event_type: "reply_captured",

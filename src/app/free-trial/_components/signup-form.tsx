@@ -5,11 +5,20 @@ import { FormEvent, useState } from "react";
 type Props = {
   onSuccess: (email: string) => void;
   selectedPlan: string;
-  buildIntake: () => object;
+  buildIntake: (input: TrialIntakeInput) => object;
   saveTrialIntake: (intake: object) => void;
   saveIntakeToBackend: (intake: object) => Promise<void>;
   buildNextUrl: () => string;
   supabase: ReturnType<typeof import("@/lib/supabase/client").createClient>;
+};
+
+type TrialIntakeInput = {
+  clinicName: string;
+  contactName: string;
+  email: string;
+  website: string;
+  phone: string;
+  city: string;
 };
 
 export default function SignupForm({
@@ -35,11 +44,22 @@ export default function SignupForm({
 
   const isLoading = googleLoading || passwordLoading || magicLinkLoading;
 
+  function collectIntakeInput(): TrialIntakeInput {
+    return {
+      clinicName,
+      contactName,
+      email,
+      website,
+      phone,
+      city,
+    };
+  }
+
   async function signInWithGoogle() {
     setGoogleLoading(true);
     setStatus("");
     try {
-      const intake = buildIntake();
+      const intake = buildIntake(collectIntakeInput());
       saveTrialIntake(intake);
       await saveIntakeToBackend(intake);
       const next = buildNextUrl();
@@ -90,7 +110,7 @@ export default function SignupForm({
         return;
       }
 
-      const intake = buildIntake();
+      const intake = buildIntake(collectIntakeInput());
       saveTrialIntake(intake);
       await saveIntakeToBackend(intake);
 
@@ -128,7 +148,7 @@ export default function SignupForm({
         return;
       }
 
-      const intake = buildIntake();
+      const intake = buildIntake(collectIntakeInput());
       saveTrialIntake(intake);
       await saveIntakeToBackend(intake);
 
@@ -165,7 +185,7 @@ export default function SignupForm({
           <p className="mt-3 text-sm text-muted">
             Start on the{" "}
             <span className="font-medium text-foreground">Growth</span> plan for
-            7 days with full access to the core LeadClaw workflow.
+            7 days with full access to the core LeadClaw AI workflow suite.
           </p>
           <p className="mt-2 text-xs font-medium text-muted-2">
             No card required • keep Growth, upgrade to Pro, or switch to free
@@ -195,7 +215,7 @@ export default function SignupForm({
 
           <form onSubmit={signUpWithPassword} className="space-y-3">
             <input
-              placeholder="Clinic name (optional)"
+              placeholder="Business or workspace name (optional)"
               value={clinicName}
               onChange={(e) => setClinicName(e.target.value)}
               className="input-premium w-full"
@@ -215,7 +235,7 @@ export default function SignupForm({
             />
             <input
               type="url"
-              placeholder="Clinic website (optional)"
+              placeholder="Website (optional)"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
               className="input-premium w-full"

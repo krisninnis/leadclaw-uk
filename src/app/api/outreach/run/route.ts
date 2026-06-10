@@ -53,6 +53,19 @@ const BLOCKED_PREFIXES = [
 
 const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
+type OutreachLeadRow = {
+  id: string;
+  company_name: string;
+  city: string | null;
+  contact_email: string | null;
+  status: string;
+  score: number | null;
+  outreach_subject: string | null;
+  outreach_message: string | null;
+  follow_up_stage: number | null;
+  last_contacted_at: string | null;
+};
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -60,22 +73,25 @@ function sleep(ms: number) {
 function inferBusinessContext(company: string) {
   const c = company.toLowerCase();
 
-  if (c.includes("nail")) {
-    return { label: "nail salon", pain: "missed booking calls and DMs" };
+  if (c.includes("studio") || c.includes("agency")) {
+    return { label: "service business", pain: "manual request follow-up" };
   }
 
-  if (c.includes("skin") || c.includes("aesthetic") || c.includes("cosmetic")) {
+  if (c.includes("consult") || c.includes("advisor")) {
     return {
-      label: "aesthetic clinic",
-      pain: "missed high-intent treatment enquiries",
+      label: "advisory business",
+      pain: "scattered intake and admin tasks",
     };
   }
 
-  if (c.includes("lash") || c.includes("brow")) {
-    return { label: "lash & brow studio", pain: "missed appointment requests" };
+  if (c.includes("group") || c.includes("services")) {
+    return {
+      label: "operations-led business",
+      pain: "repetitive admin and follow-ups",
+    };
   }
 
-  return { label: "beauty clinic", pain: "missed enquiries" };
+  return { label: "business", pain: "missed requests and repetitive admin" };
 }
 
 function variantFromId(id: string) {
@@ -101,13 +117,13 @@ function renderInitialMessage(lead: {
   if (v === 0) {
     return `Hi ${company} team,
 
-I came across your clinic${city ? ` in ${city}` : ""} and wanted to reach out.
+I came across your business${city ? ` in ${city}` : ""} and wanted to reach out.
 
-I'm building LeadClaw, a brand-new startup for clinics that helps capture website enquiries when staff are busy or out of hours.
+I'm building LeadClaw, a brand-new startup that helps businesses capture website requests, organise operational work, and automate follow-ups with AI.
 
 It's free to get started, with an optional paid subscription later, and there's also a no-obligation free trial.
 
-Because we're still early, we're improving the product constantly and listening closely to feedback from clinics.
+Because we're still early, we're improving the product constantly and listening closely to feedback from real teams.
 
 The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits that won't be offered once we grow.
 
@@ -123,11 +139,11 @@ Reply "no" to opt out.`;
   if (v === 1) {
     return `Hi ${company} team,
 
-Just a quick note — we help ${ctx.label}s${city ? ` in ${city}` : ""} respond faster when calls, forms, or messages come in at busy times.
+Just a quick note - we help ${ctx.label}s${city ? ` in ${city}` : ""} respond faster when calls, forms, documents, or messages come in at busy times.
 
 LeadClaw is a brand-new startup, free to get started, with an optional paid subscription later and a no-obligation free trial.
 
-We're updating the product constantly, and early clinics get a real chance to shape what we build with direct feedback.
+We're updating the product constantly, and early users get a real chance to shape what we build with direct feedback.
 
 The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits that won't be available later.
 
@@ -144,7 +160,7 @@ Reply "no" to opt out.`;
 
 Saw your business and thought I'd reach out.
 
-I'm building LeadClaw, a brand-new startup for clinics that helps avoid losing website enquiries when staff are tied up or it's out of hours.
+I'm building LeadClaw, a brand-new startup that helps businesses capture requests, route work, automate follow-ups, and reduce repetitive admin with AI.
 
 It's free to get started, with an optional paid subscription later, and there's a no-obligation free trial as well.
 
@@ -166,9 +182,9 @@ function renderFollowUp1(lead: { company_name: string }) {
 
 Just checking if you saw my last note.
 
-LeadClaw is a brand-new startup for clinics, free to get started, with an optional paid subscription later and a no-obligation free trial.
+LeadClaw is a brand-new startup for businesses, free to get started, with an optional paid subscription later and a no-obligation free trial.
 
-We're improving it constantly, and early clinics get a real chance to shape the product with feedback.
+We're improving it constantly, and early users get a real chance to shape the product with feedback.
 
 The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits that won't be offered later.
 
@@ -186,7 +202,7 @@ function renderFollowUp2(lead: { company_name: string }) {
 
 Final quick note from me.
 
-If improving enquiry response times is on your radar, I'd be happy to send a short example tailored to your clinic.
+If improving request response times or reducing repetitive admin is on your radar, I'd be happy to send a short example tailored to your business.
 
 LeadClaw is a new startup, free to get started, with an optional paid subscription later and a no-obligation free trial.
 
@@ -329,7 +345,7 @@ export async function POST(req: Request) {
   const dayStart = new Date();
   dayStart.setUTCHours(0, 0, 0, 0);
 
-  const { data: sentTodayRows } = await admin
+  const { data: sentTodayRows } = await (admin as any)
     .from("outreach_events")
     .select("id")
     .eq("channel", "email")
@@ -363,7 +379,7 @@ export async function POST(req: Request) {
     });
   }
 
-  const { data: leads, error } = await admin
+  const { data: leads, error } = await (admin as any)
     .from("leads")
     .select(
       "id,company_name,city,contact_email,status,score,outreach_subject,outreach_message,follow_up_stage,last_contacted_at",
@@ -387,7 +403,7 @@ export async function POST(req: Request) {
   const seenEmails = new Set<string>();
   let senderNotReady = false;
 
-  for (const lead of leads || []) {
+  for (const lead of (leads || []) as OutreachLeadRow[]) {
     if (sent.length >= remainingThisRun) break;
 
     const totalElapsed = Date.now() - startedAt;
@@ -411,7 +427,7 @@ export async function POST(req: Request) {
     if (!email || isBadEmail(email)) {
       skipped.push({ id: lead.id, email, reason: "invalid_email" });
 
-      await admin.from("outreach_events").insert({
+      await (admin as any).from("outreach_events").insert({
         lead_id: lead.id,
         channel: "email",
         event_type: "skipped",
@@ -424,7 +440,7 @@ export async function POST(req: Request) {
     if (seenEmails.has(email)) {
       skipped.push({ id: lead.id, email, reason: "duplicate_email_in_batch" });
 
-      await admin.from("outreach_events").insert({
+      await (admin as any).from("outreach_events").insert({
         lead_id: lead.id,
         channel: "email",
         event_type: "skipped",
@@ -439,7 +455,7 @@ export async function POST(req: Request) {
     if (await isSuppressed(email)) {
       skipped.push({ id: lead.id, email, reason: "suppressed" });
 
-      await admin.from("outreach_events").insert({
+      await (admin as any).from("outreach_events").insert({
         lead_id: lead.id,
         channel: "email",
         event_type: "skipped",
@@ -498,7 +514,7 @@ export async function POST(req: Request) {
 
       skipped.push({ id: lead.id, email, reason: err });
 
-      await admin.from("outreach_events").insert({
+      await (admin as any).from("outreach_events").insert({
         lead_id: lead.id,
         channel: "email",
         event_type: "failed",
@@ -531,7 +547,7 @@ export async function POST(req: Request) {
 
     sent.push({ id: lead.id, email, subject });
 
-    await admin.from("outreach_events").insert({
+    await (admin as any).from("outreach_events").insert({
       lead_id: lead.id,
       channel: "email",
       event_type: "sent",
@@ -543,7 +559,7 @@ export async function POST(req: Request) {
       },
     });
 
-    await admin
+    await (admin as any)
       .from("leads")
       .update({
         status: "contacted",

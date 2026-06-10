@@ -3,7 +3,7 @@
 import { FormEvent, useState } from 'react'
 
 const SAMPLE = `[
-  {"niche":"aesthetics","company_name":"Glow Clinic","website":"https://example.com","contact_email":"hello@example.com","contact_phone":"02070000000","city":"London","source":"google-maps"}
+  {"niche":"operations","company_name":"Acme Services","website":"https://example.com","contact_email":"hello@example.com","contact_phone":"02070000000","city":"London","source":"google-maps"}
 ]`
 
 export default function LeadImporter() {

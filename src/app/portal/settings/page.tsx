@@ -57,10 +57,10 @@ export default function PortalSettingsPage() {
           Settings
         </p>
         <h1 className="mt-2 text-2xl font-semibold text-foreground">
-          Clinic settings
+          Workspace settings
         </h1>
         <p className="mt-2 text-sm leading-7 text-muted">
-          Configure your clinic preferences and automation settings.
+          Configure your workspace preferences and automation settings.
         </p>
       </div>
 
@@ -76,8 +76,8 @@ export default function PortalSettingsPage() {
             </h2>
             <p className="mt-2 text-sm leading-7 text-muted">
               Paste your Google Business review link here. LeadClaw will
-              automatically send a review request to patients 48 hours after
-              their appointment. To find your link, go to your Google Business
+              automatically send a review request to customers 48 hours after
+              a completed appointment or service. To find your link, go to your Google Business
               Profile, click "Ask for reviews" and copy the URL.
             </p>
             <div className="mt-6">
@@ -88,7 +88,7 @@ export default function PortalSettingsPage() {
                 type="url"
                 value={reviewUrl}
                 onChange={(e) => setReviewUrl(e.target.value)}
-                placeholder="https://g.page/r/your-clinic/review"
+                placeholder="https://g.page/r/your-business/review"
                 className="mt-1 w-full"
               />
               <p className="mt-2 text-xs text-muted">
@@ -113,8 +113,8 @@ export default function PortalSettingsPage() {
                     Appointment reminders
                   </p>
                   <p className="mt-1 text-xs text-muted">
-                    Send patients a reminder email 48 hours before and 2 hours
-                    before their appointment.
+                    Send customers a reminder email 48 hours before and 2 hours
+                    before their appointment or scheduled service.
                   </p>
                 </div>
                 <button
@@ -133,8 +133,8 @@ export default function PortalSettingsPage() {
                     Review requests
                   </p>
                   <p className="mt-1 text-xs text-muted">
-                    Send patients a Google review request 48 hours after their
-                    appointment.
+                    Send customers a Google review request 48 hours after their
+                    appointment or completed service.
                   </p>
                 </div>
                 <button

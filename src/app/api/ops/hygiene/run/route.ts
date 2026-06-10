@@ -2,6 +2,14 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logSystemEvent } from '@/lib/ops'
 
+type LeadHygieneRow = {
+  id: string
+  contact_email: string | null
+  status: string | null
+  company_name: string | null
+  updated_at: string | null
+}
+
 function normalizeEmail(raw: unknown) {
   const s = String(raw || '').trim().toLowerCase().replace(/^mailto:/, '').replace(/\s+/g, '')
   try {
@@ -21,7 +29,7 @@ export async function POST(req: Request) {
   const admin = createAdminClient()
   if (!admin) return NextResponse.json({ ok: false, error: 'supabase_not_configured' }, { status: 400 })
 
-  const { data: leads, error } = await admin
+  const { data: leads, error } = await (admin as any)
     .from('leads')
     .select('id,contact_email,status,company_name,updated_at')
     .order('updated_at', { ascending: false })
@@ -34,24 +42,24 @@ export async function POST(req: Request) {
   let deduped = 0
   const seen = new Map<string, string>()
 
-  for (const lead of leads || []) {
+  for (const lead of (leads || []) as LeadHygieneRow[]) {
     const email = normalizeEmail(lead.contact_email)
     if (!email || !email.includes('@')) {
       if (lead.contact_email) {
-        await admin.from('leads').update({ contact_email: null, updated_at: new Date().toISOString() }).eq('id', lead.id)
+        await (admin as any).from('leads').update({ contact_email: null, updated_at: new Date().toISOString() }).eq('id', lead.id)
         invalid += 1
       }
       continue
     }
 
     if (email !== lead.contact_email) {
-      await admin.from('leads').update({ contact_email: email, updated_at: new Date().toISOString() }).eq('id', lead.id)
+      await (admin as any).from('leads').update({ contact_email: email, updated_at: new Date().toISOString() }).eq('id', lead.id)
       cleaned += 1
     }
 
     const key = `${(lead.company_name || '').trim().toLowerCase()}|${email}`
     if (seen.has(key)) {
-      await admin.from('leads').update({ status: 'duplicate', updated_at: new Date().toISOString() }).eq('id', lead.id)
+      await (admin as any).from('leads').update({ status: 'duplicate', updated_at: new Date().toISOString() }).eq('id', lead.id)
       deduped += 1
     } else {
       seen.set(key, lead.id)

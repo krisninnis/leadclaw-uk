@@ -7,10 +7,7 @@ export async function POST(req: Request) {
     const expected = process.env.AGENT_SECRET;
 
     if (!expected || auth !== expected) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -19,7 +16,7 @@ export async function POST(req: Request) {
     if (!command) {
       return NextResponse.json(
         { error: "Command is required" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -28,11 +25,11 @@ export async function POST(req: Request) {
     if (!supabase) {
       return NextResponse.json(
         { error: "Admin client unavailable" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("agent_commands")
       .insert({
         command,
@@ -45,7 +42,7 @@ export async function POST(req: Request) {
     if (error) {
       return NextResponse.json(
         { error: "Failed to save command", details: error.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -55,9 +52,6 @@ export async function POST(req: Request) {
       command: data,
     });
   } catch {
-    return NextResponse.json(
-      { error: "Invalid request" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Invalid request" }, { status: 500 });
   }
 }

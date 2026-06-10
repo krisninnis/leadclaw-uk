@@ -10,22 +10,22 @@ export default function PricingFaq() {
               Value framing
             </p>
             <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              The real cost is usually the enquiries your clinic never sees.
+              The real cost is usually the admin your team repeats every week.
             </h2>
             <p className="mt-4 text-lg leading-8 text-muted">
-              Clinics often spend on websites, ads, referrals, and social media
-              to generate interest. LeadClaw helps protect that demand by making
-              sure more of it gets captured and followed up.
+              Businesses spend time chasing requests, copying data, following up
+              manually, and building reports by hand. LeadClaw helps reduce that
+              friction by turning recurring work into simple AI workflows.
             </p>
 
             <div className="mt-8 rounded-[24px] border border-border bg-white p-5">
               <p className="text-sm font-medium text-muted">Simple ROI idea</p>
               <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-                One extra treatment booking can outweigh the subscription.
+                One saved admin hour can outweigh the subscription.
               </p>
               <p className="mt-2 text-sm leading-7 text-muted">
-                That makes missed-enquiry recovery one of the clearest value
-                stories on the site.
+                That makes request capture, follow-up, data cleanup, and
+                reporting automation easy to value.
               </p>
             </div>
           </div>

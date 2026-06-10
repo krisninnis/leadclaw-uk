@@ -48,7 +48,7 @@ export default function EarlyAccessButton({
               Join early access
             </h2>
             <p className="mt-2 text-sm leading-7 text-muted">
-              We are onboarding founding clinics free of charge. Enter your
+              We are onboarding founding workspaces free of charge. Enter your
               email and we will be in touch within 24 hours.
             </p>
 
@@ -64,7 +64,7 @@ export default function EarlyAccessButton({
                 <input
                   type="email"
                   required
-                  placeholder="your@clinic.com"
+                  placeholder="you@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full rounded-2xl border border-border px-4 py-3 text-sm outline-none focus:border-brand"

@@ -23,6 +23,10 @@ type SubscriptionRow = {
   updated_at: string | null;
 };
 
+type ApplicationIdRow = {
+  id: string;
+};
+
 function normalizeNext(value: string | null) {
   if (!value || !value.startsWith("/")) return "/portal";
   return value;
@@ -83,7 +87,7 @@ async function saveApplicationRecord(
     throw new Error("supabase_not_configured");
   }
 
-  const { data: existingRow, error: findError } = await admin
+  const { data: existingRow, error: findError } = await (admin as any)
     .from("applications")
     .select("id")
     .eq("email", email)
@@ -95,15 +99,17 @@ async function saveApplicationRecord(
     throw new Error(findError.message);
   }
 
-  if (existingRow?.id) {
-    const { error: updateError } = await admin
+  const existingApplication = existingRow as ApplicationIdRow | null;
+
+  if (existingApplication?.id) {
+    const { error: updateError } = await (admin as any)
       .from("applications")
       .update({
         plan,
         contact_name: contactName,
         city: "Not Provided",
       })
-      .eq("id", existingRow.id);
+      .eq("id", existingApplication.id);
 
     if (updateError) {
       throw new Error(updateError.message);
@@ -112,7 +118,7 @@ async function saveApplicationRecord(
     return;
   }
 
-  const { error: insertError } = await admin.from("applications").insert({
+  const { error: insertError } = await (admin as any).from("applications").insert({
     email,
     contact_name: contactName,
     clinic_name: null,
@@ -139,7 +145,7 @@ async function startTrialForUser(
     throw new Error("supabase_not_configured");
   }
 
-  const { data: existingRows, error: existingError } = await admin
+  const { data: existingRows, error: existingError } = await (admin as any)
     .from("subscriptions")
     .select(
       "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
@@ -197,14 +203,16 @@ async function startTrialForUser(
   let subError: string | null = null;
 
   if (existing?.id) {
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from("subscriptions")
       .update(subscriptionRow)
       .eq("id", existing.id);
 
     if (error) subError = error.message;
   } else {
-    const { error } = await admin.from("subscriptions").insert(subscriptionRow);
+    const { error } = await (admin as any)
+      .from("subscriptions")
+      .insert(subscriptionRow);
 
     if (error) subError = error.message;
   }
@@ -264,7 +272,7 @@ async function startBasicForUser(
     throw new Error("supabase_not_configured");
   }
 
-  const { data: existingRows, error: existingError } = await admin
+  const { data: existingRows, error: existingError } = await (admin as any)
     .from("subscriptions")
     .select(
       "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
@@ -309,14 +317,16 @@ async function startBasicForUser(
   let subError: string | null = null;
 
   if (existing?.id) {
-    const { error } = await admin
+    const { error } = await (admin as any)
       .from("subscriptions")
       .update(subscriptionRow)
       .eq("id", existing.id);
 
     if (error) subError = error.message;
   } else {
-    const { error } = await admin.from("subscriptions").insert(subscriptionRow);
+    const { error } = await (admin as any)
+      .from("subscriptions")
+      .insert(subscriptionRow);
 
     if (error) subError = error.message;
   }

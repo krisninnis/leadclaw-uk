@@ -12,6 +12,10 @@ type LeadRow = {
   updated_at: string;
 };
 
+type LeadNotesRow = {
+  notes: string | null;
+};
+
 type OutreachEvent = {
   lead_id: string;
   event_type: string;
@@ -40,7 +44,7 @@ export async function GET() {
     );
   }
 
-  const { data: leads, error: leadsErr } = await admin
+  const { data: leads, error: leadsErr } = await (admin as any)
     .from("leads")
     .select("id,company_name,contact_email,city,status,notes,updated_at")
     .order("updated_at", { ascending: false })
@@ -53,11 +57,12 @@ export async function GET() {
     );
   }
 
-  const leadIds = (leads || []).map((l) => l.id);
+  const leadRows = (leads || []) as LeadRow[];
+  const leadIds = leadRows.map((l) => l.id);
   let events: OutreachEvent[] = [];
 
   if (leadIds.length > 0) {
-    const { data: evData } = await admin
+    const { data: evData } = await (admin as any)
       .from("outreach_events")
       .select("lead_id,event_type,created_at,payload")
       .in("lead_id", leadIds)
@@ -72,7 +77,7 @@ export async function GET() {
     if (!latestByLead.has(ev.lead_id)) latestByLead.set(ev.lead_id, ev);
   }
 
-  const rows = ((leads as LeadRow[]) || []).map((lead) => {
+  const rows = leadRows.map((lead) => {
     const notes = parseNotes(lead.notes);
     const latest = latestByLead.get(lead.id);
 
@@ -137,14 +142,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: existing } = await admin
+  const { data: existing } = await (admin as any)
     .from("leads")
     .select("notes")
     .eq("id", leadId)
     .maybeSingle();
 
+  const existingLead = existing as LeadNotesRow | null;
   const parsed = parseNotes(
-    (existing?.notes as string | null) || null,
+    existingLead?.notes || null,
   ) as Record<string, unknown>;
   const merged = {
     ...parsed,
@@ -155,7 +161,7 @@ export async function POST(req: NextRequest) {
     updated_at: new Date().toISOString(),
   };
 
-  const { error: updateErr } = await admin
+  const { error: updateErr } = await (admin as any)
     .from("leads")
     .update({
       status,
@@ -171,14 +177,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await admin.from("outreach_events").insert({
+  await (admin as any).from("outreach_events").insert({
     lead_id: leadId,
     channel: "crm",
     event_type: "lead_outcome_updated",
     payload: { status, outcomeLabel, followUpDueAt, note },
   });
 
-  await admin.from("system_events").insert({
+  await (admin as any).from("system_events").insert({
     level: "info",
     category: "lead_ops",
     message: `Lead outcome updated: ${leadId} -> ${status}`,

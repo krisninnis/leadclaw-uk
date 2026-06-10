@@ -15,6 +15,10 @@ const schema = z.object({
   widgetReady: z.boolean().optional(),
 });
 
+type LeadNotesRow = {
+  notes: string | null;
+};
+
 export async function POST(req: Request) {
   const admin = createAdminClient();
 
@@ -47,7 +51,7 @@ export async function POST(req: Request) {
       personalisedDemo && widgetReady ? "hot_demo" : "clicked_demo";
 
     if (leadId) {
-      const { data: leadRow, error: leadLookupError } = await admin
+      const { data: leadRow, error: leadLookupError } = await (admin as any)
         .from("leads")
         .select("notes")
         .eq("id", leadId)
@@ -63,7 +67,7 @@ export async function POST(req: Request) {
         );
       }
 
-      const existingNotes = leadRow?.notes;
+      const existingNotes = (leadRow as LeadNotesRow | null)?.notes;
       const safeNotes = String(existingNotes || "").trim();
 
       const clickTag = `demo_visit_source=${source || "unknown"}`;
@@ -87,7 +91,7 @@ export async function POST(req: Request) {
         .filter(Boolean)
         .join(" | ");
 
-      const { error: leadUpdateError } = await admin
+      const { error: leadUpdateError } = await (admin as any)
         .from("leads")
         .update({
           notes: nextNotes,
@@ -105,7 +109,7 @@ export async function POST(req: Request) {
         );
       }
 
-      const { error: eventInsertError } = await admin
+      const { error: eventInsertError } = await (admin as any)
         .from("outreach_events")
         .insert({
           lead_id: leadId,

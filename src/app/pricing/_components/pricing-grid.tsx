@@ -58,26 +58,28 @@ function primaryLabel(slug: "basic" | "growth" | "pro") {
 }
 
 function supportCopy(slug: "basic" | "growth" | "pro") {
-  if (slug === "basic") return "Free forever • no card required";
-  if (slug === "growth")
-    return "Try the full Growth package for 7 days • no card required";
-  return "Try Pro free for 7 days • no card required";
+  if (slug === "basic") return "Free forever - no card required";
+  if (slug === "growth") {
+    return "Try the full Growth workflow for 7 days - no card required";
+  }
+  return "Try Pro automation free for 7 days - no card required";
 }
 
 function earlyAccessSupportCopy(slug: "basic" | "growth" | "pro") {
-  if (slug === "growth")
-    return "Free early access • founding clinic perks included";
-  return "Priority early access • locked-in founding price";
+  if (slug === "growth") {
+    return "Free early access - founding workspace perks included";
+  }
+  return "Priority early access - locked-in founding price";
 }
 
 function planSummary(slug: "basic" | "growth" | "pro") {
   if (slug === "basic") {
-    return "Built for clinics that want a simple free enquiry widget with self-serve setup.";
+    return "Built for businesses that want a simple free intake widget with self-serve setup.";
   }
   if (slug === "growth") {
-    return "Most clinics should start here to experience LeadClaw's full automation and follow-up workflow.";
+    return "Most teams should start here to experience LeadClaw's core automation and follow-up workflow.";
   }
-  return "Built for clinics that want advanced automation, stronger performance insight, and premium support.";
+  return "Built for teams that want advanced automation, stronger reporting, and priority support.";
 }
 
 export default function PricingGrid({
@@ -91,10 +93,10 @@ export default function PricingGrid({
         {isEarlyAccess && (
           <div className="mb-8 rounded-[24px] border border-violet-200 bg-violet-50 p-5 text-center">
             <p className="text-sm font-semibold text-violet-900">
-              🚀 Early Access Mode — Growth and Pro are free to join right now
+              Early Access Mode - Growth and Pro are free to join right now
             </p>
             <p className="mt-1 text-sm text-violet-800">
-              We are onboarding founding clinics free of charge. Paid plans
+              We are onboarding founding workspaces free of charge. Paid plans
               launch soon with locked-in founding pricing.
             </p>
           </div>
@@ -128,7 +130,7 @@ export default function PricingGrid({
                   >
                     <Image
                       src={mascotSrc(plan.slug)}
-                      alt={`${plan.name} mascot`}
+                      alt={`${plan.name} plan graphic`}
                       width={80}
                       height={80}
                       className={mascotImageClass(plan.slug)}
@@ -144,7 +146,7 @@ export default function PricingGrid({
                     plan.badgeClass,
                   ].join(" ")}
                 >
-                  {plan.name} • {plan.mascot}
+                  {plan.name}
                   {isEarlyAccess && plan.slug !== "basic" && (
                     <span className="ml-2 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-bold text-violet-700">
                       EARLY ACCESS
@@ -171,7 +173,7 @@ export default function PricingGrid({
               </div>
 
               {isEarlyAccess && plan.slug !== "basic" && (
-                <p className="mt-1 text-center text-xs text-violet-700 font-medium">
+                <p className="mt-1 text-center text-xs font-medium text-violet-700">
                   then {plan.price}
                   {plan.period} when paid plans launch
                 </p>
@@ -196,7 +198,7 @@ export default function PricingGrid({
                 {isEarlyAccess && plan.slug !== "basic" ? (
                   <EarlyAccessButton
                     plan={plan.slug as "growth" | "pro"}
-                    label={`Join early access — ${plan.name}`}
+                    label={`Join early access - ${plan.name}`}
                   />
                 ) : (
                   <Link

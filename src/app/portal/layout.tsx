@@ -116,7 +116,7 @@ export default async function PortalLayout({
               </h2>
               <p className="mt-1 text-sm text-muted">
                 {hasFullAccess
-                  ? "Clinic workspace for leads, install, billing, and support."
+                  ? "Workspace for requests, install, billing, and support."
                   : "Basic workspace with billing, support, and upgrade access."}
               </p>
             </div>

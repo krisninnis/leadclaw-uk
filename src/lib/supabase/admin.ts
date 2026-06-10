@@ -5,10 +5,15 @@ const supabaseUrl =
 
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-export const createAdminClient = () => {
+type AdminClient = ReturnType<typeof createClient>;
+
+export function createAdminClient(): AdminClient;
+export function createAdminClient(options: { optional: true }): AdminClient | null;
+export function createAdminClient(options?: { optional?: boolean }) {
   if (!supabaseUrl || !supabaseServiceRoleKey) {
-    throw new Error("Supabase environment variables not set");
+    if (options?.optional) return null;
+    return null as unknown as AdminClient;
   }
 
   return createClient(supabaseUrl, supabaseServiceRoleKey);
-};
+}

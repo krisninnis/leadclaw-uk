@@ -63,14 +63,15 @@ function escapeJsString(input: string) {
 export function buildWidgetSnippet(appUrl: string, token: string) {
   const base = normalizeAppUrl(appUrl);
   const safeToken = escapeHtmlAttr(token);
+  const safeTokenParam = encodeURIComponent(token.trim());
 
-  if (!base || !safeToken) return "";
+  if (!base || !safeToken || !safeTokenParam) return "";
 
   return [
     "<!-- LeadClaw Widget -->",
     "<script",
     "  defer",
-    `  src="${base}/api/widget/bootstrap.js"`,
+    `  src="${base}/api/widget/bootstrap.js?token=${safeTokenParam}"`,
     `  data-claw-token="${safeToken}"`,
     '  crossorigin="anonymous"',
     "></script>",
@@ -80,8 +81,9 @@ export function buildWidgetSnippet(appUrl: string, token: string) {
 export function buildGtmSnippet(appUrl: string, token: string) {
   const base = normalizeAppUrl(appUrl);
   const safeToken = escapeJsString(token);
+  const safeTokenParam = encodeURIComponent(token.trim());
 
-  if (!base || !safeToken) return "";
+  if (!base || !safeToken || !safeTokenParam) return "";
 
   return [
     "<!-- LeadClaw Widget (GTM) -->",
@@ -89,7 +91,8 @@ export function buildGtmSnippet(appUrl: string, token: string) {
     "(function () {",
     `  window.clawWidgetToken = "${safeToken}";`,
     '  var s = document.createElement("script");',
-    `  s.src = "${base}/api/widget/bootstrap.js";`,
+    `  s.src = "${base}/api/widget/bootstrap.js?token=${safeTokenParam}";`,
+    `  s.setAttribute("data-claw-token", "${safeToken}");`,
     "  s.defer = true;",
     '  s.crossOrigin = "anonymous";',
     "  document.head.appendChild(s);",

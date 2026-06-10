@@ -17,20 +17,20 @@ export default async function PortalSupportPage() {
       <div className="card-premium p-6 md:p-8">
         <SectionHeading
           eyebrow="Support"
-          title="Get help inside your clinic workspace"
-          description="Contact LeadClaw for onboarding, install help, billing questions, bug reports, or anything affecting your clinic setup."
+          title="Get help inside your workspace"
+          description="Contact LeadClaw for onboarding, install help, billing questions, bug reports, or anything affecting your workspace setup."
           maxWidth="lg"
         />
 
         <div className="mt-6 rounded-[24px] border border-sky-200 bg-sky-50 p-5">
           <h2 className="text-lg font-semibold text-sky-950">
-            Built with real clinic feedback
+            Built with real customer feedback
           </h2>
           <p className="mt-2 text-sm leading-7 text-sky-900">
-            LeadClaw is an early-stage product built closely with real clinic
+            LeadClaw is an early-stage product built closely with real customer
             feedback. If you spot an issue, want something improved, or have an
-            idea that would make the platform more useful for your clinic, send
-            us a message here. We review every report carefully and ship
+            idea that would make the platform more useful for your workspace,
+            send us a message here. We review every report carefully and ship
             improvements continuously.
           </p>
         </div>
@@ -71,11 +71,11 @@ export default async function PortalSupportPage() {
           <div className="rounded-[22px] border border-border bg-white p-5">
             <p className="text-sm font-medium text-muted">Lead follow-up</p>
             <p className="mt-2 text-base font-semibold text-foreground">
-              Need help with enquiries?
+              Need help with requests?
             </p>
             <p className="mt-2 text-sm leading-7 text-muted">
               Ask for help understanding lead statuses, workflow, or what to do
-              next with your captured enquiries.
+              next with your captured requests.
             </p>
             <div className="mt-4">
               <Link href="/portal/leads" className="button-secondary">
@@ -91,7 +91,7 @@ export default async function PortalSupportPage() {
             </p>
             <p className="mt-2 text-sm leading-7 text-muted">
               Report bugs, request features, or tell us what would make LeadClaw
-              better for your clinic.
+              better for your workspace.
             </p>
             <div className="mt-4">
               <a href="#support-chat" className="button-secondary">
@@ -111,7 +111,7 @@ export default async function PortalSupportPage() {
           </p>
           <div className="mt-3 space-y-2 text-sm leading-7 text-muted">
             <p>
-              Include your clinic name and the page where the issue happened.
+              Include your business name and the page where the issue happened.
             </p>
             <p>
               Tell us what you expected to happen and what happened instead.

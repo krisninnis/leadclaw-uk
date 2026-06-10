@@ -12,12 +12,24 @@ const schema = z.object({
   notes: z.string().max(1000).optional().nullable(),
 });
 
+type OnboardingClientIdRow = {
+  id: string;
+};
+
+type OnboardingSiteClinicRow = {
+  clinic_id: string | null;
+};
+
+type InsertedAppointmentRow = {
+  id: string;
+};
+
 async function getClinicId(
   userEmail: string,
   admin: ReturnType<typeof createAdminClient>,
 ) {
   if (!admin) return null;
-  const { data: client } = await admin
+  const { data: client } = await (admin as any)
     .from("onboarding_clients")
     .select("id")
     .eq("contact_email", userEmail)
@@ -25,17 +37,21 @@ async function getClinicId(
     .limit(1)
     .maybeSingle();
 
-  if (!client?.id) return null;
+  const onboardingClient = client as OnboardingClientIdRow | null;
 
-  const { data: site } = await admin
+  if (!onboardingClient?.id) return null;
+
+  const { data: site } = await (admin as any)
     .from("onboarding_sites")
     .select("clinic_id")
-    .eq("onboarding_client_id", client.id)
+    .eq("onboarding_client_id", onboardingClient.id)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 
-  return site?.clinic_id || null;
+  const onboardingSite = site as OnboardingSiteClinicRow | null;
+
+  return onboardingSite?.clinic_id || null;
 }
 
 export async function GET() {
@@ -57,7 +73,7 @@ export async function GET() {
       { status: 404 },
     );
 
-  const { data, error } = await admin!
+  const { data, error } = await (admin as any)
     .from("appointments")
     .select("*")
     .eq("clinic_id", clinicId)
@@ -96,7 +112,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = schema.parse(body);
 
-    const { data, error } = await admin!
+    const { data, error } = await (admin as any)
       .from("appointments")
       .insert({ ...parsed, clinic_id: clinicId })
       .select("id")
@@ -108,7 +124,9 @@ export async function POST(req: Request) {
         { status: 500 },
       );
 
-    return NextResponse.json({ ok: true, id: data.id });
+    const appointment = data as InsertedAppointmentRow;
+
+    return NextResponse.json({ ok: true, id: appointment.id });
   } catch (err) {
     if (err instanceof z.ZodError)
       return NextResponse.json(
@@ -149,7 +167,7 @@ export async function DELETE(req: Request) {
       { status: 404 },
     );
 
-  const { error } = await admin!
+  const { error } = await (admin as any)
     .from("appointments")
     .delete()
     .eq("id", id)

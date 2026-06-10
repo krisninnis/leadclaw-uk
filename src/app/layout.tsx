@@ -5,9 +5,9 @@ import AppShell from "@/components/app-shell";
 import PHProvider from "@/components/posthog-provider";
 
 export const metadata: Metadata = {
-  title: "LeadClaw | AI front desk for aesthetic clinics",
+  title: "LeadClaw | AI workflow automation suite",
   description:
-    "LeadClaw captures missed website enquiries for aesthetic clinics using an AI front desk, turning visitors into leads automatically.",
+    "LeadClaw helps businesses capture requests, organise operational work, automate follow-ups, and save hours on repetitive admin and data tasks with AI.",
   icons: {
     icon: "/favicon.png",
   },
@@ -16,32 +16,33 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://www.leadclaw.uk",
     siteName: "LeadClaw",
-    title: "LeadClaw | AI front desk for aesthetic clinics",
+    title: "LeadClaw | AI workflow automation suite",
     description:
-      "Stop losing clinic enquiries out of hours. LeadClaw adds an AI front desk to your clinic website that captures leads 24/7 and sends them straight to your team.",
+      "Capture requests, organise work, automate follow-ups, and reduce repetitive admin with LeadClaw's AI workflow tools.",
     images: [
       {
         url: "/brand/mascots/panther-growth.jpg",
         width: 1200,
         height: 630,
-        alt: "LeadClaw AI front desk for UK aesthetic clinics",
+        alt: "LeadClaw AI workflow automation suite",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "LeadClaw | AI front desk for aesthetic clinics",
+    title: "LeadClaw | AI workflow automation suite",
     description:
-      "Stop losing clinic enquiries out of hours. LeadClaw adds an AI front desk to your clinic website that captures leads 24/7.",
+      "Capture requests, organise work, automate follow-ups, and reduce repetitive admin with LeadClaw.",
     images: ["/brand/mascots/panther-growth.jpg"],
   },
   keywords: [
-    "aesthetic clinic software UK",
-    "AI receptionist for clinics",
-    "clinic lead capture",
-    "missed enquiry recovery",
-    "beauty clinic automation",
-    "UK aesthetic clinic management",
+    "AI workflow automation",
+    "AI receptionist",
+    "lead tracker",
+    "automated follow-up assistant",
+    "data cleaner",
+    "document extractor",
+    "weekly report bot",
   ],
 };
 

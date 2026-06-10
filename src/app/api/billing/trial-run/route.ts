@@ -16,6 +16,10 @@ type SubscriptionRow = {
   plan: string | null;
 };
 
+type BillingNotificationRow = {
+  id: string;
+};
+
 function isExpiredTrial(status: string | null | undefined, stage: TrialStage) {
   return (
     stage === "expired" && String(status || "").toLowerCase() === "trialing"
@@ -48,7 +52,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: subs, error } = await admin
+  const { data: subs, error } = await (admin as any)
     .from("subscriptions")
     .select("id,email,status,trial_end,plan")
     .in("status", ["trialing", "active", "past_due", "expired", "canceled"])
@@ -80,7 +84,7 @@ export async function POST(req: Request) {
     if (!normalizedEmail) continue;
 
     if (isExpiredTrial(sub.status, stage)) {
-      const { error: expireError } = await admin
+      const { error: expireError } = await (admin as any)
         .from("subscriptions")
         .update({
           status: "expired",
@@ -125,7 +129,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const { data: seen } = await admin
+    const { data: seen } = await (admin as any)
       .from("billing_notifications")
       .select("id")
       .eq("subscription_id", sub.id)
@@ -133,13 +137,15 @@ export async function POST(req: Request) {
       .limit(1)
       .maybeSingle();
 
-    if (seen?.id) {
+    const priorNotification = seen as BillingNotificationRow | null;
+
+    if (priorNotification?.id) {
       skippedCount += 1;
       continue;
     }
 
     if (await isSuppressed(normalizedEmail)) {
-      await admin.from("billing_notifications").insert({
+      await (admin as any).from("billing_notifications").insert({
         subscription_id: sub.id,
         email: normalizedEmail,
         stage,
@@ -161,7 +167,7 @@ export async function POST(req: Request) {
       html: `<p>${rendered.text.replace(/\n/g, "<br/>")}</p>`,
     });
 
-    await admin.from("billing_notifications").insert({
+    await (admin as any).from("billing_notifications").insert({
       subscription_id: sub.id,
       email: normalizedEmail,
       stage,

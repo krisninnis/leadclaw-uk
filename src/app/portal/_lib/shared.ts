@@ -81,7 +81,7 @@ export async function updateEnquiryStatus(formData: FormData) {
   const admin = createAdminClient();
   if (!admin) return;
 
-  const { error } = await admin
+  const { error } = await (admin as any)
     .from("enquiries")
     .update({ status: nextStatus })
     .eq("id", enquiryId);
@@ -105,7 +105,7 @@ export async function updateEnquiryNotes(formData: FormData) {
   const admin = createAdminClient();
   if (!admin) return;
 
-  const { error } = await admin
+  const { error } = await (admin as any)
     .from("enquiries")
     .update({ notes: notes || null })
     .eq("id", enquiryId);

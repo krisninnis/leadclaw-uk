@@ -67,7 +67,7 @@ export async function POST(_req: NextRequest) {
     );
   }
 
-  const { data: existingRows, error: existingError } = await admin
+  const { data: existingRows, error: existingError } = await (admin as any)
     .from("subscriptions")
     .select(
       "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
@@ -145,7 +145,7 @@ export async function POST(_req: NextRequest) {
   let writeError: string | null = null;
 
   if (existing?.id) {
-    const { error: updateError } = await admin
+    const { error: updateError } = await (admin as any)
       .from("subscriptions")
       .update(row)
       .eq("id", existing.id);
@@ -154,7 +154,7 @@ export async function POST(_req: NextRequest) {
       writeError = updateError.message;
     }
   } else {
-    const { error: insertError } = await admin
+    const { error: insertError } = await (admin as any)
       .from("subscriptions")
       .insert(row);
 

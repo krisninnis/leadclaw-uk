@@ -49,7 +49,7 @@ export default function PortalPlanUpgrade({
           </button>
         )}
         <p className="text-xs text-muted">
-          Paid plans launch soon. Founding clinics get priority access and
+          Paid plans launch soon. Founding workspaces get priority access and
           locked-in pricing.
         </p>
       </div>

@@ -21,7 +21,7 @@ function scoreLead(input: z.infer<typeof leadSchema>) {
   if (input.contact_phone) score += 20;
   if (input.city) score += 10;
   if (
-    ["aesthetics", "trades", "estate"].some((n) =>
+    ["operations", "services", "trades", "estate", "agency", "consult"].some((n) =>
       input.niche.toLowerCase().includes(n),
     )
   )
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       score: scoreLead(r),
     }));
 
-    const { error } = await admin.from("leads").insert(payload);
+    const { error } = await (admin as any).from("leads").insert(payload);
 
     if (error) {
       return NextResponse.json(
