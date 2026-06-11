@@ -5,6 +5,7 @@ import { FormEvent, Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { queueGaEvent, trackGaEvent } from "@/lib/ga";
+import GoogleIcon from "@/components/auth/google-icon";
 
 type PlanSlug = "basic";
 
@@ -283,6 +284,7 @@ function SignupContent() {
             disabled={googleLoading || passwordLoading || magicLinkLoading}
             className="button-secondary w-full"
           >
+            <GoogleIcon className="shrink-0" />
             {googleLoading ? "Redirecting..." : "Continue with Google"}
           </button>
 

@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { queueGaEvent, trackGaEvent } from "@/lib/ga";
+import GoogleIcon from "@/components/auth/google-icon";
 
 type Props = {
   onSuccess: (email: string) => void;
@@ -258,6 +259,7 @@ export default function SignupForm({
             disabled={isLoading}
             className="button-secondary w-full"
           >
+            <GoogleIcon className="shrink-0" />
             {googleLoading ? "Redirecting..." : "Continue with Google"}
           </button>
 

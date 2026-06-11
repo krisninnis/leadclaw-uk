@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import TrialCtaLink from "@/components/trial-cta-link";
+import GoogleIcon from "@/components/auth/google-icon";
 
 export default function LoginForm({ next }: { next: string }) {
   const supabase = createClient();
@@ -132,6 +133,7 @@ export default function LoginForm({ next }: { next: string }) {
             disabled={googleLoading || passwordLoading || magicLinkLoading}
             className="button-secondary w-full"
           >
+            <GoogleIcon className="shrink-0" />
             {googleLoading ? "Redirecting..." : "Continue with Google"}
           </button>
 
