@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import SolutionsByClinicType from "@/components/seo/solutions-by-clinic-type";
 
 export const metadata: Metadata = {
   title: "LeadClaw Help | Install and set up LeadClaw",
@@ -235,6 +236,8 @@ export default function HelpPage() {
           ))}
         </div>
       </section>
+
+      <SolutionsByClinicType variant="card" />
 
       <section className="rounded-[24px] border bg-white p-6 md:p-8">
         <h2 className="text-2xl font-semibold tracking-tight text-foreground">

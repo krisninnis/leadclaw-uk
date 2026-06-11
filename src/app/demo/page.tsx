@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
+import SolutionsByClinicType from "@/components/seo/solutions-by-clinic-type";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = {
@@ -203,6 +204,8 @@ export default async function DemoPage({
               </div>
             </div>
           </div>
+
+          <SolutionsByClinicType variant="card" />
         </div>
       </div>
 

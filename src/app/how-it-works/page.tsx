@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import SolutionsByClinicType from "@/components/seo/solutions-by-clinic-type";
 
 export const metadata: Metadata = {
   title: "How LeadClaw Works | AI workflow automation",
@@ -20,6 +21,7 @@ export default function HowItWorksPage() {
         <li>You run 7-day free trial with live lead tracking.</li>
         <li>Only continue to monthly subscription if satisfied.</li>
       </ol>
+      <SolutionsByClinicType variant="card" />
     </div>
   )
 }

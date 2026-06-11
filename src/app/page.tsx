@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import SolutionsByClinicType from "@/components/seo/solutions-by-clinic-type";
 import TrialCtaLink from "@/components/trial-cta-link";
 
 export const metadata: Metadata = {
@@ -399,6 +400,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <SolutionsByClinicType />
 
       <section className="section-shell">
         <div className="container-shell">
