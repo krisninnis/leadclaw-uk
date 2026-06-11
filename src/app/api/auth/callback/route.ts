@@ -5,6 +5,7 @@ import { createServerClient } from "@supabase/ssr";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
+import { normalizeAuthRedirectPath } from "@/lib/auth-redirect";
 
 type PlanSlug = "basic" | "growth" | "pro";
 
@@ -28,8 +29,7 @@ type ApplicationIdRow = {
 };
 
 function normalizeNext(value: string | null) {
-  if (!value || !value.startsWith("/")) return "/portal";
-  return value;
+  return normalizeAuthRedirectPath(value, "/portal");
 }
 
 function normalizePlan(value: string | null): PlanSlug {
@@ -232,6 +232,8 @@ async function startTrialForUser(
       email,
       plan,
       subscriptionStatus: "trialing",
+      ownerUserId: userId,
+      ownerName: contactName,
     });
   } catch (e) {
     await logSystemEvent({
@@ -346,6 +348,8 @@ async function startBasicForUser(
       email,
       plan: "basic",
       subscriptionStatus: "active",
+      ownerUserId: userId,
+      ownerName: contactName,
     });
   } catch (e) {
     await logSystemEvent({

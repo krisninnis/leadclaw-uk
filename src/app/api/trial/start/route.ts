@@ -172,7 +172,14 @@ export async function POST(_req: NextRequest) {
   > | null = null;
 
   try {
-    provisionResult = await provisionClinicWorkspace({ email });
+    provisionResult = await provisionClinicWorkspace({
+      email,
+      ownerUserId: user.id,
+      ownerName:
+        String(user.user_metadata?.name || "").trim() ||
+        String(user.user_metadata?.full_name || "").trim() ||
+        null,
+    });
   } catch (e) {
     await logSystemEvent({
       level: "warn",

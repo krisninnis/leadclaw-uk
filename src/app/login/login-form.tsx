@@ -26,7 +26,7 @@ export default function LoginForm({ next }: { next: string }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          redirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(
             next,
           )}`,
         },
@@ -92,7 +92,7 @@ export default function LoginForm({ next }: { next: string }) {
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmedEmail,
         options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(
+          emailRedirectTo: `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(
             next,
           )}`,
         },

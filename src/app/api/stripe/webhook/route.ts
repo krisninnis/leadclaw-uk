@@ -128,6 +128,7 @@ export async function POST(req: Request) {
                   plan: resolvedPlan,
                   subscriptionStatus:
                     sub.status === "active" ? "active" : "trialing",
+                  ownerUserId: userId,
                 });
                 await syncApplicationPlan(email, resolvedPlan);
               }

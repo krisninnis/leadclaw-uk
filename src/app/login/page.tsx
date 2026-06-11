@@ -1,9 +1,9 @@
 import LoginForm from "./login-form";
+import { normalizeAuthRedirectPath } from "@/lib/auth-redirect";
 
 function normalizeNext(value: string | string[] | undefined) {
   const next = Array.isArray(value) ? value[0] : value;
-  if (!next || !next.startsWith("/")) return "/portal";
-  return next;
+  return normalizeAuthRedirectPath(next, "/portal");
 }
 
 export default async function LoginPage({

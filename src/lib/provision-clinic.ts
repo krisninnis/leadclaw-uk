@@ -11,6 +11,8 @@ type ProvisionClinicWorkspaceInput = {
   fallbackDomain?: string | null;
   plan?: ProvisionPlan;
   subscriptionStatus?: ProvisionSubscriptionStatus;
+  ownerUserId?: string | null;
+  ownerName?: string | null;
 };
 
 type ProvisionClinicWorkspaceResult = {
@@ -85,28 +87,32 @@ export async function provisionClinicWorkspace(
   const domain = rawWebsite ? normalizeDomain(rawWebsite) : "test.leadclaw.uk";
 
   // 0) keep profiles table in sync
-  let ownerUserId: string | null = null;
-  let matchedUserEmail: string | null = null;
-  let matchedUserName: string | null = null;
-
-  const { data: authUsersPage, error: listUsersError } =
-    await admin.auth.admin.listUsers();
-
-  if (listUsersError) {
-    throw new Error(listUsersError.message);
-  }
-
-  const matchedUser = authUsersPage.users.find(
-    (user) => (user.email || "").trim().toLowerCase() === email,
-  );
-
-  ownerUserId = matchedUser?.id || null;
-  matchedUserEmail = (matchedUser?.email || "").trim().toLowerCase() || null;
-  matchedUserName =
-    String(matchedUser?.user_metadata?.name || "").trim() ||
-    String(matchedUser?.user_metadata?.full_name || "").trim() ||
+  let ownerUserId = input.ownerUserId?.trim() || null;
+  let matchedUserEmail = ownerUserId ? email : null;
+  let matchedUserName =
+    String(input.ownerName || "").trim() ||
     String(latestApplication?.contact_name || "").trim() ||
     null;
+
+  if (!ownerUserId) {
+    const { data: authUsersPage, error: listUsersError } =
+      await admin.auth.admin.listUsers();
+
+    if (listUsersError) {
+      throw new Error(listUsersError.message);
+    }
+
+    const matchedUser = authUsersPage.users.find(
+      (user) => (user.email || "").trim().toLowerCase() === email,
+    );
+
+    ownerUserId = matchedUser?.id || null;
+    matchedUserEmail = (matchedUser?.email || "").trim().toLowerCase() || null;
+    matchedUserName =
+      String(matchedUser?.user_metadata?.name || "").trim() ||
+      String(matchedUser?.user_metadata?.full_name || "").trim() ||
+      matchedUserName;
+  }
 
   if (ownerUserId) {
     const { error: profileUpsertError } = await (admin as unknown as SupabaseUntypedClient).from("profiles").upsert(
