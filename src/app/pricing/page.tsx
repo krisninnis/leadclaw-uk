@@ -10,6 +10,9 @@ export const metadata: Metadata = {
   title: "LeadClaw Pricing | AI workflow automation",
   description:
     "Simple pricing for LeadClaw's AI workflow automation suite. Start free, try Growth for 7 days, and upgrade when your team is ready.",
+  alternates: {
+    canonical: "/pricing",
+  },
 };
 
 const isEarlyAccess = process.env.EARLY_ACCESS_MODE === "true";

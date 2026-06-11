@@ -1,3 +1,14 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Outreach Compliance Checklist | LeadClaw",
+  description:
+    "Use LeadClaw's UK outreach compliance checklist for GDPR and PECR-aware business workflows.",
+  alternates: {
+    canonical: "/legal/compliance-checklist",
+  },
+};
+
 export default function ComplianceChecklistPage() {
   return (
     <article className="prose max-w-3xl">

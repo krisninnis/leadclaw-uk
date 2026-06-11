@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description:
     "LeadClaw helps businesses capture requests, organise operational work, automate follow-ups, and save hours on repetitive admin and data tasks with AI.",
   icons: {
-    icon: "/favicon.png",
+    icon: "/favicon.ico",
   },
   metadataBase: new URL("https://www.leadclaw.uk"),
   openGraph: {

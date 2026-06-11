@@ -1,9 +1,16 @@
 import type { MetadataRoute } from 'next'
 
 export default function robots(): MetadataRoute.Robots {
-  const site = process.env.NEXT_PUBLIC_APP_URL || 'https://leadclawai.vercel.app'
+  const site = 'https://www.leadclaw.uk'
+
   return {
-    rules: [{ userAgent: '*', allow: '/' }],
+    rules: [
+      {
+        userAgent: '*',
+        allow: '/',
+        disallow: ['/api/', '/portal/', '/admin/'],
+      },
+    ],
     sitemap: `${site}/sitemap.xml`,
     host: site,
   }

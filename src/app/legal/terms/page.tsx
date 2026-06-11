@@ -1,3 +1,14 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Terms and Conditions | LeadClaw",
+  description:
+    "Read the terms and conditions for using LeadClaw AI workflow automation services.",
+  alternates: {
+    canonical: "/legal/terms",
+  },
+};
+
 export default function TermsPage() {
   return (
     <article className="prose max-w-3xl">

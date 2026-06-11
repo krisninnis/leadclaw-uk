@@ -1,6 +1,16 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+export const metadata: Metadata = {
+  title: "LeadClaw Demo | AI workflow automation",
+  description:
+    "Preview how LeadClaw captures requests, routes work, and automates follow-ups for business teams.",
+  alternates: {
+    canonical: "/demo",
+  },
+};
 
 type DemoLeadRow = {
   company_name: string | null;
@@ -24,7 +34,7 @@ export default async function DemoPage({
   let clinicWebsite = "";
 
   if (admin && lead) {
-    const { data: leadRow } = await (admin as any)
+    const { data: leadRow } = await (admin as unknown as SupabaseUntypedClient)
       .from("leads")
       .select("company_name, city, website")
       .eq("id", lead)

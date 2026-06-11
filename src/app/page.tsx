@@ -1,5 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import TrialCtaLink from "@/components/trial-cta-link";
+
+export const metadata: Metadata = {
+  alternates: {
+    canonical: "/",
+  },
+};
 
 const softwareSchema = {
   "@context": "https://schema.org",

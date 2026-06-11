@@ -1,3 +1,14 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | LeadClaw",
+  description:
+    "Learn how LeadClaw handles website, account, trial, subscription, and service data.",
+  alternates: {
+    canonical: "/legal/privacy",
+  },
+};
+
 export default function PrivacyPage() {
   return (
     <article className="prose max-w-3xl">

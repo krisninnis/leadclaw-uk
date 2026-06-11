@@ -4,6 +4,9 @@ export const metadata: Metadata = {
   title: 'AI Workflow Automation for Service Teams | LeadClaw AI',
   description:
     'Capture requests, route work, automate follow-ups, and reduce repetitive admin with LeadClaw AI workflows.',
+  alternates: {
+    canonical: '/seo/ai-agent-for-dental-clinics-uk',
+  },
 }
 
 export default function Page() {

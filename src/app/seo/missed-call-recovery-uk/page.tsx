@@ -4,6 +4,9 @@ export const metadata: Metadata = {
   title: 'Request Recovery and Follow-Up Automation | LeadClaw AI',
   description:
     'Recover missed requests with AI intake capture, lead tracking, and automated follow-up workflows.',
+  alternates: {
+    canonical: '/seo/missed-call-recovery-uk',
+  },
 }
 
 export default function Page() {

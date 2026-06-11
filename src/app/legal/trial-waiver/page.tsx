@@ -1,3 +1,14 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Trial Terms and Waiver | LeadClaw",
+  description:
+    "Review LeadClaw trial access, setup consent, customer responsibilities, and cooling-off terms.",
+  alternates: {
+    canonical: "/legal/trial-waiver",
+  },
+};
+
 export default function TrialWaiverPage() {
   return (
     <article className="prose max-w-3xl">

@@ -1,3 +1,14 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Data Processing Addendum | LeadClaw",
+  description:
+    "Review LeadClaw's data processing addendum for AI workflow automation services.",
+  alternates: {
+    canonical: "/legal/dpa",
+  },
+};
+
 export default function DpaPage() {
   return (
     <article className="prose max-w-3xl">

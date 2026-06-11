@@ -1,4 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "LeadClaw Help | Install and set up LeadClaw",
+  description:
+    "Learn how to install LeadClaw, test your intake widget, and confirm requests are flowing into your workspace.",
+  alternates: {
+    canonical: "/help",
+  },
+};
 
 const platformGuides = [
   {

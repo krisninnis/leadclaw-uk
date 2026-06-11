@@ -1,3 +1,14 @@
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "How LeadClaw Works | AI workflow automation",
+  description:
+    "See how LeadClaw helps businesses start with AI request capture, workflow setup, follow-ups, and lead tracking.",
+  alternates: {
+    canonical: "/how-it-works",
+  },
+};
+
 export default function HowItWorksPage() {
   return (
     <div className="space-y-6">
