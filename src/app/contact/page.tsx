@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { trackGaEvent } from '@/lib/ga'
 
 export default function ContactPage() {
   const [form, setForm] = useState({
@@ -30,6 +31,11 @@ export default function ContactPage() {
         setStatus(data?.error || 'Could not send your message right now.')
         return
       }
+      trackGaEvent('contact_form_submitted', {
+        route: '/contact',
+        plan_interest: form.planInterest,
+        issue_type: form.issueType,
+      })
       setStatus('Thanks — message sent. Our AI support will respond quickly, and priority plans get faster human follow-up.')
       setForm({ name: '', email: '', clinic: '', website: '', planInterest: 'starter', issueType: 'general', message: '' })
     } catch {

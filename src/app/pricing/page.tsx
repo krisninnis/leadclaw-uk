@@ -5,6 +5,7 @@ import PricingFaq from "./_components/pricing-faq";
 import PricingCta from "./_components/pricing-cta";
 import { faqs } from "./pricing-data";
 import type { Metadata } from "next";
+import GaEventOnMount from "@/components/analytics/ga-event-on-mount";
 
 export const metadata: Metadata = {
   title: "LeadClaw Pricing | AI workflow automation",
@@ -36,6 +37,10 @@ export default function PricingPage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <GaEventOnMount
+        name="pricing_viewed"
+        params={{ route: "/pricing" }}
       />
       <div className="space-y-0">
         <PricingHero />

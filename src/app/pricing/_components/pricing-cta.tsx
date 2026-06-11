@@ -1,4 +1,5 @@
 import Link from "next/link";
+import TrialCtaLink from "@/components/trial-cta-link";
 
 export default function PricingCta() {
   return (
@@ -20,9 +21,13 @@ export default function PricingCta() {
             </p>
 
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/free-trial?plan=growth" className="button-primary">
+              <TrialCtaLink
+                href="/free-trial?plan=growth"
+                className="button-primary"
+                location="pricing_bottom_cta"
+              >
                 Start 7-day free trial
-              </Link>
+              </TrialCtaLink>
               <Link href="/pricing" className="button-secondary">
                 Compare plans
               </Link>

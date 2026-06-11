@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import GaEventOnMount from "@/components/analytics/ga-event-on-mount";
 import LogoutButton from "@/components/logout-button";
 import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import PortalChat from "@/components/portal-chat";
@@ -69,8 +70,20 @@ export default async function PortalPage({
 
   const params = (await searchParams) || {};
   const trialStarted = params.trial === "started";
+  const basicStarted = params.startBasic === "1";
   const checkoutSuccess = params.checkout === "success";
   const setupReady = params.setup === "ready";
+  const requestedPlan =
+    params.plan === "basic" || params.plan === "growth" || params.plan === "pro"
+      ? params.plan
+      : undefined;
+  const portalConversionFlow = checkoutSuccess
+    ? "checkout_success"
+    : trialStarted
+      ? "trial_signup"
+      : basicStarted
+        ? "basic_signup"
+        : null;
 
   const admin = createAdminClient();
 
@@ -239,6 +252,31 @@ export default async function PortalPage({
 
   return (
     <div className="space-y-6">
+      {portalConversionFlow ? (
+        <>
+          <GaEventOnMount
+            name="portal_reached"
+            params={{
+              route: "/portal",
+              flow: portalConversionFlow,
+              plan: requestedPlan || currentPlan,
+            }}
+            dedupeKey={`portal_reached_${portalConversionFlow}_${requestedPlan || currentPlan}`}
+            flushPending
+          />
+          {trialStarted || basicStarted ? (
+            <GaEventOnMount
+              name="signup_completed"
+              params={{
+                route: "/portal",
+                flow: portalConversionFlow,
+                plan: requestedPlan || currentPlan,
+              }}
+              dedupeKey={`signup_completed_${portalConversionFlow}_${requestedPlan || currentPlan}`}
+            />
+          ) : null}
+        </>
+      ) : null}
       <section className="card-premium p-6 md:p-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div>

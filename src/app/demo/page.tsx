@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Script from "next/script";
+import GaEventOnMount from "@/components/analytics/ga-event-on-mount";
 import SolutionsByClinicType from "@/components/seo/solutions-by-clinic-type";
+import TrialCtaLink from "@/components/trial-cta-link";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = {
@@ -69,6 +71,15 @@ export default async function DemoPage({
 
   return (
     <div className="page-hero section-shell">
+      <GaEventOnMount
+        name="demo_viewed"
+        params={{
+          route: "/demo",
+          source_type: source ? "campaign" : "direct",
+          personalised_demo: Boolean(lead),
+          widget_ready: widgetReady,
+        }}
+      />
       <div className="container-shell">
         <div className="mx-auto max-w-5xl space-y-8">
           <div className="card-premium p-6 md:p-8">
@@ -195,9 +206,13 @@ export default async function DemoPage({
               </div>
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <Link href="/free-trial?plan=growth" className="button-primary">
+                <TrialCtaLink
+                  href="/free-trial?plan=growth"
+                  className="button-primary"
+                  location="demo"
+                >
                   Start 7-day free trial
-                </Link>
+                </TrialCtaLink>
                 <Link href="/pricing" className="button-secondary">
                   View pricing
                 </Link>

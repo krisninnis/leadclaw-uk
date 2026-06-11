@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { queueGaEvent, trackGaEvent } from "@/lib/ga";
 
 type Props = {
   onSuccess: (email: string) => void;
@@ -23,6 +24,7 @@ type TrialIntakeInput = {
 
 export default function SignupForm({
   onSuccess,
+  selectedPlan,
   buildIntake,
   saveTrialIntake,
   saveIntakeToBackend,
@@ -63,6 +65,26 @@ export default function SignupForm({
       saveTrialIntake(intake);
       await saveIntakeToBackend(intake);
       const next = buildNextUrl();
+      trackGaEvent(
+        "signup_started",
+        {
+          flow: "trial",
+          method: "google",
+          plan: selectedPlan,
+          route: "/free-trial",
+        },
+        { dedupeKey: `signup_started_trial_google_${selectedPlan}` },
+      );
+      queueGaEvent(
+        "signup_started",
+        {
+          flow: "trial",
+          method: "google",
+          plan: selectedPlan,
+          route: "/free-trial",
+        },
+        { dedupeKey: `signup_started_trial_google_${selectedPlan}` },
+      );
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -115,6 +137,12 @@ export default function SignupForm({
       await saveIntakeToBackend(intake);
 
       const next = buildNextUrl();
+      trackGaEvent("signup_started", {
+        flow: "trial",
+        method: "password",
+        plan: selectedPlan,
+        route: "/free-trial",
+      });
       const { error } = await supabase.auth.signUp({
         email: email.trim().toLowerCase(),
         password,
@@ -131,6 +159,16 @@ export default function SignupForm({
       }
 
       setPasswordLoading(false);
+      trackGaEvent(
+        "signup_completed",
+        {
+          flow: "trial",
+          method: "password",
+          plan: selectedPlan,
+          route: "/free-trial",
+        },
+        { dedupeKey: `signup_completed_trial_password_${selectedPlan}` },
+      );
       onSuccess(email.trim().toLowerCase());
     } catch (err) {
       setStatus(err instanceof Error ? err.message : "Something went wrong.");
@@ -153,6 +191,26 @@ export default function SignupForm({
       await saveIntakeToBackend(intake);
 
       const next = buildNextUrl();
+      trackGaEvent(
+        "signup_started",
+        {
+          flow: "trial",
+          method: "magic_link",
+          plan: selectedPlan,
+          route: "/free-trial",
+        },
+        { dedupeKey: `signup_started_trial_magic_link_${selectedPlan}` },
+      );
+      queueGaEvent(
+        "signup_started",
+        {
+          flow: "trial",
+          method: "magic_link",
+          plan: selectedPlan,
+          route: "/free-trial",
+        },
+        { dedupeKey: `signup_started_trial_magic_link_${selectedPlan}` },
+      );
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim().toLowerCase(),
         options: {

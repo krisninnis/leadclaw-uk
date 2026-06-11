@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { queueGaEvent, trackGaEvent } from "@/lib/ga";
 
 type PlanSlug = "basic";
 
@@ -43,6 +44,27 @@ function SignupContent() {
 
     try {
       const next = buildNextUrl();
+
+      trackGaEvent(
+        "signup_started",
+        {
+          flow: "basic",
+          method: "google",
+          plan,
+          route: "/signup",
+        },
+        { dedupeKey: "signup_started_basic_google" },
+      );
+      queueGaEvent(
+        "signup_started",
+        {
+          flow: "basic",
+          method: "google",
+          plan,
+          route: "/signup",
+        },
+        { dedupeKey: "signup_started_basic_google" },
+      );
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -111,6 +133,13 @@ function SignupContent() {
 
       const next = buildNextUrl();
 
+      trackGaEvent("signup_started", {
+        flow: "basic",
+        method: "password",
+        plan,
+        route: "/signup",
+      });
+
       const { error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -133,6 +162,16 @@ function SignupContent() {
 
       setStatus(
         "Account created. Check your email to confirm your address and start your free Basic plan.",
+      );
+      trackGaEvent(
+        "signup_completed",
+        {
+          flow: "basic",
+          method: "password",
+          plan,
+          route: "/signup",
+        },
+        { dedupeKey: "signup_completed_basic_password" },
       );
       setPasswordLoading(false);
 
@@ -165,6 +204,27 @@ function SignupContent() {
       }
 
       const next = buildNextUrl();
+
+      trackGaEvent(
+        "signup_started",
+        {
+          flow: "basic",
+          method: "magic_link",
+          plan,
+          route: "/signup",
+        },
+        { dedupeKey: "signup_started_basic_magic_link" },
+      );
+      queueGaEvent(
+        "signup_started",
+        {
+          flow: "basic",
+          method: "magic_link",
+          plan,
+          route: "/signup",
+        },
+        { dedupeKey: "signup_started_basic_magic_link" },
+      );
 
       const { error } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,

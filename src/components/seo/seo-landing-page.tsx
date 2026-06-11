@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import Badge from "@/components/ui/badge";
 import SectionHeading from "@/components/ui/section-heading";
+import TrialCtaLink from "@/components/trial-cta-link";
 import type { SeoPage } from "@/lib/seo-pages";
 
 const siteUrl = "https://www.leadclaw.uk";
@@ -85,9 +86,13 @@ export default function SeoLandingPage({ page }: SeoLandingPageProps) {
                 View demo
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
-              <Link href="/free-trial" className="button-secondary">
+              <TrialCtaLink
+                href="/free-trial"
+                className="button-secondary"
+                location={`seo_hero_${page.slug}`}
+              >
                 Start free trial
-              </Link>
+              </TrialCtaLink>
             </div>
           </div>
         </section>
@@ -222,10 +227,14 @@ export default function SeoLandingPage({ page }: SeoLandingPageProps) {
               <Link href="/demo" className="button-secondary">
                 View demo
               </Link>
-              <Link href="/free-trial" className="button-primary">
+              <TrialCtaLink
+                href="/free-trial"
+                className="button-primary"
+                location={`seo_bottom_${page.slug}`}
+              >
                 Start free trial
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
+              </TrialCtaLink>
             </div>
           </div>
         </section>

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { plans } from "../pricing-data";
 import EarlyAccessButton from "@/components/early-access-button";
+import TrialCtaLink from "@/components/trial-cta-link";
 
 function CheckIcon() {
   return (
@@ -201,12 +202,22 @@ export default function PricingGrid({
                     label={`Join early access - ${plan.name}`}
                   />
                 ) : (
-                  <Link
-                    href={primaryHref(plan.slug)}
-                    className={plan.buttonClass}
-                  >
-                    {primaryLabel(plan.slug)}
-                  </Link>
+                  plan.slug === "basic" ? (
+                    <Link
+                      href={primaryHref(plan.slug)}
+                      className={plan.buttonClass}
+                    >
+                      {primaryLabel(plan.slug)}
+                    </Link>
+                  ) : (
+                    <TrialCtaLink
+                      href={primaryHref(plan.slug)}
+                      className={plan.buttonClass}
+                      location={`pricing_plan_${plan.slug}`}
+                    >
+                      {primaryLabel(plan.slug)}
+                    </TrialCtaLink>
+                  )
                 )}
 
                 <p className="mt-3 text-xs font-medium text-muted-2">
