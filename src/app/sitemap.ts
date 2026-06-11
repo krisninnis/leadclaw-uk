@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { seoPages } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = "https://www.leadclaw.uk";
@@ -79,6 +80,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.9,
     },
+    ...seoPages.map((page) => ({
+      url: `${baseUrl}${page.canonicalPath}`,
+      lastModified,
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+    })),
     // Legal pages - low priority
     {
       url: `${baseUrl}/legal/terms`,
