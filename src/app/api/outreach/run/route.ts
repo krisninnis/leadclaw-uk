@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { isSuppressed, sendEmail } from "@/lib/email";
@@ -345,7 +345,7 @@ export async function POST(req: Request) {
   const dayStart = new Date();
   dayStart.setUTCHours(0, 0, 0, 0);
 
-  const { data: sentTodayRows } = await (admin as any)
+  const { data: sentTodayRows } = await (admin as unknown as SupabaseUntypedClient)
     .from("outreach_events")
     .select("id")
     .eq("channel", "email")
@@ -353,7 +353,7 @@ export async function POST(req: Request) {
     .gte("created_at", dayStart.toISOString())
     .limit(100);
 
-  const sentToday = (sentTodayRows || []).length;
+  const sentToday = ((sentTodayRows || []) as Array<{ id: string }>).length;
   const remainingDaily = Math.max(0, dailyCap - sentToday);
   const remainingThisRun = Math.min(remainingDaily, batchSize);
 
@@ -379,7 +379,7 @@ export async function POST(req: Request) {
     });
   }
 
-  const { data: leads, error } = await (admin as any)
+  const { data: leads, error } = await (admin as unknown as SupabaseUntypedClient)
     .from("leads")
     .select(
       "id,company_name,city,contact_email,status,score,outreach_subject,outreach_message,follow_up_stage,last_contacted_at",
@@ -427,7 +427,7 @@ export async function POST(req: Request) {
     if (!email || isBadEmail(email)) {
       skipped.push({ id: lead.id, email, reason: "invalid_email" });
 
-      await (admin as any).from("outreach_events").insert({
+      await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
         lead_id: lead.id,
         channel: "email",
         event_type: "skipped",
@@ -440,7 +440,7 @@ export async function POST(req: Request) {
     if (seenEmails.has(email)) {
       skipped.push({ id: lead.id, email, reason: "duplicate_email_in_batch" });
 
-      await (admin as any).from("outreach_events").insert({
+      await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
         lead_id: lead.id,
         channel: "email",
         event_type: "skipped",
@@ -455,7 +455,7 @@ export async function POST(req: Request) {
     if (await isSuppressed(email)) {
       skipped.push({ id: lead.id, email, reason: "suppressed" });
 
-      await (admin as any).from("outreach_events").insert({
+      await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
         lead_id: lead.id,
         channel: "email",
         event_type: "skipped",
@@ -514,7 +514,7 @@ export async function POST(req: Request) {
 
       skipped.push({ id: lead.id, email, reason: err });
 
-      await (admin as any).from("outreach_events").insert({
+      await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
         lead_id: lead.id,
         channel: "email",
         event_type: "failed",
@@ -547,7 +547,7 @@ export async function POST(req: Request) {
 
     sent.push({ id: lead.id, email, subject });
 
-    await (admin as any).from("outreach_events").insert({
+    await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
       lead_id: lead.id,
       channel: "email",
       event_type: "sent",
@@ -559,7 +559,7 @@ export async function POST(req: Request) {
       },
     });
 
-    await (admin as any)
+    await (admin as unknown as SupabaseUntypedClient)
       .from("leads")
       .update({
         status: "contacted",

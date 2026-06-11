@@ -37,7 +37,7 @@ export async function isSuppressed(email: string): Promise<boolean> {
     return false;
   }
 
-  const { data, error } = await (admin as any)
+  const { data, error } = await (admin as unknown as SupabaseUntypedClient)
     .from("email_suppressions")
     .select("id")
     .eq("email", normalized)
@@ -62,7 +62,7 @@ export async function suppressEmail(email: string, reason = "unsubscribe") {
     };
   }
 
-  return (admin as any).from("email_suppressions").upsert(
+  return (admin as unknown as SupabaseUntypedClient).from("email_suppressions").upsert(
     {
       email: normalized,
       reason,

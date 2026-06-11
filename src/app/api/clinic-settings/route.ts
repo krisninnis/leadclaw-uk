@@ -28,7 +28,7 @@ async function getClinicId(
   admin: ReturnType<typeof createAdminClient>,
 ) {
   if (!admin) return null;
-  const { data: client } = await (admin as any)
+  const { data: client } = await (admin as unknown as SupabaseUntypedClient)
     .from("onboarding_clients")
     .select("id")
     .eq("contact_email", userEmail)
@@ -40,7 +40,7 @@ async function getClinicId(
 
   if (!onboardingClient?.id) return null;
 
-  const { data: site } = await (admin as any)
+  const { data: site } = await (admin as unknown as SupabaseUntypedClient)
     .from("onboarding_sites")
     .select("clinic_id")
     .eq("onboarding_client_id", onboardingClient.id)
@@ -72,7 +72,7 @@ export async function GET() {
       { status: 404 },
     );
 
-  const { data } = await (admin as any)
+  const { data } = await (admin as unknown as SupabaseUntypedClient)
     .from("clinic_settings")
     .select("google_review_url, review_requests_enabled, reminders_enabled")
     .eq("clinic_id", clinicId)
@@ -111,7 +111,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = schema.parse(body);
 
-    const { error } = await (admin as any)
+    const { error } = await (admin as unknown as SupabaseUntypedClient)
       .from("clinic_settings")
       .upsert(
         {

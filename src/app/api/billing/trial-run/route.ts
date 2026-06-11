@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const { data: subs, error } = await (admin as any)
+  const { data: subs, error } = await (admin as unknown as SupabaseUntypedClient)
     .from("subscriptions")
     .select("id,email,status,trial_end,plan")
     .in("status", ["trialing", "active", "past_due", "expired", "canceled"])
@@ -84,7 +84,7 @@ export async function POST(req: Request) {
     if (!normalizedEmail) continue;
 
     if (isExpiredTrial(sub.status, stage)) {
-      const { error: expireError } = await (admin as any)
+      const { error: expireError } = await (admin as unknown as SupabaseUntypedClient)
         .from("subscriptions")
         .update({
           status: "expired",
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const { data: seen } = await (admin as any)
+    const { data: seen } = await (admin as unknown as SupabaseUntypedClient)
       .from("billing_notifications")
       .select("id")
       .eq("subscription_id", sub.id)
@@ -145,7 +145,7 @@ export async function POST(req: Request) {
     }
 
     if (await isSuppressed(normalizedEmail)) {
-      await (admin as any).from("billing_notifications").insert({
+      await (admin as unknown as SupabaseUntypedClient).from("billing_notifications").insert({
         subscription_id: sub.id,
         email: normalizedEmail,
         stage,
@@ -167,7 +167,7 @@ export async function POST(req: Request) {
       html: `<p>${rendered.text.replace(/\n/g, "<br/>")}</p>`,
     });
 
-    await (admin as any).from("billing_notifications").insert({
+    await (admin as unknown as SupabaseUntypedClient).from("billing_notifications").insert({
       subscription_id: sub.id,
       email: normalizedEmail,
       stage,

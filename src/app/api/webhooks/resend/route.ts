@@ -82,7 +82,7 @@ async function findLeadId(
 
   const emailId = String(payload.email_id || payload.id || "");
   if (emailId) {
-    const { data } = await (admin as any)
+    const { data } = await (admin as unknown as SupabaseUntypedClient)
       .from("outreach_events")
       .select("lead_id,payload,created_at")
       .eq("event_type", "sent")
@@ -99,7 +99,7 @@ async function findLeadId(
 
   const to = normalizeEmail(payload.to || payload.email || payload.recipient);
   if (to) {
-    const { data } = await (admin as any)
+    const { data } = await (admin as unknown as SupabaseUntypedClient)
       .from("leads")
       .select("id")
       .eq("contact_email", to)
@@ -157,7 +157,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: true, matchedLead: false });
   }
 
-  await (admin as any).from("outreach_events").insert({
+  await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
     lead_id: leadId,
     channel: "email",
     event_type: `resend_${eventType.replace(/[^a-z0-9_.-]/gi, "_")}`,
@@ -171,7 +171,7 @@ export async function POST(req: Request) {
   if (eventType.includes("reply") || replyText) {
     const status = classifyReply(replyText);
 
-    const { data: lead } = await (admin as any)
+    const { data: lead } = await (admin as unknown as SupabaseUntypedClient)
       .from("leads")
       .select("notes")
       .eq("id", leadId)
@@ -197,7 +197,7 @@ export async function POST(req: Request) {
       updated_via: "resend_webhook",
     };
 
-    await (admin as any)
+    await (admin as unknown as SupabaseUntypedClient)
       .from("leads")
       .update({
         status,
@@ -206,7 +206,7 @@ export async function POST(req: Request) {
       })
       .eq("id", leadId);
 
-    await (admin as any).from("outreach_events").insert({
+    await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
       lead_id: leadId,
       channel: "email",
       event_type: "reply_captured",

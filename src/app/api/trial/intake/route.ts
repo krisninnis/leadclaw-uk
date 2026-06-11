@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       created_at: new Date().toISOString(),
     };
 
-    const { error } = await (admin as any).from("applications").insert(payload);
+    const { error } = await (admin as unknown as SupabaseUntypedClient).from("applications").insert(payload);
 
     if (error) {
       console.error(
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ ok: true });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Unexpected error occurred:", error);
     return NextResponse.json(
       { ok: false, error: "internal_server_error" },

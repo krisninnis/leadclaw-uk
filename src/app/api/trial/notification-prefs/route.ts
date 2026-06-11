@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   if (parsed.data.notifyWhatsapp) channels.push("whatsapp");
   if (parsed.data.notifySms) channels.push("sms");
 
-  await (admin as any)
+  await (admin as unknown as SupabaseUntypedClient)
     .from("onboarding_clients")
     .update({
       notify_whatsapp: parsed.data.notifyWhatsapp || null,

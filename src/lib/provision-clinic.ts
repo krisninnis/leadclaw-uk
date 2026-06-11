@@ -62,7 +62,7 @@ export async function provisionClinicWorkspace(
     input.subscriptionStatus ??
     (resolvedPlan === "basic" ? "active" : "trialing");
 
-  const { data: latestApp } = await (admin as any)
+  const { data: latestApp } = await (admin as unknown as SupabaseUntypedClient)
     .from("applications")
     .select("clinic_name,website,services,city,contact_name")
     .eq("email", email)
@@ -109,7 +109,7 @@ export async function provisionClinicWorkspace(
     null;
 
   if (ownerUserId) {
-    const { error: profileUpsertError } = await (admin as any).from("profiles").upsert(
+    const { error: profileUpsertError } = await (admin as unknown as SupabaseUntypedClient).from("profiles").upsert(
       {
         id: ownerUserId,
         role: "client",
@@ -129,7 +129,7 @@ export async function provisionClinicWorkspace(
   }
 
   // 1) onboarding client
-  const { data: existingClient } = await (admin as any)
+  const { data: existingClient } = await (admin as unknown as SupabaseUntypedClient)
     .from("onboarding_clients")
     .select("id")
     .eq("contact_email", email)
@@ -140,7 +140,7 @@ export async function provisionClinicWorkspace(
   let clientId = (existingClient as IdRow | null)?.id || null;
 
   if (!clientId) {
-    const { data: insertedClient, error } = await (admin as any)
+    const { data: insertedClient, error } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_clients")
       .insert({
         client_name: clinicName,
@@ -159,7 +159,7 @@ export async function provisionClinicWorkspace(
   let clinicId: string | null = null;
 
   if (ownerUserId) {
-    const { data: existingClinicByOwner } = await (admin as any)
+    const { data: existingClinicByOwner } = await (admin as unknown as SupabaseUntypedClient)
       .from("clinics")
       .select("id")
       .eq("owner_user_id", ownerUserId)
@@ -171,7 +171,7 @@ export async function provisionClinicWorkspace(
   }
 
   if (!clinicId) {
-    const { data: existingClinicByName } = await (admin as any)
+    const { data: existingClinicByName } = await (admin as unknown as SupabaseUntypedClient)
       .from("clinics")
       .select("id")
       .eq("name", clinicName)
@@ -183,7 +183,7 @@ export async function provisionClinicWorkspace(
   }
 
   if (!clinicId) {
-    const { data: insertedClinic, error } = await (admin as any)
+    const { data: insertedClinic, error } = await (admin as unknown as SupabaseUntypedClient)
       .from("clinics")
       .insert({
         name: clinicName,
@@ -206,7 +206,7 @@ export async function provisionClinicWorkspace(
       clinicUpdate.owner_user_id = ownerUserId;
     }
 
-    const { error: clinicUpdateError } = await (admin as any)
+    const { error: clinicUpdateError } = await (admin as unknown as SupabaseUntypedClient)
       .from("clinics")
       .update(clinicUpdate)
       .eq("id", clinicId);
@@ -217,7 +217,7 @@ export async function provisionClinicWorkspace(
   // 3) site
   let siteId: string | null = null;
 
-  const { data: existingSite } = await (admin as any)
+  const { data: existingSite } = await (admin as unknown as SupabaseUntypedClient)
     .from("onboarding_sites")
     .select("id,clinic_id")
     .eq("onboarding_client_id", clientId)
@@ -232,7 +232,7 @@ export async function provisionClinicWorkspace(
     siteId = existingSiteRow.id;
 
     if (!existingSiteRow.clinic_id && clinicId) {
-      const { error: siteUpdateError } = await (admin as any)
+      const { error: siteUpdateError } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_sites")
         .update({ clinic_id: clinicId })
         .eq("id", siteId);
@@ -240,7 +240,7 @@ export async function provisionClinicWorkspace(
       if (siteUpdateError) throw new Error(siteUpdateError.message);
     }
   } else {
-    const { data: insertedSite, error } = await (admin as any)
+    const { data: insertedSite, error } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_sites")
       .insert({
         onboarding_client_id: clientId,
@@ -271,7 +271,7 @@ export async function provisionClinicWorkspace(
   let widgetToken: string | null = null;
 
   if (siteId) {
-    const { data: existingToken } = await (admin as any)
+    const { data: existingToken } = await (admin as unknown as SupabaseUntypedClient)
       .from("widget_tokens")
       .select("token")
       .eq("onboarding_site_id", siteId)
@@ -287,7 +287,7 @@ export async function provisionClinicWorkspace(
     } else {
       widgetToken = randomBytes(24).toString("hex");
 
-      const { error } = await (admin as any).from("widget_tokens").insert({
+      const { error } = await (admin as unknown as SupabaseUntypedClient).from("widget_tokens").insert({
         onboarding_site_id: siteId,
         token: widgetToken,
         status: "active",
@@ -297,14 +297,16 @@ export async function provisionClinicWorkspace(
     }
 
     // 5) onboarding tasks
-    const { data: existingTasks } = await (admin as any)
+    const { data: existingTasks } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_tasks")
       .select("id")
       .eq("onboarding_site_id", siteId)
       .limit(1);
 
-    if (!existingTasks || existingTasks.length === 0) {
-      const { error } = await (admin as any).from("onboarding_tasks").insert(
+    const existingTaskRows = (existingTasks || []) as IdRow[];
+
+    if (existingTaskRows.length === 0) {
+      const { error } = await (admin as unknown as SupabaseUntypedClient).from("onboarding_tasks").insert(
         AUTONOMOUS_TASK_ORDER.map((taskType, idx) => ({
           onboarding_site_id: siteId,
           task_type: taskType,

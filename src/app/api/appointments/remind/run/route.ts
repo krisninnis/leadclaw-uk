@@ -72,7 +72,7 @@ export async function POST(req: Request) {
   const in2h = new Date(now.getTime() + 2 * 60 * 60 * 1000);
   const in1h = new Date(now.getTime() + 1 * 60 * 60 * 1000);
 
-  const { data: remind48 } = await (admin as any)
+  const { data: remind48 } = await (admin as unknown as SupabaseUntypedClient)
     .from("appointments")
     .select(
       "id, patient_name, patient_email, service, appointment_at, clinic_id",
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
     .not("patient_email", "is", null)
     .limit(50);
 
-  const { data: remind2h } = await (admin as any)
+  const { data: remind2h } = await (admin as unknown as SupabaseUntypedClient)
     .from("appointments")
     .select(
       "id, patient_name, patient_email, service, appointment_at, clinic_id",
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
   const skipped: Array<{ id: string; reason: string }> = [];
 
   async function getWorkspaceName(clinicId: string): Promise<string> {
-    const { data: site } = await (admin as any)
+    const { data: site } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_sites")
       .select("onboarding_client_id")
       .eq("clinic_id", clinicId)
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
     const onboardingSite = site as OnboardingSiteRow | null;
 
     if (onboardingSite?.onboarding_client_id) {
-      const { data: client } = await (admin as any)
+      const { data: client } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_clients")
         .select("business_name, client_name")
         .eq("id", onboardingSite.onboarding_client_id)
@@ -178,7 +178,7 @@ See you soon,
 ${workspaceName}`,
       });
 
-      await (admin as any)
+      await (admin as unknown as SupabaseUntypedClient)
         .from("appointments")
         .update({ reminder_48h_sent_at: new Date().toISOString() })
         .eq("id", appt.id);
@@ -232,7 +232,7 @@ See you very soon,
 ${workspaceName}`,
       });
 
-      await (admin as any)
+      await (admin as unknown as SupabaseUntypedClient)
         .from("appointments")
         .update({ reminder_2h_sent_at: new Date().toISOString() })
         .eq("id", appt.id);

@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       score: scoreLead(r),
     }));
 
-    const { error } = await (admin as any).from("leads").insert(payload);
+    const { error } = await (admin as unknown as SupabaseUntypedClient).from("leads").insert(payload);
 
     if (error) {
       return NextResponse.json(

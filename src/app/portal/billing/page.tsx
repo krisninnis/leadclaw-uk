@@ -59,7 +59,7 @@ export default async function PortalBillingPage({
   let trialEndedIntoBasic = false;
 
   if (admin) {
-    const { data } = await (admin as any)
+    const { data } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .select("status,plan,trial_end,current_period_end")
       .eq("email", user.email || "")

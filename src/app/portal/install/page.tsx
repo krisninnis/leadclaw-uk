@@ -69,7 +69,7 @@ export default async function PortalInstallPage() {
   } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
-  const { data: sub } = await (supabase as any)
+  const { data: sub } = await (supabase as unknown as SupabaseUntypedClient)
     .from("subscriptions")
     .select("status, plan")
     .eq("email", user.email || "")
@@ -99,7 +99,7 @@ export default async function PortalInstallPage() {
   } | null = null;
 
   if (admin) {
-    const { data: subscription } = await (admin as any)
+    const { data: subscription } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .select("status,plan")
       .eq("email", user.email || "")
@@ -119,7 +119,7 @@ export default async function PortalInstallPage() {
     hasWidgetAccess = currentPlan === "basic" || hasFullSubscriptionAccess;
 
     if (user.email) {
-      const { data: client } = await (admin as any)
+      const { data: client } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_clients")
         .select("id")
         .eq("contact_email", user.email)
@@ -130,7 +130,7 @@ export default async function PortalInstallPage() {
       const onboardingClient = client as IdRow | null;
 
       if (onboardingClient?.id) {
-        const { data: site } = await (admin as any)
+        const { data: site } = await (admin as unknown as SupabaseUntypedClient)
           .from("onboarding_sites")
           .select("id,domain,status")
           .eq("onboarding_client_id", onboardingClient.id)
@@ -144,7 +144,7 @@ export default async function PortalInstallPage() {
         let widgetLastSeenDomain: string | null = null;
 
         if (onboardingSite?.id) {
-          const { data: tokenRow } = await (admin as any)
+          const { data: tokenRow } = await (admin as unknown as SupabaseUntypedClient)
             .from("widget_tokens")
             .select("token,last_seen_at,last_seen_domain")
             .eq("onboarding_site_id", onboardingSite.id)

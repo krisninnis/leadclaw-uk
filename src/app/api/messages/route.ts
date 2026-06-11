@@ -9,7 +9,7 @@ export async function GET() {
   const user = auth.user
   if (!user) return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await (supabase as unknown as SupabaseUntypedClient)
     .from('client_messages')
     .select('id,sender,message,created_at')
     .eq('user_id', user.id)
@@ -34,7 +34,7 @@ export async function POST(req: Request) {
   const text = (body.message || '').trim()
   if (!text) return NextResponse.json({ ok: false, error: 'message_required' }, { status: 400 })
 
-  const { error } = await (supabase as any).from('client_messages').insert({
+  const { error } = await (supabase as unknown as SupabaseUntypedClient).from('client_messages').insert({
     user_id: user.id,
     sender: 'client',
     message: text,
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
   // basic auto-reply placeholder
   const admin = createAdminClient()
   if (admin) {
-    await (admin as any).from('client_messages').insert({
+    await (admin as unknown as SupabaseUntypedClient).from('client_messages').insert({
       user_id: user.id,
       sender: 'agent',
       message: 'Got it — thanks. Our team is on this and you will get an update shortly.',

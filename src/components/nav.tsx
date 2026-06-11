@@ -21,16 +21,15 @@ export default function Nav() {
   const pathname = usePathname() ?? "";
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [authReady, setAuthReady] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
-
-  useEffect(() => {
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
     try {
       const saved = window.localStorage.getItem("leadclaw_nav_collapsed");
-      if (saved === "1") setCollapsed(true);
+      return saved === "1";
     } catch {
-      // ignore storage errors
+      return false;
     }
-  }, []);
+  });
 
   useEffect(() => {
     try {
@@ -45,13 +44,14 @@ export default function Nav() {
 
   useEffect(() => {
     const supabase = createClient();
+    let mounted = true;
 
     if (!supabase) {
-      setAuthReady(true);
+      queueMicrotask(() => {
+        if (mounted) setAuthReady(true);
+      });
       return;
     }
-
-    let mounted = true;
 
     supabase.auth
       .getUser()

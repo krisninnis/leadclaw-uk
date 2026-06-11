@@ -29,7 +29,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data, error } = await (supabase as any)
+    const { data, error } = await (supabase as unknown as SupabaseUntypedClient)
       .from("agent_commands")
       .insert({
         command,

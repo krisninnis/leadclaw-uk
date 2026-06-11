@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { data: command, error: fetchError } = await (supabase as any)
+    const { data: command, error: fetchError } = await (supabase as unknown as SupabaseUntypedClient)
       .from("agent_commands")
       .select("*")
       .eq("id", commandId)
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Command not found" }, { status: 404 });
     }
 
-    const { error: updateStartError } = await (supabase as any)
+    const { error: updateStartError } = await (supabase as unknown as SupabaseUntypedClient)
       .from("agent_commands")
       .update({ status: "running" })
       .eq("id", commandId);
@@ -65,7 +65,7 @@ export async function POST(req: Request) {
       repo: agentCommand.repo,
     };
 
-    const { error: updateDoneError } = await (supabase as any)
+    const { error: updateDoneError } = await (supabase as unknown as SupabaseUntypedClient)
       .from("agent_commands")
       .update({
         status: "completed",

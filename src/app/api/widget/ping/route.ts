@@ -64,7 +64,7 @@ export async function POST(req: Request) {
 
     const safeDomain = parsed.domain.trim().toLowerCase();
 
-    const { data: tokenRow, error: tokenError } = await (admin as any)
+    const { data: tokenRow, error: tokenError } = await (admin as unknown as SupabaseUntypedClient)
       .from("widget_tokens")
       .select("id,token,status,onboarding_site_id")
       .eq("token", parsed.token)
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
 
     const widgetToken = tokenRow as WidgetTokenPingRow;
 
-    const { data: site, error: siteError } = await (admin as any)
+    const { data: site, error: siteError } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_sites")
       .select("onboarding_client_id")
       .eq("id", widgetToken.onboarding_site_id)
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
     const onboardingSite = site as OnboardingSiteClientRow | null;
 
     if (onboardingSite?.onboarding_client_id) {
-      const { data: client, error: clientError } = await (admin as any)
+      const { data: client, error: clientError } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_clients")
         .select("contact_email")
         .eq("id", onboardingSite.onboarding_client_id)
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
         onboardingClient?.contact_email?.trim().toLowerCase() || null;
 
       if (clinicContactEmail) {
-        const { data: subscription, error: subscriptionError } = await (admin as any)
+        const { data: subscription, error: subscriptionError } = await (admin as unknown as SupabaseUntypedClient)
           .from("subscriptions")
           .select("status,updated_at")
           .eq("email", clinicContactEmail)
@@ -172,7 +172,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { error: updateError } = await (admin as any)
+    const { error: updateError } = await (admin as unknown as SupabaseUntypedClient)
       .from("widget_tokens")
       .update({
         last_seen_at: new Date().toISOString(),

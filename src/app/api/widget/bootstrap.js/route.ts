@@ -91,7 +91,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { data: tokenRow } = await (admin as any)
+  const { data: tokenRow } = await (admin as unknown as SupabaseUntypedClient)
     .from("widget_tokens")
     .select(
       `
@@ -134,7 +134,7 @@ export async function GET(req: NextRequest) {
   let contactEmail = "";
 
   if (onboardingClientId) {
-    const { data: clientRow } = await (admin as any)
+    const { data: clientRow } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_clients")
       .select("contact_email")
       .eq("id", onboardingClientId)
@@ -150,7 +150,7 @@ export async function GET(req: NextRequest) {
   let subscriptionStatus: string | null = null;
 
   if (contactEmail) {
-    const { data: subscriptionRow } = await (admin as any)
+    const { data: subscriptionRow } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .select("status")
       .eq("email", contactEmail)

@@ -43,7 +43,7 @@ export async function POST(req: Request) {
   const admin = createAdminClient()
   if (!admin) return NextResponse.json({ ok: false, error: 'supabase_not_configured' }, { status: 400 })
 
-  const { data: rows, error } = await (admin as any)
+  const { data: rows, error } = await (admin as unknown as SupabaseUntypedClient)
     .from('onboarding_tasks')
     .select('id,task_type,onboarding_site_id,onboarding_sites(id,domain,platform,settings,onboarding_client_id,onboarding_clients(id,client_name,contact_email))')
     .eq('status', 'queued')
@@ -62,7 +62,7 @@ export async function POST(req: Request) {
 
     if (!site) {
       failed.push({ id: row.id, reason: 'site_not_found' })
-      await (admin as any).from('onboarding_tasks').update({ status: 'failed', error: 'site_not_found' }).eq('id', row.id)
+      await (admin as unknown as SupabaseUntypedClient).from('onboarding_tasks').update({ status: 'failed', error: 'site_not_found' }).eq('id', row.id)
       continue
     }
 
@@ -70,11 +70,11 @@ export async function POST(req: Request) {
 
     try {
       if (taskType === 'create_client_workspace') {
-        await (admin as any).from('onboarding_sites').update({ status: 'workspace_ready' }).eq('id', site.id)
+        await (admin as unknown as SupabaseUntypedClient).from('onboarding_sites').update({ status: 'workspace_ready' }).eq('id', site.id)
       }
 
       if (taskType === 'generate_widget_token') {
-        const { data: tokenRow } = await (admin as any)
+        const { data: tokenRow } = await (admin as unknown as SupabaseUntypedClient)
           .from('widget_tokens')
           .select('id')
           .eq('onboarding_site_id', site.id)
@@ -85,11 +85,11 @@ export async function POST(req: Request) {
       }
 
       if (taskType === 'store_settings') {
-        await (admin as any).from('onboarding_sites').update({ status: 'settings_stored' }).eq('id', site.id)
+        await (admin as unknown as SupabaseUntypedClient).from('onboarding_sites').update({ status: 'settings_stored' }).eq('id', site.id)
       }
 
       if (taskType === 'run_validation_tests') {
-        await (admin as any).from('onboarding_sites').update({ status: 'validation_pending_client_test' }).eq('id', site.id)
+        await (admin as unknown as SupabaseUntypedClient).from('onboarding_sites').update({ status: 'validation_pending_client_test' }).eq('id', site.id)
       }
 
       if (taskType === 'schedule_retention_automations') {
@@ -97,7 +97,7 @@ export async function POST(req: Request) {
         const primaryService = settings.services?.[0] || 'general request'
         const key = `${site.domain}:${client?.contact_email || 'no-email'}`
 
-        const { data: retentionClient } = await (admin as any)
+        const { data: retentionClient } = await (admin as unknown as SupabaseUntypedClient)
           .from('retention_clients')
           .upsert(
             {
@@ -118,7 +118,7 @@ export async function POST(req: Request) {
         if (!retentionClientRow?.id) throw new Error('retention_client_upsert_failed')
 
         const rules = defaultRetentionRules()
-        await (admin as any).from('retention_tasks').insert(
+        await (admin as unknown as SupabaseUntypedClient).from('retention_tasks').insert(
           rules.map((r) => ({
             retention_client_id: retentionClientRow.id,
             behavior: r.behavior,
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
       }
 
       if (taskType === 'generate_handover_report') {
-        await (admin as any).from('onboarding_reports').insert({
+        await (admin as unknown as SupabaseUntypedClient).from('onboarding_reports').insert({
           onboarding_site_id: site.id,
           report_type: 'handover',
           content: {
@@ -139,15 +139,15 @@ export async function POST(req: Request) {
             status: 'ready_for_client_confirmation',
           },
         })
-        await (admin as any).from('onboarding_sites').update({ status: 'handover_ready' }).eq('id', site.id)
+        await (admin as unknown as SupabaseUntypedClient).from('onboarding_sites').update({ status: 'handover_ready' }).eq('id', site.id)
       }
 
-      await (admin as any).from('onboarding_tasks').update({ status: 'done', completed_at: new Date().toISOString(), error: null }).eq('id', row.id)
+      await (admin as unknown as SupabaseUntypedClient).from('onboarding_tasks').update({ status: 'done', completed_at: new Date().toISOString(), error: null }).eq('id', row.id)
       completed.push(row.id)
     } catch (err) {
       const reason = err instanceof Error ? err.message : 'task_failed'
       failed.push({ id: row.id, reason })
-      await (admin as any).from('onboarding_tasks').update({ status: 'failed', error: reason }).eq('id', row.id)
+      await (admin as unknown as SupabaseUntypedClient).from('onboarding_tasks').update({ status: 'failed', error: reason }).eq('id', row.id)
     }
   }
 

@@ -64,7 +64,7 @@ export async function POST(req: Request) {
     Date.now() - 24 * 60 * 60 * 1000,
   ).toISOString();
 
-  const { data: enquiries, error } = await (admin as any)
+  const { data: enquiries, error } = await (admin as unknown as SupabaseUntypedClient)
     .from("enquiries")
     .select(
       `
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
     // Get workspace name for the email
     let clinicName = "the business";
 
-    const { data: site } = await (admin as any)
+    const { data: site } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_sites")
       .select("onboarding_client_id")
       .eq("clinic_id", enquiry.clinic_id)
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
     const onboardingSite = site as OnboardingSiteRow | null;
 
     if (onboardingSite?.onboarding_client_id) {
-      const { data: client } = await (admin as any)
+      const { data: client } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_clients")
         .select("business_name,client_name,contact_email")
         .eq("id", onboardingSite.onboarding_client_id)
@@ -170,7 +170,7 @@ ${clinicName}`,
       });
 
       // Mark follow-up as sent
-      await (admin as any)
+      await (admin as unknown as SupabaseUntypedClient)
         .from("enquiries")
         .update({ follow_up_sent_at: new Date().toISOString() })
         .eq("id", enquiry.id);

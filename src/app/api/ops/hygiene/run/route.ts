@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   const admin = createAdminClient()
   if (!admin) return NextResponse.json({ ok: false, error: 'supabase_not_configured' }, { status: 400 })
 
-  const { data: leads, error } = await (admin as any)
+  const { data: leads, error } = await (admin as unknown as SupabaseUntypedClient)
     .from('leads')
     .select('id,contact_email,status,company_name,updated_at')
     .order('updated_at', { ascending: false })
@@ -46,20 +46,20 @@ export async function POST(req: Request) {
     const email = normalizeEmail(lead.contact_email)
     if (!email || !email.includes('@')) {
       if (lead.contact_email) {
-        await (admin as any).from('leads').update({ contact_email: null, updated_at: new Date().toISOString() }).eq('id', lead.id)
+        await (admin as unknown as SupabaseUntypedClient).from('leads').update({ contact_email: null, updated_at: new Date().toISOString() }).eq('id', lead.id)
         invalid += 1
       }
       continue
     }
 
     if (email !== lead.contact_email) {
-      await (admin as any).from('leads').update({ contact_email: email, updated_at: new Date().toISOString() }).eq('id', lead.id)
+      await (admin as unknown as SupabaseUntypedClient).from('leads').update({ contact_email: email, updated_at: new Date().toISOString() }).eq('id', lead.id)
       cleaned += 1
     }
 
     const key = `${(lead.company_name || '').trim().toLowerCase()}|${email}`
     if (seen.has(key)) {
-      await (admin as any).from('leads').update({ status: 'duplicate', updated_at: new Date().toISOString() }).eq('id', lead.id)
+      await (admin as unknown as SupabaseUntypedClient).from('leads').update({ status: 'duplicate', updated_at: new Date().toISOString() }).eq('id', lead.id)
       deduped += 1
     } else {
       seen.set(key, lead.id)

@@ -87,7 +87,7 @@ async function saveApplicationRecord(
     throw new Error("supabase_not_configured");
   }
 
-  const { data: existingRow, error: findError } = await (admin as any)
+  const { data: existingRow, error: findError } = await (admin as unknown as SupabaseUntypedClient)
     .from("applications")
     .select("id")
     .eq("email", email)
@@ -102,7 +102,7 @@ async function saveApplicationRecord(
   const existingApplication = existingRow as ApplicationIdRow | null;
 
   if (existingApplication?.id) {
-    const { error: updateError } = await (admin as any)
+    const { error: updateError } = await (admin as unknown as SupabaseUntypedClient)
       .from("applications")
       .update({
         plan,
@@ -118,7 +118,7 @@ async function saveApplicationRecord(
     return;
   }
 
-  const { error: insertError } = await (admin as any).from("applications").insert({
+  const { error: insertError } = await (admin as unknown as SupabaseUntypedClient).from("applications").insert({
     email,
     contact_name: contactName,
     clinic_name: null,
@@ -145,7 +145,7 @@ async function startTrialForUser(
     throw new Error("supabase_not_configured");
   }
 
-  const { data: existingRows, error: existingError } = await (admin as any)
+  const { data: existingRows, error: existingError } = await (admin as unknown as SupabaseUntypedClient)
     .from("subscriptions")
     .select(
       "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
@@ -203,14 +203,14 @@ async function startTrialForUser(
   let subError: string | null = null;
 
   if (existing?.id) {
-    const { error } = await (admin as any)
+    const { error } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .update(subscriptionRow)
       .eq("id", existing.id);
 
     if (error) subError = error.message;
   } else {
-    const { error } = await (admin as any)
+    const { error } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .insert(subscriptionRow);
 
@@ -272,7 +272,7 @@ async function startBasicForUser(
     throw new Error("supabase_not_configured");
   }
 
-  const { data: existingRows, error: existingError } = await (admin as any)
+  const { data: existingRows, error: existingError } = await (admin as unknown as SupabaseUntypedClient)
     .from("subscriptions")
     .select(
       "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
@@ -317,14 +317,14 @@ async function startBasicForUser(
   let subError: string | null = null;
 
   if (existing?.id) {
-    const { error } = await (admin as any)
+    const { error } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .update(subscriptionRow)
       .eq("id", existing.id);
 
     if (error) subError = error.message;
   } else {
-    const { error } = await (admin as any)
+    const { error } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .insert(subscriptionRow);
 

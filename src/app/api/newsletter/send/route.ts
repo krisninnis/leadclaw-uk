@@ -21,7 +21,7 @@ export async function POST(req: Request) {
   const subject = body.subject || 'LeadClaw Weekly Update'
   const content = body.content || 'This week: product updates, wins, and what is shipping next.'
 
-  const { data: subs } = await (admin as any).from('newsletter_subscribers').select('email,name').eq('status', 'active').limit(200)
+  const { data: subs } = await (admin as unknown as SupabaseUntypedClient).from('newsletter_subscribers').select('email,name').eq('status', 'active').limit(200)
 
   let sent = 0
   let skipped = 0
@@ -49,7 +49,7 @@ export async function POST(req: Request) {
     else skipped++
   }
 
-  await (admin as any).from('newsletter_issues').insert({
+  await (admin as unknown as SupabaseUntypedClient).from('newsletter_issues').insert({
     subject,
     content_markdown: content,
     status: 'sent',

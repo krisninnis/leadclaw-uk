@@ -12,7 +12,7 @@ export async function logSystemEvent(input: {
 
   const level = input.level || 'info'
 
-  await (admin as any).from('system_events').insert({
+  await (admin as unknown as SupabaseUntypedClient).from('system_events').insert({
     level,
     category: input.category,
     message: input.message,

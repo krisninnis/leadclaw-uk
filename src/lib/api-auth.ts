@@ -65,7 +65,7 @@ export async function requireAdmin(): Promise<
 
   const admin = createAdminClient();
   if (admin) {
-    const { data: profile } = await (admin as any)
+    const { data: profile } = await (admin as unknown as SupabaseUntypedClient)
       .from("profiles")
       .select("role")
       .eq("id", authed.user.id)

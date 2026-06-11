@@ -35,7 +35,7 @@ export default async function PortalLeadsPage() {
 
   if (!user) redirect("/login");
 
-  const { data: sub } = await (supabase as any)
+  const { data: sub } = await (supabase as unknown as SupabaseUntypedClient)
     .from("subscriptions")
     .select("status, plan")
     .eq("email", user.email || "")
@@ -55,7 +55,7 @@ export default async function PortalLeadsPage() {
   let enquiries: EnquiryRow[] = [];
 
   if (admin) {
-    const { data: subscription } = await (admin as any)
+    const { data: subscription } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .select("status")
       .eq("email", user.email || "")
@@ -72,7 +72,7 @@ export default async function PortalLeadsPage() {
     );
 
     if (user.email) {
-      const { data: client } = await (admin as any)
+      const { data: client } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_clients")
         .select("id")
         .eq("contact_email", user.email)
@@ -83,7 +83,7 @@ export default async function PortalLeadsPage() {
       const onboardingClient = client as IdRow | null;
 
       if (onboardingClient?.id && hasActiveSubscription) {
-        const { data: site } = await (admin as any)
+        const { data: site } = await (admin as unknown as SupabaseUntypedClient)
           .from("onboarding_sites")
           .select("clinic_id")
           .eq("onboarding_client_id", onboardingClient.id)
@@ -94,7 +94,7 @@ export default async function PortalLeadsPage() {
         const onboardingSite = site as ClinicIdRow | null;
 
         if (onboardingSite?.clinic_id) {
-          const { data: enquiryRows } = await (admin as any)
+          const { data: enquiryRows } = await (admin as unknown as SupabaseUntypedClient)
             .from("enquiries")
             .select("id,name,email,phone,status,service,notes,created_at")
             .eq("clinic_id", onboardingSite.clinic_id)

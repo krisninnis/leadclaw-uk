@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     const admin = createAdminClient();
 
     if (admin) {
-      const { error } = await (admin as any)
+      const { error } = await (admin as unknown as SupabaseUntypedClient)
         .from("applications")
         .insert(payload);
       if (error) throw error;

@@ -78,7 +78,7 @@ export default function PortalSettingsPage() {
               Paste your Google Business review link here. LeadClaw will
               automatically send a review request to customers 48 hours after
               a completed appointment or service. To find your link, go to your Google Business
-              Profile, click "Ask for reviews" and copy the URL.
+              Profile, click &quot;Ask for reviews&quot; and copy the URL.
             </p>
             <div className="mt-6">
               <label className="block text-sm font-medium text-foreground">

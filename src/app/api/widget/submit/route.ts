@@ -124,7 +124,7 @@ export async function POST(req: Request) {
     const safePageTitle = parsed.pageTitle?.trim() || null;
     const safeDomain = parsed.domain?.trim().toLowerCase() || null;
 
-    const { data: tokenRow, error: tokenError } = await (admin as any)
+    const { data: tokenRow, error: tokenError } = await (admin as unknown as SupabaseUntypedClient)
       .from("widget_tokens")
       .select("onboarding_site_id,status")
       .eq("token", parsed.token)
@@ -149,7 +149,7 @@ export async function POST(req: Request) {
 
     const widgetToken = tokenRow as WidgetTokenSubmitRow;
 
-    const { data: site, error: siteError } = await (admin as any)
+    const { data: site, error: siteError } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_sites")
       .select("clinic_id,onboarding_client_id,domain")
       .eq("id", widgetToken.onboarding_site_id)
@@ -177,7 +177,7 @@ export async function POST(req: Request) {
     let clinicContactEmail: string | null = null;
 
     if (onboardingSite.onboarding_client_id) {
-      const { data: client, error: clientError } = await (admin as any)
+      const { data: client, error: clientError } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_clients")
         .select("contact_email,business_name,client_name")
         .eq("id", onboardingSite.onboarding_client_id)
@@ -199,7 +199,7 @@ export async function POST(req: Request) {
     }
 
     const { data: subscriptionRow } = clinicContactEmail
-      ? await (admin as any)
+      ? await (admin as unknown as SupabaseUntypedClient)
           .from("subscriptions")
           .select("status,email,plan")
           .eq("email", clinicContactEmail)
@@ -237,7 +237,7 @@ export async function POST(req: Request) {
       status: "new",
     };
 
-    const { data: insertedEnquiry, error: insertError } = await (admin as any)
+    const { error: insertError } = await (admin as unknown as SupabaseUntypedClient)
       .from("enquiries")
       .insert({
         ...enquiryPayload,

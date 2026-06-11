@@ -71,7 +71,7 @@ export async function upsertStripeSubscription(input: SubscriptionInput) {
     filters.push(`email.eq.${normalizedEmail}`);
   }
 
-  const { data: existingRows, error: existingError } = await (admin as any)
+  const { data: existingRows, error: existingError } = await (admin as unknown as SupabaseUntypedClient)
     .from("subscriptions")
     .select(
       "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
@@ -126,7 +126,7 @@ export async function upsertStripeSubscription(input: SubscriptionInput) {
   };
 
   if (existing?.id) {
-    const { error: updateError } = await (admin as any)
+    const { error: updateError } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .update(row)
       .eq("id", existing.id);
@@ -138,7 +138,7 @@ export async function upsertStripeSubscription(input: SubscriptionInput) {
     return { ok: true as const };
   }
 
-  const { error: insertError } = await (admin as any)
+  const { error: insertError } = await (admin as unknown as SupabaseUntypedClient)
     .from("subscriptions")
     .insert(row);
 

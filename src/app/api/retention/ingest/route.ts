@@ -46,7 +46,7 @@ export async function POST(req: Request) {
 
   const key = (email || phone) as string
 
-  const { data: existing } = await (admin as any)
+  const { data: existing } = await (admin as unknown as SupabaseUntypedClient)
     .from('retention_clients')
     .select('id')
     .eq('external_key', key)
@@ -66,9 +66,9 @@ export async function POST(req: Request) {
 
   let clientId = (existing as IdRow | null)?.id
   if (clientId) {
-    await (admin as any).from('retention_clients').update(payload).eq('id', clientId)
+    await (admin as unknown as SupabaseUntypedClient).from('retention_clients').update(payload).eq('id', clientId)
   } else {
-    const { data: inserted, error } = await (admin as any).from('retention_clients').insert(payload).select('id').single()
+    const { data: inserted, error } = await (admin as unknown as SupabaseUntypedClient).from('retention_clients').insert(payload).select('id').single()
     const insertedClient = inserted as IdRow | null
     if (error || !insertedClient?.id) return NextResponse.json({ ok: false, error: error?.message || 'client_insert_failed' }, { status: 500 })
     clientId = insertedClient.id
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
   }
 
   if (tasks.length > 0) {
-    await (admin as any).from('retention_tasks').insert(
+    await (admin as unknown as SupabaseUntypedClient).from('retention_tasks').insert(
       tasks.map((t) => ({
         retention_client_id: clientId,
         behavior: t.behavior,

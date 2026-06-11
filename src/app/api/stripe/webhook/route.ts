@@ -29,7 +29,7 @@ async function syncApplicationPlan(email: string, plan: "growth" | "pro") {
 
   const normalizedEmail = email.trim().toLowerCase();
 
-  const { data: existingRow } = await (admin as any)
+  const { data: existingRow } = await (admin as unknown as SupabaseUntypedClient)
     .from("applications")
     .select("id")
     .eq("email", normalizedEmail)
@@ -40,7 +40,7 @@ async function syncApplicationPlan(email: string, plan: "growth" | "pro") {
   const existingApplication = existingRow as ApplicationIdRow | null;
 
   if (existingApplication?.id) {
-    await (admin as any)
+    await (admin as unknown as SupabaseUntypedClient)
       .from("applications")
       .update({ plan })
       .eq("id", existingApplication.id);

@@ -29,7 +29,7 @@ async function getClinicId(
   admin: ReturnType<typeof createAdminClient>,
 ) {
   if (!admin) return null;
-  const { data: client } = await (admin as any)
+  const { data: client } = await (admin as unknown as SupabaseUntypedClient)
     .from("onboarding_clients")
     .select("id")
     .eq("contact_email", userEmail)
@@ -41,7 +41,7 @@ async function getClinicId(
 
   if (!onboardingClient?.id) return null;
 
-  const { data: site } = await (admin as any)
+  const { data: site } = await (admin as unknown as SupabaseUntypedClient)
     .from("onboarding_sites")
     .select("clinic_id")
     .eq("onboarding_client_id", onboardingClient.id)
@@ -73,7 +73,7 @@ export async function GET() {
       { status: 404 },
     );
 
-  const { data, error } = await (admin as any)
+  const { data, error } = await (admin as unknown as SupabaseUntypedClient)
     .from("appointments")
     .select("*")
     .eq("clinic_id", clinicId)
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const parsed = schema.parse(body);
 
-    const { data, error } = await (admin as any)
+    const { data, error } = await (admin as unknown as SupabaseUntypedClient)
       .from("appointments")
       .insert({ ...parsed, clinic_id: clinicId })
       .select("id")
@@ -167,7 +167,7 @@ export async function DELETE(req: Request) {
       { status: 404 },
     );
 
-  const { error } = await (admin as any)
+  const { error } = await (admin as unknown as SupabaseUntypedClient)
     .from("appointments")
     .delete()
     .eq("id", id)

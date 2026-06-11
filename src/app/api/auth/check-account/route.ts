@@ -30,7 +30,7 @@ export async function POST(req: Request) {
     const parsed = schema.parse(body);
     const email = parsed.email.trim().toLowerCase();
 
-    const { data: subscription } = await (admin as any)
+    const { data: subscription } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .select("status,updated_at")
       .eq("email", email)
@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       latestSubscription?.status || null,
     );
 
-    const { data: onboardingClient } = await (admin as any)
+    const { data: onboardingClient } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_clients")
       .select("id")
       .eq("contact_email", email)

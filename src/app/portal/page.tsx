@@ -93,7 +93,7 @@ export default async function PortalPage({
   let recentEnquiries: RecentEnquiryRow[] = [];
 
   if (admin) {
-    const { data: subscription } = await (admin as any)
+    const { data: subscription } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
       .select("status,plan,trial_end,current_period_end")
       .eq("email", user.email || "")
@@ -107,13 +107,13 @@ export default async function PortalPage({
       rawSubscriptionStatus = String(latestSubscription.status).toLowerCase();
 
       const planLabel = latestSubscription.plan
-        ? `${String(subscription.plan).toUpperCase()} • `
+        ? `${String(latestSubscription.plan).toUpperCase()} • `
         : "";
-      currentPlan = String(subscription.plan || "basic").toLowerCase();
+      currentPlan = String(latestSubscription.plan || "basic").toLowerCase();
 
-      subStatus = `${planLabel}${subscription.status}`;
-      trialEnd = subscription.trial_end || null;
-      currentPeriodEnd = subscription.current_period_end || null;
+      subStatus = `${planLabel}${latestSubscription.status}`;
+      trialEnd = latestSubscription.trial_end || null;
+      currentPeriodEnd = latestSubscription.current_period_end || null;
 
       isTrialing = rawSubscriptionStatus === "trialing";
       isTrialExpired =
@@ -126,7 +126,7 @@ export default async function PortalPage({
     }
 
     if (user.email) {
-      const { data: client } = await (admin as any)
+      const { data: client } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_clients")
         .select("id")
         .eq("contact_email", user.email)
@@ -137,7 +137,7 @@ export default async function PortalPage({
       const onboardingClient = client as IdRow | null;
 
       if (onboardingClient?.id) {
-        const { data: site } = await (admin as any)
+        const { data: site } = await (admin as unknown as SupabaseUntypedClient)
           .from("onboarding_sites")
           .select("id,domain,clinic_id")
           .eq("onboarding_client_id", onboardingClient.id)
@@ -150,7 +150,7 @@ export default async function PortalPage({
         domain = onboardingSite?.domain || null;
 
         if (onboardingSite?.id) {
-          const { data: tokenRow } = await (admin as any)
+          const { data: tokenRow } = await (admin as unknown as SupabaseUntypedClient)
             .from("widget_tokens")
             .select("last_seen_at")
             .eq("onboarding_site_id", onboardingSite.id)
@@ -164,7 +164,7 @@ export default async function PortalPage({
         }
 
         if (onboardingSite?.clinic_id && hasActiveSubscription) {
-          const { data: enquiryRows } = await (admin as any)
+          const { data: enquiryRows } = await (admin as unknown as SupabaseUntypedClient)
             .from("enquiries")
             .select("id,name,status,created_at")
             .eq("clinic_id", onboardingSite.clinic_id)
@@ -189,16 +189,16 @@ export default async function PortalPage({
             { count: totalCount },
             { data: allRows },
           ] = await Promise.all([
-            (admin as any)
+            (admin as unknown as SupabaseUntypedClient)
               .from("enquiries")
               .select("*", { count: "exact", head: true })
               .eq("clinic_id", onboardingSite.clinic_id)
               .gte("created_at", sevenDaysAgo.toISOString()),
-            (admin as any)
+            (admin as unknown as SupabaseUntypedClient)
               .from("enquiries")
               .select("*", { count: "exact", head: true })
               .eq("clinic_id", onboardingSite.clinic_id),
-            (admin as any)
+            (admin as unknown as SupabaseUntypedClient)
               .from("enquiries")
               .select("status")
               .eq("clinic_id", onboardingSite.clinic_id)

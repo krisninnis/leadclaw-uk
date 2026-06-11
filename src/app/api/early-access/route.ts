@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     }
 
     // Upsert — don't create duplicates
-    const { error } = await (admin as any).from("early_access_signups").upsert(
+    const { error } = await (admin as unknown as SupabaseUntypedClient).from("early_access_signups").upsert(
       {
         email: parsed.email.toLowerCase().trim(),
         requested_plan: parsed.plan,

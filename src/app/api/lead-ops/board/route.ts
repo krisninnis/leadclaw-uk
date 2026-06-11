@@ -44,7 +44,7 @@ export async function GET() {
     );
   }
 
-  const { data: leads, error: leadsErr } = await (admin as any)
+  const { data: leads, error: leadsErr } = await (admin as unknown as SupabaseUntypedClient)
     .from("leads")
     .select("id,company_name,contact_email,city,status,notes,updated_at")
     .order("updated_at", { ascending: false })
@@ -62,7 +62,7 @@ export async function GET() {
   let events: OutreachEvent[] = [];
 
   if (leadIds.length > 0) {
-    const { data: evData } = await (admin as any)
+    const { data: evData } = await (admin as unknown as SupabaseUntypedClient)
       .from("outreach_events")
       .select("lead_id,event_type,created_at,payload")
       .in("lead_id", leadIds)
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { data: existing } = await (admin as any)
+  const { data: existing } = await (admin as unknown as SupabaseUntypedClient)
     .from("leads")
     .select("notes")
     .eq("id", leadId)
@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
     updated_at: new Date().toISOString(),
   };
 
-  const { error: updateErr } = await (admin as any)
+  const { error: updateErr } = await (admin as unknown as SupabaseUntypedClient)
     .from("leads")
     .update({
       status,
@@ -177,14 +177,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  await (admin as any).from("outreach_events").insert({
+  await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
     lead_id: leadId,
     channel: "crm",
     event_type: "lead_outcome_updated",
     payload: { status, outcomeLabel, followUpDueAt, note },
   });
 
-  await (admin as any).from("system_events").insert({
+  await (admin as unknown as SupabaseUntypedClient).from("system_events").insert({
     level: "info",
     category: "lead_ops",
     message: `Lead outcome updated: ${leadId} -> ${status}`,

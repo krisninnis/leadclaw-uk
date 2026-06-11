@@ -11,7 +11,7 @@ export default function PricingHero() {
           </div>
 
           <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Choose the LeadClaw plan that fits your team's workflow stage.
+            Choose the LeadClaw plan that fits your team&apos;s workflow stage.
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted sm:text-xl">

@@ -64,7 +64,7 @@ export async function POST(req: Request) {
   const fortyEightHoursAgo = new Date(now.getTime() - 48 * 60 * 60 * 1000);
   const fiftyHoursAgo = new Date(now.getTime() - 50 * 60 * 60 * 1000);
 
-  const { data: appointments } = await (admin as any)
+  const { data: appointments } = await (admin as unknown as SupabaseUntypedClient)
     .from("appointments")
     .select(
       "id, patient_name, patient_email, service, appointment_at, clinic_id",
@@ -88,7 +88,7 @@ export async function POST(req: Request) {
     let workspaceName = "your business";
     let googleReviewUrl: string | null = null;
 
-    const { data: site } = await (admin as any)
+    const { data: site } = await (admin as unknown as SupabaseUntypedClient)
       .from("onboarding_sites")
       .select("onboarding_client_id")
       .eq("clinic_id", appt.clinic_id)
@@ -98,7 +98,7 @@ export async function POST(req: Request) {
     const onboardingSite = site as OnboardingSiteRow | null;
 
     if (onboardingSite?.onboarding_client_id) {
-      const { data: client } = await (admin as any)
+      const { data: client } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_clients")
         .select("business_name, client_name")
         .eq("id", onboardingSite.onboarding_client_id)
@@ -113,7 +113,7 @@ export async function POST(req: Request) {
         "your business";
     }
 
-    const { data: settings } = await (admin as any)
+    const { data: settings } = await (admin as unknown as SupabaseUntypedClient)
       .from("clinic_settings")
       .select("google_review_url, review_requests_enabled")
       .eq("clinic_id", appt.clinic_id)
@@ -163,7 +163,7 @@ ${googleReviewUrl ? `Leave a Google review: ${googleReviewUrl}\n\n` : ""}Thank y
 ${workspaceName}`,
       });
 
-      await (admin as any)
+      await (admin as unknown as SupabaseUntypedClient)
         .from("appointments")
         .update({ review_request_sent_at: new Date().toISOString() })
         .eq("id", appt.id);

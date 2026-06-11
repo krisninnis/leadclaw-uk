@@ -51,7 +51,7 @@ export async function POST(req: Request) {
       personalisedDemo && widgetReady ? "hot_demo" : "clicked_demo";
 
     if (leadId) {
-      const { data: leadRow, error: leadLookupError } = await (admin as any)
+      const { data: leadRow, error: leadLookupError } = await (admin as unknown as SupabaseUntypedClient)
         .from("leads")
         .select("notes")
         .eq("id", leadId)
@@ -91,7 +91,7 @@ export async function POST(req: Request) {
         .filter(Boolean)
         .join(" | ");
 
-      const { error: leadUpdateError } = await (admin as any)
+      const { error: leadUpdateError } = await (admin as unknown as SupabaseUntypedClient)
         .from("leads")
         .update({
           notes: nextNotes,
@@ -109,7 +109,7 @@ export async function POST(req: Request) {
         );
       }
 
-      const { error: eventInsertError } = await (admin as any)
+      const { error: eventInsertError } = await (admin as unknown as SupabaseUntypedClient)
         .from("outreach_events")
         .insert({
           lead_id: leadId,

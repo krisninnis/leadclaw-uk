@@ -12,7 +12,7 @@ export default function PricingComparison() {
                   Which plan is right for you?
                 </p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                  Pick the plan that matches your team's current workflow.
+                  Pick the plan that matches your team&apos;s current workflow.
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-muted">
                   Basic is for simple request capture. Growth adds core

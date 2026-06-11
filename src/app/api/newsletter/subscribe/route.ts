@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const body = await req.json()
     const data = schema.parse(body)
 
-    const { error } = await (admin as any).from('newsletter_subscribers').upsert(
+    const { error } = await (admin as unknown as SupabaseUntypedClient).from('newsletter_subscribers').upsert(
       {
         email: data.email.toLowerCase(),
         name: data.name || null,

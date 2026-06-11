@@ -20,8 +20,8 @@ export async function GET(req: Request) {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
   const [tasksRes, eventsRes] = await Promise.all([
-    (admin as any).from('retention_tasks').select('status,behavior,created_at').gte('created_at', since).limit(5000),
-    (admin as any).from('retention_events').select('status,behavior,created_at').gte('created_at', since).limit(5000),
+    (admin as unknown as SupabaseUntypedClient).from('retention_tasks').select('status,behavior,created_at').gte('created_at', since).limit(5000),
+    (admin as unknown as SupabaseUntypedClient).from('retention_events').select('status,behavior,created_at').gte('created_at', since).limit(5000),
   ])
 
   if (tasksRes.error) return NextResponse.json({ ok: false, error: tasksRes.error.message }, { status: 500 })

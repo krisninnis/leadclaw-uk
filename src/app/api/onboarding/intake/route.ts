@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     handoffMethod: body.handoffMethod || null,
   }
 
-  const { data: existingClient } = await (admin as any)
+  const { data: existingClient } = await (admin as unknown as SupabaseUntypedClient)
     .from('onboarding_clients')
     .select('id')
     .eq('contact_email', body.contactEmail || '')
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
   let clientId = (existingClient as IdRow | null)?.id
   if (!clientId) {
-    const { data: inserted, error } = await (admin as any)
+    const { data: inserted, error } = await (admin as unknown as SupabaseUntypedClient)
       .from('onboarding_clients')
       .insert({
         client_name: body.clientName || body.businessName || domain,
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     clientId = insertedClient.id
   }
 
-  const { data: siteInserted, error: siteError } = await (admin as any)
+  const { data: siteInserted, error: siteError } = await (admin as unknown as SupabaseUntypedClient)
     .from('onboarding_sites')
     .insert({
       onboarding_client_id: clientId,
@@ -94,13 +94,13 @@ export async function POST(req: Request) {
   const siteId = insertedSite.id
   const widgetToken = randomBytes(24).toString('hex')
 
-  await (admin as any).from('widget_tokens').insert({
+  await (admin as unknown as SupabaseUntypedClient).from('widget_tokens').insert({
     onboarding_site_id: siteId,
     token: widgetToken,
     status: 'active',
   })
 
-  await (admin as any).from('onboarding_tasks').insert(
+  await (admin as unknown as SupabaseUntypedClient).from('onboarding_tasks').insert(
     AUTONOMOUS_TASK_ORDER.map((taskType, idx) => ({
       onboarding_site_id: siteId,
       task_type: taskType,

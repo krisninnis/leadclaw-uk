@@ -60,7 +60,7 @@ export async function POST(req: Request) {
 
   const now = new Date().toISOString();
 
-  const { data: rows, error } = await (admin as any)
+  const { data: rows, error } = await (admin as unknown as SupabaseUntypedClient)
     .from("retention_tasks")
     .select(
       "id,behavior,retention_client_id,retention_clients(id,client_name,email,phone,service,clinic_name,objection)",
@@ -86,7 +86,7 @@ export async function POST(req: Request) {
       : row.retention_clients;
 
     if (!client) {
-      await (admin as any)
+      await (admin as unknown as SupabaseUntypedClient)
         .from("retention_tasks")
         .update({ status: "failed", error: "client_not_found" })
         .eq("id", row.id);
@@ -102,7 +102,7 @@ export async function POST(req: Request) {
     let clinicHasFullAccess = false;
 
     if (client.clinic_name) {
-      const { data: onboardingClient } = await (admin as any)
+      const { data: onboardingClient } = await (admin as unknown as SupabaseUntypedClient)
         .from("onboarding_clients")
         .select("contact_email,business_name,client_name")
         .or(
@@ -119,7 +119,7 @@ export async function POST(req: Request) {
           .toLowerCase() || null;
 
       if (clinicEmail) {
-        const { data: subscription } = await (admin as any)
+        const { data: subscription } = await (admin as unknown as SupabaseUntypedClient)
           .from("subscriptions")
           .select("status,plan")
           .eq("email", clinicEmail)
@@ -139,7 +139,7 @@ export async function POST(req: Request) {
         reason: "subscription_no_longer_full_access",
       });
 
-      await (admin as any)
+      await (admin as unknown as SupabaseUntypedClient)
         .from("retention_tasks")
         .update({
           status: "skipped",
@@ -153,7 +153,7 @@ export async function POST(req: Request) {
     // idempotency / anti-spam guard
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-    const { data: recent } = await (admin as any)
+    const { data: recent } = await (admin as unknown as SupabaseUntypedClient)
       .from("retention_events")
       .select("id")
       .eq("retention_client_id", row.retention_client_id)
@@ -166,7 +166,7 @@ export async function POST(req: Request) {
     if ((recent as IdRow | null)?.id) {
       skipped.push({ id: row.id, reason: "duplicate_recent_send" });
 
-      await (admin as any)
+      await (admin as unknown as SupabaseUntypedClient)
         .from("retention_tasks")
         .update({ status: "skipped", error: "duplicate_recent_send" })
         .eq("id", row.id);
@@ -208,7 +208,7 @@ export async function POST(req: Request) {
       skipped.push({ id: row.id, reason: finalReason });
     }
 
-    await (admin as any).from("retention_events").insert({
+    await (admin as unknown as SupabaseUntypedClient).from("retention_events").insert({
       retention_task_id: row.id,
       retention_client_id: row.retention_client_id,
       behavior,
@@ -217,7 +217,7 @@ export async function POST(req: Request) {
       payload: { subject: rendered.subject, text: rendered.text },
     });
 
-    await (admin as any)
+    await (admin as unknown as SupabaseUntypedClient)
       .from("retention_tasks")
       .update({
         status: delivered ? "sent" : "skipped",
