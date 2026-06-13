@@ -57,13 +57,23 @@ type OutreachLeadRow = {
   id: string;
   company_name: string;
   city: string | null;
+  niche: string | null;
+  created_at: string | null;
   contact_email: string | null;
   status: string;
   score: number | null;
+  lead_quality_score: number | null;
+  pecr_classification: string | null;
   outreach_subject: string | null;
   outreach_message: string | null;
   follow_up_stage: number | null;
   last_contacted_at: string | null;
+};
+
+type OutreachRunBody = {
+  niches?: unknown;
+  created_after?: unknown;
+  createdAfter?: unknown;
 };
 
 function sleep(ms: number) {
@@ -217,16 +227,29 @@ LeadClaw
 Reply "no" to opt out.`;
 }
 
+function unsubscribeUrl(email?: string | null) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.leadclaw.uk";
+  return email
+    ? `${appUrl}/api/unsubscribe?email=${encodeURIComponent(email)}`
+    : `${appUrl}/api/unsubscribe`;
+}
+
+function appendTextUnsubscribe(text: string, email?: string | null) {
+  const lower = text.toLowerCase();
+  if (lower.includes("/api/unsubscribe") || lower.includes("unsubscribe:")) {
+    return text;
+  }
+
+  return `${text}\n\nUnsubscribe: ${unsubscribeUrl(email)}`;
+}
+
 function renderHtml(text: string, email?: string | null) {
   const htmlBody = text
     .split("\n\n")
     .map((block) => `<p>${block.replace(/\n/g, "<br/>")}</p>`)
     .join("");
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.leadclaw.uk";
-  const unsub = email
-    ? `${appUrl}/api/unsubscribe?email=${encodeURIComponent(email)}`
-    : `${appUrl}/api/unsubscribe`;
+  const unsub = unsubscribeUrl(email);
 
   return `
     <div style="font-family:Arial,sans-serif;line-height:1.5;color:#0f172a">
@@ -311,6 +334,42 @@ function daysSince(dateString?: string | null) {
   return (Date.now() - then.getTime()) / 86400000;
 }
 
+function boundedInt(
+  raw: string | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+) {
+  const parsed = Number(raw);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.max(min, Math.min(Math.floor(parsed), max));
+}
+
+function parseStringArray(raw: unknown) {
+  if (!Array.isArray(raw)) return [];
+
+  const seen = new Set<string>();
+  const values: string[] = [];
+
+  for (const item of raw) {
+    const value = String(item || "").trim();
+    if (!value || seen.has(value.toLowerCase())) continue;
+    seen.add(value.toLowerCase());
+    values.push(value);
+  }
+
+  return values;
+}
+
+function parseIsoDate(raw: unknown) {
+  const value = String(raw || "").trim();
+  if (!value) return null;
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return null;
+  return parsed.toISOString();
+}
+
 export async function POST(req: Request) {
   const startedAt = Date.now();
 
@@ -324,6 +383,10 @@ export async function POST(req: Request) {
     );
   }
 
+  const body = (await req.json().catch(() => ({}))) as OutreachRunBody;
+  const scopedNiches = parseStringArray(body.niches);
+  const scopedCreatedAfter = parseIsoDate(body.created_after ?? body.createdAfter);
+
   const admin = createAdminClient();
   if (!admin) {
     return NextResponse.json(
@@ -332,14 +395,19 @@ export async function POST(req: Request) {
     );
   }
 
-  const dailyCap = Number(process.env.OUTREACH_DAILY_CAP || 20);
-  const batchSize = Math.max(
-    1,
-    Math.min(Number(process.env.OUTREACH_BATCH_SIZE || 3), 6),
-  );
-  const perEmailDelayMs = Math.max(
+  const dailyCap = boundedInt(process.env.OUTREACH_DAILY_CAP, 1, 0, 5);
+  const minLeadQualityScore = boundedInt(
+    process.env.OUTREACH_MIN_LEAD_QUALITY_SCORE,
+    90,
     0,
-    Math.min(Number(process.env.OUTREACH_PER_EMAIL_DELAY_MS || 50), 250),
+    100,
+  );
+  const batchSize = boundedInt(process.env.OUTREACH_BATCH_SIZE, 1, 1, 5);
+  const perEmailDelayMs = boundedInt(
+    process.env.OUTREACH_PER_EMAIL_DELAY_MS,
+    50,
+    0,
+    250,
   );
 
   const dayStart = new Date();
@@ -363,6 +431,9 @@ export async function POST(req: Request) {
     remainingDaily,
     batchSize,
     remainingThisRun,
+    minLeadQualityScore,
+    scopedNiches,
+    scopedCreatedAfter,
   });
 
   if (remainingThisRun === 0) {
@@ -376,18 +447,34 @@ export async function POST(req: Request) {
       dailyCap,
       sentToday,
       batchSize,
+      minLeadQualityScore,
+      scopedNiches,
+      scopedCreatedAfter,
     });
   }
 
-  const { data: leads, error } = await (admin as unknown as SupabaseUntypedClient)
+  let leadQuery = (admin as unknown as SupabaseUntypedClient)
     .from("leads")
     .select(
-      "id,company_name,city,contact_email,status,score,outreach_subject,outreach_message,follow_up_stage,last_contacted_at",
+      "id,company_name,city,niche,created_at,contact_email,status,score,lead_quality_score,pecr_classification,outreach_subject,outreach_message,follow_up_stage,last_contacted_at",
     )
-    .in("status", ["new", "contacted"])
+    .eq("status", "queued")
+    .eq("pecr_classification", "corporate")
     .not("contact_email", "is", null)
-    .gte("score", 50)
-    .order("score", { ascending: false })
+    .not("outreach_subject", "is", null)
+    .not("outreach_message", "is", null)
+    .gte("lead_quality_score", minLeadQualityScore);
+
+  if (scopedNiches.length > 0) {
+    leadQuery = leadQuery.in("niche", scopedNiches);
+  }
+
+  if (scopedCreatedAfter) {
+    leadQuery = leadQuery.gte("created_at", scopedCreatedAfter);
+  }
+
+  const { data: leads, error } = await leadQuery
+    .order("lead_quality_score", { ascending: false })
     .limit(remainingThisRun * 4);
 
   if (error) {
@@ -418,9 +505,34 @@ export async function POST(req: Request) {
 
     const leadStartedAt = Date.now();
     const email = normalizeEmail(lead.contact_email);
+    const leadQualityScore = Number(lead.lead_quality_score);
+    const hasReviewedMessage = Boolean(
+      lead.outreach_subject?.trim() && lead.outreach_message?.trim(),
+    );
 
     if (senderNotReady) {
       skipped.push({ id: lead.id, email, reason: "sender_not_verified" });
+      continue;
+    }
+
+    if (
+      lead.status !== "queued" ||
+      lead.pecr_classification !== "corporate" ||
+      !Number.isFinite(leadQualityScore) ||
+      leadQualityScore < minLeadQualityScore ||
+      lead.last_contacted_at ||
+      Number(lead.follow_up_stage || 0) > 0 ||
+      !hasReviewedMessage
+    ) {
+      skipped.push({ id: lead.id, email, reason: "unsafe_lead_state" });
+
+      await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
+        lead_id: lead.id,
+        channel: "email",
+        event_type: "skipped",
+        payload: { reason: "unsafe_lead_state" },
+      });
+
       continue;
     }
 
@@ -474,7 +586,7 @@ export async function POST(req: Request) {
     let text = "";
     let nextStage = followUpStage;
 
-    if (lead.status === "new" || followUpStage === 0) {
+    if (followUpStage === 0) {
       text = renderInitialMessage(lead);
       nextStage = 1;
     } else if (followUpStage === 1) {
@@ -495,13 +607,14 @@ export async function POST(req: Request) {
       continue;
     }
 
-    const html = renderHtml(text, email);
+    const deliverableText = appendTextUnsubscribe(text, email);
+    const html = renderHtml(deliverableText, email);
 
     const result = await sendEmail({
       to: email,
       subject,
       html,
-      text,
+      text: deliverableText,
       tags: [
         { name: "lead_id", value: lead.id },
         { name: "source", value: "outreach" },
@@ -567,7 +680,10 @@ export async function POST(req: Request) {
         last_contacted_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq("id", lead.id);
+      .eq("id", lead.id)
+      .eq("status", "queued")
+      .eq("pecr_classification", "corporate")
+      .gte("lead_quality_score", minLeadQualityScore);
 
     if (perEmailDelayMs > 0) {
       await sleep(perEmailDelayMs);
@@ -594,6 +710,9 @@ export async function POST(req: Request) {
     totalMs: Date.now() - startedAt,
     batchSize,
     dailyCap,
+    minLeadQualityScore,
+    scopedNiches,
+    scopedCreatedAfter,
     sentTodayBeforeRun: sentToday,
     sentTodayAfterRun: sentToday + sent.length,
   });
@@ -606,6 +725,9 @@ export async function POST(req: Request) {
     skipped,
     capped: sentToday + sent.length >= dailyCap,
     dailyCap,
+    minLeadQualityScore,
+    scopedNiches,
+    scopedCreatedAfter,
     sentToday: sentToday + sent.length,
     batchSize,
     totalMs: Date.now() - startedAt,

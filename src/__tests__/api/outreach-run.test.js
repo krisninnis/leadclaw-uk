@@ -6,6 +6,7 @@ function makeAdminWithOneLead() {
   };
 
   const leadsSelect = {
+    eq: jest.fn().mockReturnThis(),
     in: jest.fn().mockReturnThis(),
     not: jest.fn().mockReturnThis(),
     gte: jest.fn().mockReturnThis(),
@@ -17,16 +18,22 @@ function makeAdminWithOneLead() {
           company_name: "Bright Clinic",
           city: "London",
           contact_email: "owner@brightclinic.co.uk",
-          status: "new",
+          status: "queued",
           score: 95,
-          outreach_subject: null,
-          outreach_message: null,
+          lead_quality_score: 95,
+          pecr_classification: "corporate",
+          outreach_subject: "Reviewed subject",
+          outreach_message: "Reviewed message",
           follow_up_stage: 0,
           last_contacted_at: null,
         },
       ],
       error: null,
     }),
+  };
+  const leadsUpdate = {
+    eq: jest.fn().mockReturnThis(),
+    gte: jest.fn().mockResolvedValue({ error: null }),
   };
 
   return {
@@ -41,9 +48,7 @@ function makeAdminWithOneLead() {
       if (table === "leads") {
         return {
           select: jest.fn(() => leadsSelect),
-          update: jest.fn(() => ({
-            eq: jest.fn().mockResolvedValue({ error: null }),
-          })),
+          update: jest.fn(() => leadsUpdate),
         };
       }
 
@@ -56,7 +61,8 @@ describe("POST /api/outreach/run", () => {
   beforeEach(() => {
     jest.resetModules();
     process.env.OUTREACH_RUN_TOKEN = "test-token";
-    process.env.OUTREACH_DAILY_CAP = "20";
+    process.env.OUTREACH_DAILY_CAP = "1";
+    process.env.OUTREACH_MIN_LEAD_QUALITY_SCORE = "90";
     process.env.NEXT_PUBLIC_APP_URL = "https://leadclaw.uk";
   });
 
@@ -156,23 +162,24 @@ describe("POST /api/outreach/run", () => {
 
     expect(res.status).toBe(200);
 
-    expect(body).toEqual({
+    expect(body).toEqual(expect.objectContaining({
       ok: true,
       sentCount: 1,
       skippedCount: 0,
-
       sent: [
         {
           id: "lead_1",
           email: "owner@brightclinic.co.uk",
-          subject: "Quick question for Bright Clinic",
+          subject: "Reviewed subject",
         },
       ],
       skipped: [],
-      capped: false,
-      dailyCap: 20,
+      capped: true,
+      dailyCap: 1,
+      minLeadQualityScore: 90,
       sentToday: 1,
-    });
+      batchSize: 1,
+    }));
 
     expect(emailModule.sendEmail).toHaveBeenCalledTimes(1);
     expect(opsModule.logSystemEvent).toHaveBeenCalled();
