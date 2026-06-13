@@ -131,6 +131,15 @@ export default function ComparePage() {
               <Link href="/ai-receptionist-for-aesthetic-clinics-uk" className="button-secondary">
                 For aesthetic clinics
               </Link>
+              <Link href="/ai-receptionist-for-plumbers-uk" className="button-secondary">
+                For plumbers
+              </Link>
+              <Link href="/ai-receptionist-for-electricians-uk" className="button-secondary">
+                For electricians
+              </Link>
+              <Link href="/ai-receptionist-uk" className="button-secondary">
+                All industries
+              </Link>
               <Link href="/pricing" className="button-secondary">
                 Pricing
               </Link>
