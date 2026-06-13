@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -20,7 +20,6 @@ function isActivePath(pathname: string, href: string) {
 export default function Nav() {
   const pathname = usePathname() ?? "";
   const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [authReady, setAuthReady] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
     try {
@@ -48,7 +47,7 @@ export default function Nav() {
 
     if (!supabase) {
       queueMicrotask(() => {
-        if (mounted) setAuthReady(true);
+        if (mounted) setUserEmail(null);
       });
       return;
     }
@@ -58,7 +57,6 @@ export default function Nav() {
       .then(({ data }: { data: { user: User | null } }) => {
         if (!mounted) return;
         setUserEmail(data.user?.email?.toLowerCase() ?? null);
-        setAuthReady(true);
       });
 
     const {
@@ -67,7 +65,6 @@ export default function Nav() {
       (_event: string, session: Session | null) => {
         if (!mounted) return;
         setUserEmail(session?.user?.email?.toLowerCase() ?? null);
-        setAuthReady(true);
       },
     );
 
@@ -77,16 +74,7 @@ export default function Nav() {
     };
   }, []);
 
-  const adminEmails = useMemo(
-    () =>
-      ["kris@leadclaw.uk", "krisninnis@gmail.com", "leadclawops@gmail.com"].map(
-        (email) => email.toLowerCase(),
-      ),
-    [],
-  );
-
   const isSignedIn = Boolean(userEmail);
-  const isAdmin = Boolean(userEmail && adminEmails.includes(userEmail));
 
   const links: NavLink[] = [
     { href: "/", label: "Home", icon: "🏠" },
@@ -184,28 +172,13 @@ export default function Nav() {
                 );
               })}
             </nav>
-
-            <div className="mt-auto pt-6">
-              {authReady && isAdmin ? (
-                <Link
-                  href="/admin"
-                  className={[
-                    "flex items-center gap-3 rounded-2xl border border-border bg-white px-3 py-3 text-sm font-medium text-foreground shadow-sm transition hover:-translate-y-0.5 hover:border-border-strong hover:bg-surface-2",
-                    collapsed ? "justify-center" : "",
-                  ].join(" ")}
-                  title={collapsed ? "Admin portal" : undefined}
-                >
-                  <span className="text-lg">🛠️</span>
-                  {!collapsed && <span>Admin portal</span>}
-                </Link>
-              ) : null}
-            </div>
+            <div className="mt-auto pt-6" />
           </div>
         </div>
       </aside>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/92 backdrop-blur-xl md:hidden">
-        <div className={`grid ${isAdmin ? "grid-cols-6" : "grid-cols-5"}`}>
+        <div className="grid grid-cols-5">
           {links.map((link) => {
             const active = isActivePath(pathname, link.href);
 

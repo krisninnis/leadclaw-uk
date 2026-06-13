@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import SignupForm from "./_components/signup-form";
 import NotificationStep from "./_components/notification-step";
 
-type PlanSlug = "growth";
+type PlanSlug = "growth" | "pro";
 const TRIAL_INTAKE_KEY = "leadclaw_trial_intake";
 
 type TrialIntakeInput = {
@@ -17,7 +17,8 @@ type TrialIntakeInput = {
   city: string;
 };
 
-function normalizePlan(_value: string | null): PlanSlug {
+function normalizePlan(value: string | null): PlanSlug {
+  if (value?.toLowerCase() === "pro") return "pro";
   return "growth";
 }
 
@@ -64,7 +65,7 @@ function FreeTrialContent() {
   }
 
   function buildNextUrl() {
-    return `/portal?startTrial=1&trial=started&setup=ready&plan=growth`;
+    return `/portal?startTrial=1&trial=started&setup=ready&plan=${selectedPlan}`;
   }
 
   async function handleNotificationSave(whatsapp: string, sms: string) {

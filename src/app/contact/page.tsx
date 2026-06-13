@@ -36,7 +36,7 @@ export default function ContactPage() {
         plan_interest: form.planInterest,
         issue_type: form.issueType,
       })
-      setStatus('Thanks — message sent. Our AI support will respond quickly, and priority plans get faster human follow-up.')
+      setStatus('Thanks — your message is in. A real person will reply within one business day, usually much faster.')
       setForm({ name: '', email: '', clinic: '', website: '', planInterest: 'starter', issueType: 'general', message: '' })
     } catch {
       setStatus('Could not send your message right now.')
@@ -55,7 +55,7 @@ export default function ContactPage() {
       <div className="rounded-xl border bg-white p-6">
         <h2 className="text-xl font-semibold">How support works</h2>
         <ul className="mt-3 list-disc pl-6 text-sm text-slate-700 space-y-1">
-          <li><strong>Starter:</strong> AI-first support and guided self-serve setup.</li>
+          <li><strong>Basic:</strong> AI-first support and guided self-serve setup.</li>
           <li><strong>Growth:</strong> AI-first + faster human escalation when needed.</li>
           <li><strong>Pro:</strong> Priority support and deeper implementation help.</li>
         </ul>
@@ -76,7 +76,7 @@ export default function ContactPage() {
             value={form.planInterest}
             onChange={(e) => setForm({ ...form, planInterest: e.target.value })}
           >
-            <option value="starter">Starter</option>
+            <option value="starter">Basic</option>
             <option value="growth">Growth</option>
             <option value="pro">Pro (priority support)</option>
             <option value="unsure">Not sure yet</option>

@@ -50,7 +50,7 @@ export const plans: PricingPlan[] = [
   {
     name: "Growth",
     slug: "growth",
-    price: "GBP 79",
+    price: "£79",
     period: "/month",
     description:
       "AI workflows for capturing requests, tracking leads, and automating follow-ups.",
@@ -75,7 +75,7 @@ export const plans: PricingPlan[] = [
   {
     name: "Pro",
     slug: "pro",
-    price: "GBP 149",
+    price: "£149",
     period: "/month",
     description:
       "Advanced automation and reporting tools for teams with more complex operations.",

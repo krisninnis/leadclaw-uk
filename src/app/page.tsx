@@ -41,11 +41,6 @@ const softwareSchema = {
       description: "Advanced automation for teams with complex operations",
     },
   ],
-  aggregateRating: {
-    "@type": "AggregateRating",
-    ratingValue: "5",
-    ratingCount: "1",
-  },
 };
 
 const painPoints = [
@@ -135,23 +130,23 @@ export default function Home() {
             <div className="max-w-3xl">
               <div className="badge-soft mb-5">
                 <span className="h-2 w-2 rounded-full bg-brand" />
-                AI workflow automation for busy teams
+                AI front desk for UK businesses
               </div>
 
               <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Capture requests, organise work, and automate follow-ups with
-                AI.
+                Never miss another enquiry. LeadClaw answers, captures, and
+                follows up with every lead — 24/7.
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-8 text-muted sm:text-xl">
-                LeadClaw helps businesses capture requests, organise
-                operational work, automate follow-ups, and save hours on
-                repetitive admin and data tasks with AI.
+                Your AI front desk replies to website and missed-call enquiries
+                instantly, captures the details, and chases follow-ups — so you
+                book more appointments without lifting a finger.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
                 <TrialCtaLink
-                  href="/pricing"
+                  href="/free-trial"
                   className="button-primary"
                   location="homepage_bottom_cta"
                 >
@@ -161,6 +156,9 @@ export default function Home() {
                   View demo
                 </Link>
               </div>
+              <p className="mt-3 text-sm font-medium text-muted">
+                7-day free trial · no card required · cancel anytime
+              </p>
 
               <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
                 {painPoints.map((item) => (
@@ -467,7 +465,7 @@ export default function Home() {
 
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <TrialCtaLink
-                  href="/pricing"
+                  href="/free-trial"
                   className="button-primary"
                   location="homepage_hero"
                 >

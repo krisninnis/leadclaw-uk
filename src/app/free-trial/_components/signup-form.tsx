@@ -46,6 +46,7 @@ export default function SignupForm({
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
 
   const isLoading = googleLoading || passwordLoading || magicLinkLoading;
+  const selectedPlanLabel = selectedPlan === "pro" ? "Pro" : "Growth";
 
   function collectIntakeInput(): TrialIntakeInput {
     return {
@@ -243,12 +244,15 @@ export default function SignupForm({
           </h1>
           <p className="mt-3 text-sm text-muted">
             Start on the{" "}
-            <span className="font-medium text-foreground">Growth</span> plan for
-            7 days with full access to the core LeadClaw AI workflow suite.
+            <span className="font-medium text-foreground">
+              {selectedPlanLabel}
+            </span>{" "}
+            plan for 7 days with full access to the core LeadClaw AI workflow
+            suite.
           </p>
           <p className="mt-2 text-xs font-medium text-muted-2">
-            No card required • keep Growth, upgrade to Pro, or switch to free
-            Basic after the trial
+            No card required • keep {selectedPlanLabel}, switch plans, or move
+            to free Basic after the trial
           </p>
         </div>
 
@@ -264,7 +268,8 @@ export default function SignupForm({
           </button>
 
           <p className="text-center text-xs text-muted-2">
-            Fastest option — start your Growth trial with no card details
+            Fastest option — start your {selectedPlanLabel} trial with no card
+            details
           </p>
 
           <div className="flex items-center gap-3">
