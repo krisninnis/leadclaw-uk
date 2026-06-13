@@ -1,3 +1,5 @@
+import { normalizePlan as normalizePlanSlug } from "@/lib/plans";
+
 export function normalizeSubscriptionStatus(value: string | null | undefined) {
   return String(value || "")
     .trim()
@@ -5,9 +7,12 @@ export function normalizeSubscriptionStatus(value: string | null | undefined) {
 }
 
 export function normalizePlan(value: string | null | undefined) {
-  return String(value || "")
+  const normalized = String(value || "")
     .trim()
     .toLowerCase();
+
+  if (!normalized) return "";
+  return normalizePlanSlug(normalized, "basic");
 }
 
 export function hasFullLeadClawAccess(value: string | null | undefined) {

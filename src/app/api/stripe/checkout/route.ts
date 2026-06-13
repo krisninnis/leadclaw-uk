@@ -1,13 +1,8 @@
 import { NextResponse } from "next/server";
-import { getStripe, PRICE_IDS } from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
+import { resolveCheckoutPlan } from "@/lib/checkout-plans";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-const ALLOWED_PLANS = ["basic", "growth", "pro"] as const;
-const PAID_PLANS = ["growth", "pro"] as const;
-
-type AllowedPlan = (typeof ALLOWED_PLANS)[number];
-type PaidPlan = (typeof PAID_PLANS)[number];
 
 type SubscriptionRow = {
   id?: string;
@@ -26,20 +21,6 @@ function normalizeEmail(value: unknown) {
     .toLowerCase();
 }
 
-function isAllowedPlan(value: unknown): value is AllowedPlan {
-  return (
-    typeof value === "string" &&
-    (ALLOWED_PLANS as readonly string[]).includes(value)
-  );
-}
-
-function isPaidPlan(value: unknown): value is PaidPlan {
-  return (
-    typeof value === "string" &&
-    (PAID_PLANS as readonly string[]).includes(value)
-  );
-}
-
 function normalizeStatus(value: string | null | undefined) {
   return String(value || "")
     .trim()
@@ -53,23 +34,15 @@ export async function POST(req: Request) {
       .trim()
       .toLowerCase();
 
-    if (!isAllowedPlan(requestedPlan)) {
-      return NextResponse.json(
-        { ok: false, error: "invalid_plan" },
-        { status: 400 },
-      );
-    }
+    const checkoutPlan = resolveCheckoutPlan(requestedPlan);
 
-    if (requestedPlan === "basic") {
+    if (!checkoutPlan.ok) {
       return NextResponse.json(
-        { ok: false, error: "basic_plan_does_not_require_checkout" },
-        { status: 400 },
-      );
-    }
-
-    if (!isPaidPlan(requestedPlan)) {
-      return NextResponse.json(
-        { ok: false, error: "invalid_paid_plan" },
+        {
+          ok: false,
+          error: checkoutPlan.error,
+          requiredEnvVar: checkoutPlan.requiredEnvVar,
+        },
         { status: 400 },
       );
     }
@@ -82,13 +55,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const priceId = PRICE_IDS[requestedPlan as keyof typeof PRICE_IDS];
-    if (!priceId) {
-      return NextResponse.json(
-        { ok: false, error: "missing_price_id" },
-        { status: 400 },
-      );
-    }
+    const requestedPaidPlan = checkoutPlan.plan;
+    const priceId = checkoutPlan.priceId;
 
     const supabase = await createClient();
     const {
@@ -141,7 +109,7 @@ export async function POST(req: Request) {
       .trim()
       .toLowerCase();
 
-    if (existingStatus === "active" && existingPlan === requestedPlan) {
+    if (existingStatus === "active" && existingPlan === requestedPaidPlan) {
       return NextResponse.json(
         { ok: false, error: "already_on_requested_plan" },
         { status: 409 },
@@ -155,11 +123,11 @@ export async function POST(req: Request) {
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: resolvedEmail,
-      success_url: `${appUrl}/portal?checkout=success&setup=ready&plan=${requestedPlan}`,
+      success_url: `${appUrl}/portal?checkout=success&setup=ready&plan=${requestedPaidPlan}`,
       cancel_url: `${appUrl}/portal/billing?checkout=cancelled`,
       payment_method_collection: "always",
       metadata: {
-        plan: requestedPlan,
+        plan: requestedPaidPlan,
         userId: user?.id || "",
         email: resolvedEmail,
         existingStatus,
@@ -168,7 +136,7 @@ export async function POST(req: Request) {
       },
       subscription_data: {
         metadata: {
-          plan: requestedPlan,
+          plan: requestedPaidPlan,
           userId: user?.id || "",
           email: resolvedEmail,
           existingStatus,

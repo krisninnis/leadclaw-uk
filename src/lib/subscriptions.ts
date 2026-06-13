@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizePlan as normalizePlanSlug } from "@/lib/plans";
 
 function toIso(ts?: number | null) {
   if (!ts) return null;
@@ -12,9 +13,12 @@ function normalizeEmail(value?: string | null) {
 }
 
 function normalizePlan(value?: string | null) {
-  return String(value || "")
+  const normalized = String(value || "")
     .trim()
     .toLowerCase();
+
+  if (!normalized) return "";
+  return normalizePlanSlug(normalized, "basic");
 }
 
 function normalizeStatus(value?: string | null) {

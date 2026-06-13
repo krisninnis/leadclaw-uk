@@ -9,7 +9,7 @@ export default function ContactPage() {
     email: '',
     clinic: '',
     website: '',
-    planInterest: 'starter',
+    planInterest: 'basic',
     issueType: 'general',
     message: '',
   })
@@ -37,7 +37,7 @@ export default function ContactPage() {
         issue_type: form.issueType,
       })
       setStatus('Thanks — your message is in. A real person will reply within one business day, usually much faster.')
-      setForm({ name: '', email: '', clinic: '', website: '', planInterest: 'starter', issueType: 'general', message: '' })
+      setForm({ name: '', email: '', clinic: '', website: '', planInterest: 'basic', issueType: 'general', message: '' })
     } catch {
       setStatus('Could not send your message right now.')
     } finally {
@@ -76,7 +76,7 @@ export default function ContactPage() {
             value={form.planInterest}
             onChange={(e) => setForm({ ...form, planInterest: e.target.value })}
           >
-            <option value="starter">Basic</option>
+            <option value="basic">Basic</option>
             <option value="growth">Growth</option>
             <option value="pro">Pro (priority support)</option>
             <option value="unsure">Not sure yet</option>

@@ -1,4 +1,6 @@
 import Stripe from "stripe";
+import { isPaidPlan } from "@/lib/plans";
+import { getStripePriceIdForPlan } from "@/lib/stripe-plans";
 
 export function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -13,11 +15,8 @@ export function getStripe() {
 // Only paid plans exist in Stripe
 
 export const PRICE_IDS = {
-  growth: process.env.STRIPE_PRICE_GROWTH || "",
-  pro: process.env.STRIPE_PRICE_PRO || "",
+  growth: getStripePriceIdForPlan("growth") || "",
+  pro: getStripePriceIdForPlan("pro") || "",
 };
 
-// Optional helper (VERY useful later)
-export function isPaidPlan(plan: string) {
-  return plan === "growth" || plan === "pro";
-}
+export { isPaidPlan, getStripePriceIdForPlan };

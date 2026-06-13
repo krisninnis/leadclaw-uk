@@ -6,22 +6,11 @@ import { upsertStripeSubscription } from "@/lib/subscriptions";
 import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { planFromStripePriceId } from "@/lib/stripe-plans";
 
 type ApplicationIdRow = {
   id: string;
 };
-
-function planFromPriceId(priceId?: string | null) {
-  if (!priceId) return null;
-
-  const growth = process.env.STRIPE_PRICE_GROWTH;
-  const pro = process.env.STRIPE_PRICE_PRO;
-
-  if (priceId === growth) return "growth";
-  if (priceId === pro) return "pro";
-
-  return null;
-}
 
 async function syncApplicationPlan(email: string, plan: "growth" | "pro") {
   const admin = createAdminClient();
@@ -112,7 +101,7 @@ export async function POST(req: Request) {
                 : session.customer?.id,
             subscriptionId: sub.id,
             priceId,
-            plan: planFromPriceId(priceId),
+            plan: planFromStripePriceId(priceId),
             status: sub.status,
             trialEnd: sub.trial_end,
             cancelAtPeriodEnd: sub.cancel_at_period_end,
@@ -120,7 +109,7 @@ export async function POST(req: Request) {
 
           if (email) {
             try {
-              const resolvedPlan = planFromPriceId(priceId);
+              const resolvedPlan = planFromStripePriceId(priceId);
 
               if (resolvedPlan === "growth" || resolvedPlan === "pro") {
                 await provisionClinicWorkspace({
@@ -141,7 +130,7 @@ export async function POST(req: Request) {
                   email,
                   subscriptionId: sub.id,
                   priceId,
-                  plan: planFromPriceId(priceId),
+                  plan: planFromStripePriceId(priceId),
                   error: err instanceof Error ? err.message : "unknown",
                 },
               });
@@ -163,7 +152,7 @@ export async function POST(req: Request) {
             typeof sub.customer === "string" ? sub.customer : sub.customer?.id,
           subscriptionId: sub.id,
           priceId,
-          plan: planFromPriceId(priceId),
+          plan: planFromStripePriceId(priceId),
           status: sub.status,
           trialEnd: sub.trial_end,
           cancelAtPeriodEnd: sub.cancel_at_period_end,

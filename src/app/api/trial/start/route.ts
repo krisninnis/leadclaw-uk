@@ -3,8 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
-
-const DEFAULT_TRIAL_PLAN = "growth" as const;
+import { normalizeTrialPlan } from "@/lib/plans";
 
 type SubscriptionRow = {
   id?: string;
@@ -38,7 +37,7 @@ function isPaidLikeStatus(status: string | null | undefined) {
   return ["active", "past_due"].includes(normalized);
 }
 
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -124,7 +123,8 @@ export async function POST(_req: NextRequest) {
   const trialEnd = new Date(now);
   trialEnd.setDate(trialEnd.getDate() + 7);
 
-  const selectedPlan = DEFAULT_TRIAL_PLAN;
+  const body = await req.json().catch(() => ({}));
+  const selectedPlan = normalizeTrialPlan(body?.plan);
   const trialSubscriptionId = `trial_${user.id}`;
   const nowIso = now.toISOString();
 
@@ -174,6 +174,7 @@ export async function POST(_req: NextRequest) {
   try {
     provisionResult = await provisionClinicWorkspace({
       email,
+      plan: selectedPlan,
       ownerUserId: user.id,
       ownerName:
         String(user.user_metadata?.name || "").trim() ||

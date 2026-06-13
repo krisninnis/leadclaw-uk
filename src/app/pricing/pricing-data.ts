@@ -1,3 +1,5 @@
+import { PLAN_MONTHLY_PRICES } from "@/lib/plans";
+
 export type PricingPlan = {
   name: string;
   slug: "basic" | "growth" | "pro";
@@ -27,7 +29,7 @@ export const plans: PricingPlan[] = [
   {
     name: "Basic",
     slug: "basic",
-    price: "Free",
+    price: PLAN_MONTHLY_PRICES.basic.display,
     period: "",
     description:
       "A simple AI Receptionist widget for capturing requests on your website. No advanced automation included.",
@@ -50,7 +52,7 @@ export const plans: PricingPlan[] = [
   {
     name: "Growth",
     slug: "growth",
-    price: "£79",
+    price: PLAN_MONTHLY_PRICES.growth.display,
     period: "/month",
     description:
       "AI workflows for capturing requests, tracking leads, and automating follow-ups.",
@@ -75,7 +77,7 @@ export const plans: PricingPlan[] = [
   {
     name: "Pro",
     slug: "pro",
-    price: "£149",
+    price: PLAN_MONTHLY_PRICES.pro.display,
     period: "/month",
     description:
       "Advanced automation and reporting tools for teams with more complex operations.",

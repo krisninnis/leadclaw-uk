@@ -2,10 +2,10 @@
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { normalizeTrialPlan } from "@/lib/plans";
 import SignupForm from "./_components/signup-form";
 import NotificationStep from "./_components/notification-step";
 
-type PlanSlug = "growth" | "pro";
 const TRIAL_INTAKE_KEY = "leadclaw_trial_intake";
 
 type TrialIntakeInput = {
@@ -17,16 +17,11 @@ type TrialIntakeInput = {
   city: string;
 };
 
-function normalizePlan(value: string | null): PlanSlug {
-  if (value?.toLowerCase() === "pro") return "pro";
-  return "growth";
-}
-
 function FreeTrialContent() {
   const searchParams = useSearchParams();
   const supabase = createClient();
   const selectedPlan = useMemo(
-    () => normalizePlan(searchParams?.get("plan") ?? null),
+    () => normalizeTrialPlan(searchParams?.get("plan") ?? null),
     [searchParams],
   );
 

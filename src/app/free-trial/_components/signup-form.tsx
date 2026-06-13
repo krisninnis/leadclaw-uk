@@ -2,11 +2,12 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { queueGaEvent, trackGaEvent } from "@/lib/ga";
+import type { PaidPlanSlug } from "@/lib/plans";
 import GoogleIcon from "@/components/auth/google-icon";
 
 type Props = {
   onSuccess: (email: string) => void;
-  selectedPlan: string;
+  selectedPlan: PaidPlanSlug;
   buildIntake: (input: TrialIntakeInput) => object;
   saveTrialIntake: (intake: object) => void;
   saveIntakeToBackend: (intake: object) => Promise<void>;

@@ -3,7 +3,7 @@ import Badge from "@/components/ui/badge";
 
 type PlanCardProps = {
   name: string;
-  slug: "starter" | "growth" | "pro";
+  slug: "basic" | "growth" | "pro";
   price: string;
   period?: string;
   description: string;
@@ -15,7 +15,7 @@ type PlanCardProps = {
 };
 
 const themeMap = {
-  starter: {
+  basic: {
     card: "border-amber-200 bg-[linear-gradient(180deg,rgba(255,251,235,0.95),rgba(255,255,255,0.96))]",
     badge: "amber" as const,
     button:
