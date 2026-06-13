@@ -44,6 +44,7 @@ export default async function PortalBillingPage({
 
   const params = (await searchParams) || {};
   const expired = params.expired === "1";
+  const accountActive = params.account === "active";
 
   const admin = createAdminClient();
 
@@ -122,6 +123,18 @@ export default async function PortalBillingPage({
 
   return (
     <div className="space-y-6">
+      {accountActive && (
+        <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-5">
+          <h2 className="text-lg font-semibold text-sky-950">
+            You already have an active LeadClaw account
+          </h2>
+          <p className="mt-2 text-sm leading-7 text-sky-900">
+            Continue using your workspace here, or manage billing below if you
+            want to change plan.
+          </p>
+        </div>
+      )}
+
       {showTrialEndedNotice && (
         <div className="rounded-[24px] border border-amber-300 bg-amber-50 p-5">
           <h2 className="text-lg font-semibold text-amber-950">

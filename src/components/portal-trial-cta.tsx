@@ -22,7 +22,17 @@ export default function PortalTrialCta() {
       const data = await res.json();
 
       if (!res.ok || !data?.ok) {
-        setStatus(data?.error || "Could not start trial right now.");
+        if (typeof data?.redirectTo === "string" && data.redirectTo) {
+          setStatus(data?.message || "Taking you to the right place...");
+          window.location.assign(data.redirectTo);
+          return;
+        }
+
+        setStatus(
+          data?.message ||
+            data?.error ||
+            "Could not start trial right now.",
+        );
         return;
       }
 

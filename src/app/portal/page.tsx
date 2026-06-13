@@ -70,6 +70,7 @@ export default async function PortalPage({
 
   const params = (await searchParams) || {};
   const trialStarted = params.trial === "started";
+  const trialAlreadyActive = params.trial === "active";
   const basicStarted = params.startBasic === "1";
   const checkoutSuccess = params.checkout === "success";
   const setupReady = params.setup === "ready";
@@ -340,6 +341,16 @@ export default async function PortalPage({
           <p className="mt-1">
             You can now install your widget, review leads, and explore your
             workspace.
+          </p>
+        </div>
+      )}
+
+      {trialAlreadyActive && (
+        <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900 shadow-sm">
+          <p className="font-semibold">Your free trial is already active</p>
+          <p className="mt-1">
+            Continue setup from your workspace, or review billing if you want
+            to change plan.
           </p>
         </div>
       )}

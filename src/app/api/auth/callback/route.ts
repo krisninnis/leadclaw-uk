@@ -6,27 +6,30 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
 import { normalizeAuthRedirectPath } from "@/lib/auth-redirect";
+import {
+  buildTrialRedirectSubscriptionPatch,
+  decideTrialGate,
+  normalizeEmail,
+  normalizeSubscriptionStatus,
+  SUBSCRIPTION_GATE_SELECT,
+  type SubscriptionGateRow,
+  type TrialGateRedirectCode,
+} from "@/lib/trial-subscription-gate";
 
 type PlanSlug = "basic" | "growth" | "pro";
-
-type SubscriptionRow = {
-  id?: string;
-  user_id: string | null;
-  email: string | null;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  stripe_price_id: string | null;
-  plan: string | null;
-  status: string | null;
-  trial_end: string | null;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean | null;
-  updated_at: string | null;
-};
 
 type ApplicationIdRow = {
   id: string;
 };
+
+type TrialStartResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code: TrialGateRedirectCode;
+      message: string;
+      redirectTo: string;
+    };
 
 function normalizeNext(value: string | null) {
   return normalizeAuthRedirectPath(value, "/portal");
@@ -36,12 +39,6 @@ function normalizePlan(value: string | null): PlanSlug {
   if (value === "basic") return "basic";
   if (value === "pro") return "pro";
   return "growth";
-}
-
-function normalizeEmail(value: unknown) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
 }
 
 function buildFallbackContactName(
@@ -64,17 +61,8 @@ function buildFallbackContactName(
   return "New LeadClaw User";
 }
 
-function isFutureDate(value?: string | null) {
-  if (!value) return false;
-  const dt = new Date(value);
-  return !Number.isNaN(dt.getTime()) && dt.getTime() > Date.now();
-}
-
 function isPaidLikeStatus(status: string | null | undefined) {
-  const normalized = String(status || "")
-    .trim()
-    .toLowerCase();
-  return ["active", "past_due"].includes(normalized);
+  return ["active", "past_due"].includes(normalizeSubscriptionStatus(status));
 }
 
 async function saveApplicationRecord(
@@ -139,7 +127,7 @@ async function startTrialForUser(
   email: string,
   plan: PlanSlug,
   contactName: string,
-) {
+): Promise<TrialStartResult> {
   const admin = createAdminClient();
   if (!admin) {
     throw new Error("supabase_not_configured");
@@ -147,9 +135,7 @@ async function startTrialForUser(
 
   const { data: existingRows, error: existingError } = await (admin as unknown as SupabaseUntypedClient)
     .from("subscriptions")
-    .select(
-      "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
-    )
+    .select(SUBSCRIPTION_GATE_SELECT)
     .or(`user_id.eq.${userId},email.eq.${email}`)
     .order("updated_at", { ascending: false })
     .limit(10);
@@ -158,26 +144,50 @@ async function startTrialForUser(
     throw new Error(existingError.message);
   }
 
-  const existingList = (existingRows || []) as SubscriptionRow[];
-  const existing =
-    existingList.find((row) => row.user_id === userId) ||
-    existingList.find((row) => normalizeEmail(row.email) === email) ||
-    null;
+  const existingList = (existingRows || []) as SubscriptionGateRow[];
+  const gate = decideTrialGate({
+    rows: existingList,
+    userId,
+    email,
+    requestedPlan: plan,
+  });
 
-  const existingStatus = String(existing?.status || "")
-    .trim()
-    .toLowerCase();
+  if (gate.action === "redirect") {
+    const patch = buildTrialRedirectSubscriptionPatch({
+      decision: gate,
+      userId,
+      email,
+    });
 
-  if (existingStatus === "trialing" && isFutureDate(existing?.trial_end)) {
-    throw new Error("trial_already_active");
-  }
+    if (patch) {
+      const { error: patchError } = await (admin as unknown as SupabaseUntypedClient)
+        .from("subscriptions")
+        .update(patch.values)
+        .eq("id", patch.id);
 
-  if (isPaidLikeStatus(existing?.status)) {
-    throw new Error("already_subscribed");
-  }
+      if (patchError) {
+        throw new Error(patchError.message);
+      }
+    }
 
-  if (existing?.trial_end) {
-    throw new Error("trial_already_used");
+    await logSystemEvent({
+      level: "info",
+      category: "billing_trial",
+      message: `Trial start redirected for ${email}`,
+      meta: {
+        userId,
+        email,
+        plan: gate.selectedPlan,
+        code: gate.code,
+      },
+    });
+
+    return {
+      ok: false,
+      code: gate.code,
+      message: gate.message,
+      redirectTo: gate.redirectTo,
+    };
   }
 
   const now = new Date();
@@ -185,6 +195,8 @@ async function startTrialForUser(
   trialEnd.setDate(trialEnd.getDate() + 7);
 
   const trialSubscriptionId = `trial_${userId}`;
+  const selectedPlan = gate.selectedPlan;
+  const existing = gate.existing;
 
   const subscriptionRow = {
     user_id: userId,
@@ -192,7 +204,7 @@ async function startTrialForUser(
     stripe_customer_id: existing?.stripe_customer_id || null,
     stripe_subscription_id: trialSubscriptionId,
     stripe_price_id: null,
-    plan,
+    plan: selectedPlan,
     status: "trialing",
     trial_end: trialEnd.toISOString(),
     current_period_end: null,
@@ -221,7 +233,7 @@ async function startTrialForUser(
     throw new Error(subError);
   }
 
-  await saveApplicationRecord(email, plan, contactName);
+  await saveApplicationRecord(email, selectedPlan, contactName);
 
   let provisionResult: Awaited<
     ReturnType<typeof provisionClinicWorkspace>
@@ -230,7 +242,7 @@ async function startTrialForUser(
   try {
     provisionResult = await provisionClinicWorkspace({
       email,
-      plan,
+      plan: selectedPlan,
       subscriptionStatus: "trialing",
       ownerUserId: userId,
       ownerName: contactName,
@@ -243,7 +255,7 @@ async function startTrialForUser(
         "Trial started in auth callback but onboarding auto-provision encountered an issue",
       meta: {
         email,
-        plan,
+        plan: selectedPlan,
         error: e instanceof Error ? e.message : "unknown",
       },
     });
@@ -252,16 +264,19 @@ async function startTrialForUser(
   await logSystemEvent({
     level: "info",
     category: "billing_trial",
-    message: `No-card ${plan} trial started for ${email} in auth callback`,
+    message: `No-card ${selectedPlan} trial started for ${email} in auth callback`,
     meta: {
       userId,
       email,
-      plan,
+      plan: selectedPlan,
+      reason: gate.reason,
       trialEnd: trialEnd.toISOString(),
       siteId: provisionResult?.siteId || null,
       clinicId: provisionResult?.clinicId || null,
     },
   });
+
+  return { ok: true };
 }
 
 async function startBasicForUser(
@@ -276,9 +291,7 @@ async function startBasicForUser(
 
   const { data: existingRows, error: existingError } = await (admin as unknown as SupabaseUntypedClient)
     .from("subscriptions")
-    .select(
-      "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
-    )
+    .select(SUBSCRIPTION_GATE_SELECT)
     .or(`user_id.eq.${userId},email.eq.${email}`)
     .order("updated_at", { ascending: false })
     .limit(10);
@@ -287,7 +300,7 @@ async function startBasicForUser(
     throw new Error(existingError.message);
   }
 
-  const existingList = (existingRows || []) as SubscriptionRow[];
+  const existingList = (existingRows || []) as SubscriptionGateRow[];
   const existing =
     existingList.find((row) => row.user_id === userId) ||
     existingList.find((row) => normalizeEmail(row.email) === email) ||
@@ -393,6 +406,10 @@ export async function GET(request: NextRequest) {
 
   const redirectUrl = new URL(next, origin);
   const response = NextResponse.redirect(redirectUrl);
+  const redirectWithSession = (path: string) => {
+    response.headers.set("Location", new URL(path, origin).toString());
+    return response;
+  };
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -438,25 +455,26 @@ export async function GET(request: NextRequest) {
 
   if (shouldStartTrial) {
     try {
-      await startTrialForUser(
+      const trialResult = await startTrialForUser(
         user.id,
         normalizedEmail,
         selectedPlan,
         contactName,
       );
+
+      if (!trialResult.ok) {
+        return redirectWithSession(trialResult.redirectTo);
+      }
     } catch (trialError) {
       console.error("[api.auth.callback] failed to start trial", trialError);
 
       const errorMessage =
         trialError instanceof Error ? trialError.message : "trial_start_failed";
 
-      return NextResponse.redirect(
-        new URL(
-          `/free-trial?plan=${selectedPlan}&email=${encodeURIComponent(
-            normalizedEmail,
-          )}&error=${encodeURIComponent(errorMessage)}`,
-          origin,
-        ),
+      return redirectWithSession(
+        `/free-trial?plan=${selectedPlan}&email=${encodeURIComponent(
+          normalizedEmail,
+        )}&error=${encodeURIComponent(errorMessage)}`,
       );
     }
   }
@@ -472,13 +490,14 @@ export async function GET(request: NextRequest) {
           ? basicError.message
           : "basic_signup_failed";
 
-      return NextResponse.redirect(
-        new URL(
-          `/signup?plan=basic&email=${encodeURIComponent(
-            normalizedEmail,
-          )}&error=${encodeURIComponent(errorMessage)}`,
-          origin,
-        ),
+      if (errorMessage === "already_subscribed") {
+        return redirectWithSession("/portal/billing?account=active&plan=basic");
+      }
+
+      return redirectWithSession(
+        `/signup?plan=basic&email=${encodeURIComponent(
+          normalizedEmail,
+        )}&error=${encodeURIComponent(errorMessage)}`,
       );
     }
   }

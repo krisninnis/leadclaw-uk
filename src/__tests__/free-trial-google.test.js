@@ -75,4 +75,24 @@ describe("free trial Google sign-in", () => {
         .getAttribute("type"),
     ).toBe("button");
   });
+
+  it("preserves a Pro trial plan through the Google OAuth redirect", async () => {
+    const props = renderSignupForm({
+      selectedPlan: "pro",
+      buildNextUrl: jest.fn(
+        () => "/portal?startTrial=1&trial=started&setup=ready&plan=pro",
+      ),
+    });
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /continue with google/i }),
+    );
+
+    const oauthRequest =
+      props.supabase.auth.signInWithOAuth.mock.calls[0][0];
+
+    expect(decodeURIComponent(oauthRequest.options.redirectTo)).toContain(
+      "/api/auth/callback?next=/portal?startTrial=1&trial=started&setup=ready&plan=pro",
+    );
+  });
 });

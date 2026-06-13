@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { queueGaEvent, trackGaEvent } from "@/lib/ga";
 import GoogleIcon from "@/components/auth/google-icon";
+import AccountFlowNotice from "@/components/auth/account-flow-notice";
 
 type PlanSlug = "basic";
 
@@ -22,6 +23,7 @@ function SignupContent() {
     () => normalizePlan(searchParams?.get("plan") ?? null),
     [searchParams],
   );
+  const flowError = searchParams?.get("error") ?? null;
 
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -263,6 +265,7 @@ function SignupContent() {
   return (
     <div className="min-h-screen bg-white px-6 py-10">
       <div className="mx-auto max-w-md space-y-6">
+        <AccountFlowNotice error={flowError} />
         <div className="text-center">
           <p className="text-sm text-muted">LeadClaw</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">

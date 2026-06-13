@@ -3,39 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
-import { normalizeTrialPlan } from "@/lib/plans";
-
-type SubscriptionRow = {
-  id?: string;
-  user_id: string | null;
-  email: string | null;
-  stripe_customer_id: string | null;
-  stripe_subscription_id: string | null;
-  stripe_price_id: string | null;
-  plan: string | null;
-  status: string | null;
-  trial_end: string | null;
-  current_period_end: string | null;
-  cancel_at_period_end: boolean | null;
-  updated_at: string | null;
-};
-
-function normalizeEmail(value: unknown) {
-  return String(value || "")
-    .trim()
-    .toLowerCase();
-}
-
-function isFutureDate(value?: string | null) {
-  if (!value) return false;
-  const dt = new Date(value);
-  return !Number.isNaN(dt.getTime()) && dt.getTime() > Date.now();
-}
-
-function isPaidLikeStatus(status: string | null | undefined) {
-  const normalized = String(status || "").toLowerCase();
-  return ["active", "past_due"].includes(normalized);
-}
+import {
+  buildTrialRedirectSubscriptionPatch,
+  decideTrialGate,
+  normalizeEmail,
+  SUBSCRIPTION_GATE_SELECT,
+  type SubscriptionGateRow,
+} from "@/lib/trial-subscription-gate";
 
 export async function POST(req: NextRequest) {
   const supabase = await createClient();
@@ -68,9 +42,7 @@ export async function POST(req: NextRequest) {
 
   const { data: existingRows, error: existingError } = await (admin as unknown as SupabaseUntypedClient)
     .from("subscriptions")
-    .select(
-      "id,user_id,email,stripe_customer_id,stripe_subscription_id,stripe_price_id,plan,status,trial_end,current_period_end,cancel_at_period_end,updated_at",
-    )
+    .select(SUBSCRIPTION_GATE_SELECT)
     .or(`user_id.eq.${user.id},email.eq.${email}`)
     .order("updated_at", { ascending: false })
     .limit(10);
@@ -82,49 +54,54 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const existingList = (existingRows || []) as SubscriptionRow[];
-  const existing =
-    existingList.find((row) => row.user_id === user.id) ||
-    existingList.find((row) => normalizeEmail(row.email) === email) ||
-    null;
+  const body = await req.json().catch(() => ({}));
+  const existingList = (existingRows || []) as SubscriptionGateRow[];
+  const gate = decideTrialGate({
+    rows: existingList,
+    userId: user.id,
+    email,
+    requestedPlan: body?.plan,
+  });
 
-  if (existing) {
-    const existingStatus = String(existing.status || "").toLowerCase();
+  if (gate.action === "redirect") {
+    const patch = buildTrialRedirectSubscriptionPatch({
+      decision: gate,
+      userId: user.id,
+      email,
+    });
 
-    if (existingStatus === "trialing" && isFutureDate(existing.trial_end)) {
-      return NextResponse.json(
-        {
-          ok: false,
-          error: "trial_already_active",
-          trialEnd: existing.trial_end,
-        },
-        { status: 409 },
-      );
+    if (patch) {
+      const { error: patchError } = await (admin as unknown as SupabaseUntypedClient)
+        .from("subscriptions")
+        .update(patch.values)
+        .eq("id", patch.id);
+
+      if (patchError) {
+        return NextResponse.json(
+          { ok: false, error: patchError.message },
+          { status: 500 },
+        );
+      }
     }
 
-    if (isPaidLikeStatus(existing.status)) {
-      return NextResponse.json(
-        { ok: false, error: "already_subscribed" },
-        { status: 409 },
-      );
-    }
-
-    // One free trial only:
-    // if this user/email has ever had a trial_end recorded, do not allow another trial.
-    if (existing.trial_end) {
-      return NextResponse.json(
-        { ok: false, error: "trial_already_used" },
-        { status: 409 },
-      );
-    }
+    return NextResponse.json(
+      {
+        ok: false,
+        error: gate.code,
+        message: gate.message,
+        redirectTo: gate.redirectTo,
+        trialEnd: gate.trialEnd,
+      },
+      { status: 409 },
+    );
   }
 
   const now = new Date();
   const trialEnd = new Date(now);
   trialEnd.setDate(trialEnd.getDate() + 7);
 
-  const body = await req.json().catch(() => ({}));
-  const selectedPlan = normalizeTrialPlan(body?.plan);
+  const selectedPlan = gate.selectedPlan;
+  const existing = gate.existing;
   const trialSubscriptionId = `trial_${user.id}`;
   const nowIso = now.toISOString();
 

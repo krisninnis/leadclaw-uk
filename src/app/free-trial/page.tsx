@@ -3,6 +3,7 @@ import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { normalizeTrialPlan } from "@/lib/plans";
+import AccountFlowNotice from "@/components/auth/account-flow-notice";
 import SignupForm from "./_components/signup-form";
 import NotificationStep from "./_components/notification-step";
 
@@ -24,6 +25,7 @@ function FreeTrialContent() {
     () => normalizeTrialPlan(searchParams?.get("plan") ?? null),
     [searchParams],
   );
+  const flowError = searchParams?.get("error") ?? null;
 
   const [step, setStep] = useState<"signup" | "notifications">("signup");
   const [signedUpEmail, setSignedUpEmail] = useState("");
@@ -89,18 +91,25 @@ function FreeTrialContent() {
   }
 
   return (
-    <SignupForm
-      onSuccess={(email) => {
-        setSignedUpEmail(email);
-        setStep("notifications");
-      }}
-      selectedPlan={selectedPlan}
-      buildIntake={buildIntake}
-      saveTrialIntake={saveTrialIntake}
-      saveIntakeToBackend={saveIntakeToBackend}
-      buildNextUrl={buildNextUrl}
-      supabase={supabase}
-    />
+    <div className="space-y-4">
+      {flowError ? (
+        <div className="mx-auto max-w-md px-6 pt-10">
+          <AccountFlowNotice error={flowError} />
+        </div>
+      ) : null}
+      <SignupForm
+        onSuccess={(email) => {
+          setSignedUpEmail(email);
+          setStep("notifications");
+        }}
+        selectedPlan={selectedPlan}
+        buildIntake={buildIntake}
+        saveTrialIntake={saveTrialIntake}
+        saveIntakeToBackend={saveIntakeToBackend}
+        buildNextUrl={buildNextUrl}
+        supabase={supabase}
+      />
+    </div>
   );
 }
 
