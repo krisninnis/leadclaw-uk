@@ -967,6 +967,1266 @@ export const aiReceptionistPages: SeoPage[] = [
       ...sharedLinks,
     ],
   },
+  {
+    slug: "ai-receptionist-for-builders-uk",
+    title: "AI Receptionist for Builders UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures building project enquiries 24/7, recovers missed calls from site, and qualifies extension, renovation, and new-build leads for UK builders.",
+    h1: "AI receptionist for builders in the UK",
+    subheading:
+      "Capture extension, renovation, and new-build enquiries while you are on site, and qualify the serious projects from the time-wasters.",
+    niche: "Builders",
+    audience:
+      "Building contractors, extension and renovation specialists, and small construction firms that miss enquiries while working on site.",
+    pains: [
+      "You are on site with no chance to answer the phone, so project enquiries are missed.",
+      "Big-ticket extension and renovation leads go to the next builder if you do not respond.",
+      "Enquiries lack the scope, budget, and timing detail you need to decide what to quote.",
+      "Quoting and admin happen in the evenings, long after the lead has gone cold.",
+    ],
+    benefits: [
+      "Capture every project enquiry instantly, even from the middle of a build.",
+      "Qualify scope, budget range, location, and timescale before you call back.",
+      "Recover missed calls so high-value projects are not lost to competitors.",
+      "Follow up on quotes so estimates convert into signed jobs.",
+    ],
+    features: [
+      "24/7 AI receptionist for building enquiries",
+      "Missed-call recovery from site",
+      "Project qualification (scope, budget, timing)",
+      "Quote follow-up reminders",
+    ],
+    useCases: [
+      "Capture extension, loft, and renovation enquiries out of hours.",
+      "Collect project type, location, rough budget, and ideal start date.",
+      "Recover missed calls while the team is on the tools.",
+      "Follow up on estimates so projects do not stall.",
+    ],
+    faq: [
+      {
+        question: "Can it qualify serious building projects?",
+        answer:
+          "Yes. The intake asks about scope, budget range, and timing so you can prioritise the enquiries worth quoting.",
+      },
+      {
+        question: "Does LeadClaw give construction advice?",
+        answer:
+          "No. It handles administrative intake and follow-up only. Project advice and quoting decisions stay with your team.",
+      },
+      {
+        question: "Will it work while I am on site?",
+        answer:
+          "Yes. When you cannot answer, LeadClaw captures the enquiry and texts the caller back.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-builders-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-kitchen-fitters-uk", label: "AI receptionist for kitchen fitters" },
+      { href: "/ai-receptionist-for-painters-and-decorators-uk", label: "AI receptionist for painters and decorators" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-painters-and-decorators-uk",
+    title: "AI Receptionist for Painters & Decorators UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures painting and decorating enquiries 24/7, recovers missed calls, and qualifies interior, exterior, and commercial jobs for UK decorators.",
+    h1: "AI receptionist for painters and decorators in the UK",
+    subheading:
+      "Capture interior, exterior, and commercial decorating enquiries while you are on the brush, and keep quotes moving.",
+    niche: "Painters and decorators",
+    audience:
+      "Painters, decorators, and small decorating firms who lose enquiries while working on jobs.",
+    pains: [
+      "You cannot stop mid-job to take a call, so enquiries go to voicemail.",
+      "Interior, exterior, and commercial jobs need different quoting detail.",
+      "Quote requests need room counts, areas, and timing that are hard to capture by phone.",
+      "Word-of-mouth leads go cold if nobody replies quickly.",
+    ],
+    benefits: [
+      "Capture decorating enquiries instantly while you work.",
+      "Qualify interior vs exterior vs commercial for accurate quoting.",
+      "Collect room counts, areas, and timing for faster estimates.",
+      "Follow up on quotes so jobs are booked, not forgotten.",
+    ],
+    features: [
+      "24/7 AI receptionist for decorating enquiries",
+      "Missed-call recovery on the job",
+      "Interior / exterior / commercial qualification",
+      "Quote follow-up reminders",
+    ],
+    useCases: [
+      "Capture full-house repaint and feature-wall enquiries.",
+      "Qualify exterior and commercial decorating jobs.",
+      "Collect rooms, areas, and preferred dates for quoting.",
+      "Follow up on estimates to win the work.",
+    ],
+    faq: [
+      {
+        question: "Can it tell the difference between job types?",
+        answer:
+          "Yes. The intake asks qualifying questions so interior, exterior, and commercial enquiries are routed and quoted appropriately.",
+      },
+      {
+        question: "Will it work while I am decorating?",
+        answer:
+          "Yes. LeadClaw captures the enquiry and follows up when you cannot answer.",
+      },
+      {
+        question: "Do I keep my own number?",
+        answer:
+          "Yes. It works alongside your existing number with call forwarding.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-painters-and-decorators-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-builders-uk", label: "AI receptionist for builders" },
+      { href: "/ai-receptionist-for-flooring-companies-uk", label: "AI receptionist for flooring companies" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-drainage-companies-uk",
+    title: "AI Receptionist for Drainage Companies UK | LeadClaw",
+    metaDescription:
+      "LeadClaw answers drainage enquiries 24/7, captures emergency blockages, and recovers missed calls for UK drainage and drain-clearance companies.",
+    h1: "AI receptionist for drainage companies in the UK",
+    subheading:
+      "Blocked drains do not wait. Capture emergency call-outs with location and urgency so you respond before the customer calls a rival.",
+    niche: "Drainage companies",
+    audience:
+      "Drainage specialists, drain-clearance firms, and emergency call-out teams handling urgent, round-the-clock jobs.",
+    pains: [
+      "Blocked-drain emergencies are urgent and the customer calls the next firm if you miss it.",
+      "Calls come in at all hours while crews are already on jobs.",
+      "You need location, access, and the type of problem fast.",
+      "A missed emergency call is a lost high-value job.",
+    ],
+    benefits: [
+      "Answer emergency drainage enquiries instantly, day or night.",
+      "Capture location, access, and problem type for a fast callback.",
+      "Recover missed calls before the customer dials a competitor.",
+      "Keep a clear log of jobs and callbacks.",
+    ],
+    features: [
+      "24/7 AI receptionist for drainage enquiries",
+      "Emergency call capture with location and urgency",
+      "Instant missed-call recovery",
+      "Job and callback log",
+    ],
+    useCases: [
+      "Capture blocked-drain and flooding call-outs out of hours.",
+      "Collect location, access details, and the nature of the blockage.",
+      "Recover missed calls with an instant text back.",
+      "Track which jobs are booked, pending, or completed.",
+    ],
+    faq: [
+      {
+        question: "Can it handle emergency drainage call-outs?",
+        answer:
+          "It captures and flags urgent enquiries so you can respond quickly. It does not dispatch a crew itself — your team stays in control.",
+      },
+      {
+        question: "Can it work 24/7?",
+        answer:
+          "Yes. Enquiries are captured at any hour so none are missed overnight.",
+      },
+      {
+        question: "Do I keep my existing number?",
+        answer:
+          "Yes. LeadClaw works alongside your number with call forwarding.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-drainage-companies-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-plumbers-uk", label: "AI receptionist for plumbers" },
+      { href: "/ai-receptionist-for-gardeners-uk", label: "AI receptionist for gardeners" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-window-cleaners-uk",
+    title: "AI Receptionist for Window Cleaners UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures window cleaning enquiries 24/7, qualifies one-off vs recurring rounds, and recovers missed calls for UK window cleaners.",
+    h1: "AI receptionist for window cleaners in the UK",
+    subheading:
+      "Capture domestic and commercial window cleaning enquiries and lock in recurring rounds, even when you are up a ladder.",
+    niche: "Window cleaners",
+    audience:
+      "Domestic and commercial window cleaners building regular rounds and handling one-off requests.",
+    pains: [
+      "You are on a ladder or pole and cannot take calls during the day.",
+      "Recurring-round enquiries are worth far more than one clean but get missed.",
+      "Quotes need property size, frequency, and access details.",
+      "New enquiries go elsewhere when nobody replies.",
+    ],
+    benefits: [
+      "Capture window cleaning enquiries 24/7 while you work.",
+      "Qualify one-off vs recurring rounds and domestic vs commercial.",
+      "Collect property size, frequency, and access for accurate quoting.",
+      "Follow up so regular rounds are not lost.",
+    ],
+    features: [
+      "24/7 AI receptionist for window cleaning enquiries",
+      "One-off vs recurring qualification",
+      "Domestic and commercial routing",
+      "Quote follow-up reminders",
+    ],
+    useCases: [
+      "Capture recurring residential round enquiries.",
+      "Qualify commercial and one-off window cleaning jobs.",
+      "Collect property size, frequency, and access notes.",
+      "Follow up on quotes to win regular work.",
+    ],
+    faq: [
+      {
+        question: "Can it qualify recurring rounds?",
+        answer:
+          "Yes. The intake asks whether the job is one-off or recurring so you can prioritise higher-value regular work.",
+      },
+      {
+        question: "Will it work while I am cleaning?",
+        answer:
+          "Yes. LeadClaw captures the enquiry and follows up when you cannot answer.",
+      },
+      {
+        question: "Do I keep my number?",
+        answer:
+          "Yes. It works alongside your existing number with call forwarding.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-window-cleaners-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-cleaning-companies-uk", label: "AI receptionist for cleaning companies" },
+      { href: "/ai-receptionist-for-gardeners-uk", label: "AI receptionist for gardeners" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-gardeners-uk",
+    title: "AI Receptionist for Gardeners UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures gardening and landscaping enquiries 24/7, qualifies one-off vs maintenance work, and recovers missed calls for UK gardeners.",
+    h1: "AI receptionist for gardeners in the UK",
+    subheading:
+      "Capture garden maintenance and landscaping enquiries and secure recurring contracts, even when you are out on a job.",
+    niche: "Gardeners",
+    audience:
+      "Gardeners, landscapers, and grounds-maintenance firms balancing one-off jobs and recurring contracts.",
+    pains: [
+      "You are outdoors with machinery running and cannot answer calls.",
+      "Recurring maintenance contracts are missed when nobody picks up.",
+      "Landscaping quotes need site size, access, and scope details.",
+      "Seasonal demand spikes are hard to staff for.",
+    ],
+    benefits: [
+      "Capture gardening and landscaping enquiries 24/7.",
+      "Qualify one-off vs recurring maintenance and the type of work.",
+      "Collect site size, access, and scope for accurate quotes.",
+      "Follow up so maintenance contracts are not lost.",
+    ],
+    features: [
+      "24/7 AI receptionist for gardening enquiries",
+      "One-off vs maintenance qualification",
+      "Landscaping scope capture",
+      "Quote follow-up reminders",
+    ],
+    useCases: [
+      "Capture regular lawn and garden maintenance enquiries.",
+      "Qualify landscaping and design project requests.",
+      "Collect site size, access, and scope details.",
+      "Follow up on quotes during seasonal demand spikes.",
+    ],
+    faq: [
+      {
+        question: "Can it capture recurring maintenance work?",
+        answer:
+          "Yes. The intake asks whether the job is one-off or recurring so regular contracts are prioritised.",
+      },
+      {
+        question: "Will it work while I am on a job?",
+        answer:
+          "Yes. LeadClaw captures enquiries and follows up when you cannot answer.",
+      },
+      {
+        question: "Do I keep my own number?",
+        answer:
+          "Yes. It works alongside your existing number with call forwarding.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-gardeners-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-window-cleaners-uk", label: "AI receptionist for window cleaners" },
+      { href: "/ai-receptionist-for-handymen-uk", label: "AI receptionist for handymen" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-handymen-uk",
+    title: "AI Receptionist for Handymen UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures handyman enquiries 24/7, recovers missed calls, and qualifies job type and urgency for UK handymen and property maintenance services.",
+    h1: "AI receptionist for handymen in the UK",
+    subheading:
+      "Capture odd-job and property maintenance enquiries while you are on a job, and keep your diary full.",
+    niche: "Handymen",
+    audience:
+      "Handymen and property-maintenance providers juggling many small jobs and frequent enquiries.",
+    pains: [
+      "You move between jobs all day and cannot answer every call.",
+      "Small-job enquiries are easy to lose track of without a system.",
+      "Customers want a quick response or they call someone else.",
+      "Quoting and scheduling eat into your evenings.",
+    ],
+    benefits: [
+      "Capture every odd-job enquiry instantly while you work.",
+      "Qualify job type, location, and urgency for easy scheduling.",
+      "Recover missed calls so small jobs add up.",
+      "Follow up so enquiries turn into booked work.",
+    ],
+    features: [
+      "24/7 AI receptionist for handyman enquiries",
+      "Missed-call recovery between jobs",
+      "Job type and urgency qualification",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture repair, assembly, and maintenance enquiries.",
+      "Collect job description, location, and preferred timing.",
+      "Recover missed calls while moving between jobs.",
+      "Follow up on enquiries to fill the diary.",
+    ],
+    faq: [
+      {
+        question: "Can it handle lots of small enquiries?",
+        answer:
+          "Yes. LeadClaw captures and organises every enquiry so small jobs do not slip through the cracks.",
+      },
+      {
+        question: "Will it work while I am on a job?",
+        answer:
+          "Yes. It captures the enquiry and follows up when you cannot answer.",
+      },
+      {
+        question: "Do I keep my own number?",
+        answer:
+          "Yes. It works alongside your existing number with call forwarding.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-handymen-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-gardeners-uk", label: "AI receptionist for gardeners" },
+      { href: "/ai-receptionist-for-flooring-companies-uk", label: "AI receptionist for flooring companies" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-removals-companies-uk",
+    title: "AI Receptionist for Removals Companies UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures removals and man-and-van enquiries 24/7, qualifies move details, and recovers missed calls for UK removals companies.",
+    h1: "AI receptionist for removals companies in the UK",
+    subheading:
+      "Capture move enquiries with the dates, sizes, and locations you need to quote, even when the crew is out on a job.",
+    niche: "Removals companies",
+    audience:
+      "Removals firms and man-and-van services handling quote requests and date-driven bookings.",
+    pains: [
+      "Crews are out on moves and cannot answer enquiry calls.",
+      "Quotes need property size, dates, and locations that are hard to capture by phone.",
+      "Date-sensitive enquiries go elsewhere if nobody replies fast.",
+      "Peak moving periods overwhelm a small office.",
+    ],
+    benefits: [
+      "Capture move enquiries 24/7 with the key details for quoting.",
+      "Qualify property size, move date, and pickup/drop-off locations.",
+      "Recover missed calls so date-driven bookings are not lost.",
+      "Follow up on quotes to confirm bookings.",
+    ],
+    features: [
+      "24/7 AI receptionist for removals enquiries",
+      "Move detail capture (size, date, locations)",
+      "Missed-call recovery",
+      "Quote follow-up reminders",
+    ],
+    useCases: [
+      "Capture home and office move enquiries.",
+      "Collect property size, preferred date, and addresses.",
+      "Recover missed calls during peak moving season.",
+      "Follow up on quotes to secure bookings.",
+    ],
+    faq: [
+      {
+        question: "Can it collect the details needed to quote a move?",
+        answer:
+          "Yes. The intake can ask for property size, dates, and locations so you have what you need to quote.",
+      },
+      {
+        question: "Will it work while the crew is out?",
+        answer:
+          "Yes. LeadClaw captures enquiries and follows up when the office cannot answer.",
+      },
+      {
+        question: "Do I keep my own number?",
+        answer:
+          "Yes. It works alongside your existing number with call forwarding.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-removals-companies-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-handymen-uk", label: "AI receptionist for handymen" },
+      { href: "/ai-receptionist-for-cleaning-companies-uk", label: "AI receptionist for cleaning companies" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-security-installers-uk",
+    title: "AI Receptionist for Security Installers UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures CCTV, alarm, and access-control enquiries 24/7, qualifies domestic vs commercial, and recovers missed calls for UK security installers.",
+    h1: "AI receptionist for security installers in the UK",
+    subheading:
+      "Capture CCTV, alarm, and access-control enquiries and qualify domestic versus commercial work, even when you are on an install.",
+    niche: "Security installers",
+    audience:
+      "CCTV, alarm, and access-control installers handling domestic and commercial enquiries.",
+    pains: [
+      "You are on an installation and cannot take enquiry calls.",
+      "Domestic and commercial jobs need very different follow-up.",
+      "Urgent security concerns expect a fast response.",
+      "Quotes need site details that are hard to gather by phone.",
+    ],
+    benefits: [
+      "Capture security enquiries 24/7 while you are on site.",
+      "Qualify CCTV, alarm, or access-control and domestic vs commercial.",
+      "Recover missed calls so urgent enquiries are not lost.",
+      "Follow up on quotes to win installs.",
+    ],
+    features: [
+      "24/7 AI receptionist for security enquiries",
+      "System-type and domestic/commercial qualification",
+      "Missed-call recovery on installs",
+      "Quote follow-up reminders",
+    ],
+    useCases: [
+      "Capture CCTV, intruder alarm, and access-control enquiries.",
+      "Qualify domestic vs commercial site requirements.",
+      "Recover missed calls while on an installation.",
+      "Follow up on quotes and survey requests.",
+    ],
+    faq: [
+      {
+        question: "Does LeadClaw give security advice?",
+        answer:
+          "No. It handles administrative intake and follow-up only. System recommendations stay with your qualified engineers.",
+      },
+      {
+        question: "Can it qualify domestic vs commercial?",
+        answer:
+          "Yes. The intake routes enquiries by type so follow-up matches the job.",
+      },
+      {
+        question: "Do I keep my own number?",
+        answer:
+          "Yes. It works alongside your existing number with call forwarding.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-security-installers-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-electricians-uk", label: "AI receptionist for electricians" },
+      { href: "/ai-receptionist-for-it-support-companies-uk", label: "AI receptionist for IT support companies" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-flooring-companies-uk",
+    title: "AI Receptionist for Flooring Companies UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures flooring enquiries 24/7, qualifies material and room details, and recovers missed calls for UK flooring and carpet companies.",
+    h1: "AI receptionist for flooring companies in the UK",
+    subheading:
+      "Capture carpet, laminate, vinyl, and hardwood enquiries with the room and material details you need to quote.",
+    niche: "Flooring companies",
+    audience:
+      "Flooring and carpet companies and fitters handling supply-and-fit enquiries.",
+    pains: [
+      "Fitters are on jobs and cannot answer enquiry calls.",
+      "Quotes need room sizes, materials, and fitting details.",
+      "Supply-only and supply-and-fit enquiries need different handling.",
+      "Showroom staff cannot catch every call.",
+    ],
+    benefits: [
+      "Capture flooring enquiries 24/7 with the right detail to quote.",
+      "Qualify material type, rooms, and supply vs supply-and-fit.",
+      "Recover missed calls so quote requests are not lost.",
+      "Follow up on estimates to win the fit.",
+    ],
+    features: [
+      "24/7 AI receptionist for flooring enquiries",
+      "Material and room qualification",
+      "Missed-call recovery",
+      "Quote follow-up reminders",
+    ],
+    useCases: [
+      "Capture carpet, laminate, vinyl, and hardwood enquiries.",
+      "Collect rooms, approximate sizes, and material preference.",
+      "Qualify supply-only vs supply-and-fit jobs.",
+      "Follow up on quotes and measure-up requests.",
+    ],
+    faq: [
+      {
+        question: "Can it collect the details needed to quote flooring?",
+        answer:
+          "Yes. The intake can ask for rooms, sizes, and material preferences so you can quote accurately.",
+      },
+      {
+        question: "Will it work while fitters are on jobs?",
+        answer:
+          "Yes. LeadClaw captures enquiries and follows up when nobody can answer.",
+      },
+      {
+        question: "Do I keep my own number?",
+        answer:
+          "Yes. It works alongside your existing number with call forwarding.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-flooring-companies-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-kitchen-fitters-uk", label: "AI receptionist for kitchen fitters" },
+      { href: "/ai-receptionist-for-painters-and-decorators-uk", label: "AI receptionist for painters and decorators" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-kitchen-fitters-uk",
+    title: "AI Receptionist for Kitchen Fitters UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures kitchen fitting and installation enquiries 24/7, qualifies project scope, and recovers missed calls for UK kitchen fitters.",
+    h1: "AI receptionist for kitchen fitters in the UK",
+    subheading:
+      "Capture kitchen installation enquiries with the scope and timing detail you need, even when you are on a fit.",
+    niche: "Kitchen fitters",
+    audience:
+      "Kitchen fitters and installers handling supply-and-fit and installation-only enquiries.",
+    pains: [
+      "You are mid-installation and cannot take enquiry calls.",
+      "Kitchen projects are high-value and lost if you do not respond fast.",
+      "Quotes need scope, supply vs fit-only, and timing details.",
+      "Admin and quoting happen after a long day on site.",
+    ],
+    benefits: [
+      "Capture kitchen enquiries 24/7 with project detail to quote.",
+      "Qualify supply-and-fit vs fit-only and rough timing.",
+      "Recover missed calls so high-value projects are not lost.",
+      "Follow up on quotes to confirm installs.",
+    ],
+    features: [
+      "24/7 AI receptionist for kitchen fitting enquiries",
+      "Project scope qualification",
+      "Missed-call recovery on installs",
+      "Quote follow-up reminders",
+    ],
+    useCases: [
+      "Capture full kitchen installation enquiries.",
+      "Qualify supply-and-fit vs fit-only requests.",
+      "Collect scope, timing, and location details.",
+      "Follow up on quotes and survey requests.",
+    ],
+    faq: [
+      {
+        question: "Can it qualify kitchen projects?",
+        answer:
+          "Yes. The intake asks about scope and timing so you can prioritise the projects worth quoting.",
+      },
+      {
+        question: "Will it work while I am on a fit?",
+        answer:
+          "Yes. LeadClaw captures enquiries and follows up when you cannot answer.",
+      },
+      {
+        question: "Do I keep my own number?",
+        answer:
+          "Yes. It works alongside your existing number with call forwarding.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-kitchen-fitters-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-builders-uk", label: "AI receptionist for builders" },
+      { href: "/ai-receptionist-for-flooring-companies-uk", label: "AI receptionist for flooring companies" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-osteopaths-uk",
+    title: "AI Receptionist for Osteopaths UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures appointment requests and new-patient enquiries 24/7 for UK osteopaths, and recovers missed calls during clinic hours.",
+    h1: "AI receptionist for osteopaths in the UK",
+    subheading:
+      "Capture appointment requests and new-patient enquiries around the clock, without giving clinical advice, so your clinic never misses a booking.",
+    niche: "Osteopaths",
+    audience:
+      "Osteopathy clinics and solo practitioners managing appointment requests and new-patient enquiries.",
+    pains: [
+      "Practitioners are in sessions and cannot answer the phone.",
+      "New-patient enquiries arrive out of hours and expect a prompt reply.",
+      "Appointment requests need contact and availability details.",
+      "Solo practitioners cannot run a clinic and the phones at once.",
+    ],
+    benefits: [
+      "Capture appointment requests and enquiries 24/7.",
+      "Collect contact details and preferred times for callbacks.",
+      "Reduce front-desk phone load during sessions.",
+      "Follow up so enquiries become booked appointments.",
+    ],
+    features: [
+      "24/7 AI receptionist for osteopathy enquiries",
+      "Appointment request capture",
+      "Missed-call recovery",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture new-patient appointment requests after hours.",
+      "Collect contact details and availability for callbacks.",
+      "Recover missed calls during busy clinic sessions.",
+      "Follow up with prospective patients awaiting a reply.",
+    ],
+    faq: [
+      {
+        question: "Does LeadClaw give osteopathy advice?",
+        answer:
+          "No. It handles administrative intake and follow-up only. Assessment and clinical advice remain with qualified practitioners.",
+      },
+      {
+        question: "Can it capture out-of-hours requests?",
+        answer:
+          "Yes. Enquiries are captured at any time, ready for the team to action.",
+      },
+      {
+        question: "Do I keep my existing number?",
+        answer:
+          "Yes. It works alongside your number with call forwarding and a website widget.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-osteopaths-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-physiotherapists-uk", label: "AI receptionist for physiotherapists" },
+      { href: "/ai-receptionist-for-podiatrists-uk", label: "AI receptionist for podiatrists" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-podiatrists-uk",
+    title: "AI Receptionist for Podiatrists UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures podiatry and chiropody appointment enquiries 24/7 for UK clinics, and recovers missed calls without giving clinical advice.",
+    h1: "AI receptionist for podiatrists in the UK",
+    subheading:
+      "Capture podiatry and chiropody appointment requests around the clock and keep follow-up organised, while clinicians stay in control.",
+    niche: "Podiatrists",
+    audience:
+      "Podiatry and chiropody clinics managing appointment requests and new-patient enquiries.",
+    pains: [
+      "Clinicians are with patients and cannot answer calls.",
+      "Appointment enquiries arrive out of hours and need a prompt reply.",
+      "New patients ask the same questions before booking.",
+      "Reception is stretched during busy clinic periods.",
+    ],
+    benefits: [
+      "Capture podiatry appointment requests 24/7.",
+      "Collect contact details and reason for visit for callbacks.",
+      "Reduce repetitive front-desk questions.",
+      "Follow up so enquiries become bookings.",
+    ],
+    features: [
+      "24/7 AI receptionist for podiatry enquiries",
+      "Appointment request capture",
+      "Missed-call recovery",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture routine and new-patient appointment requests.",
+      "Collect contact details and preferred times.",
+      "Recover missed calls during clinic hours.",
+      "Follow up with patients awaiting a callback.",
+    ],
+    faq: [
+      {
+        question: "Does LeadClaw give podiatry advice?",
+        answer:
+          "No. It handles administrative intake and follow-up only. Clinical advice and assessment remain with qualified podiatrists.",
+      },
+      {
+        question: "Can it capture out-of-hours enquiries?",
+        answer:
+          "Yes. Enquiries are captured any time, ready for the team to review.",
+      },
+      {
+        question: "Do I keep my existing number?",
+        answer:
+          "Yes. It works alongside your number with call forwarding and a website widget.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-podiatrists-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-osteopaths-uk", label: "AI receptionist for osteopaths" },
+      { href: "/ai-receptionist-for-private-gps-uk", label: "AI receptionist for private GPs" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-private-gps-uk",
+    title: "AI Receptionist for Private GPs UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures private GP appointment requests and registrations 24/7, and recovers missed calls without giving medical advice.",
+    h1: "AI receptionist for private GPs in the UK",
+    subheading:
+      "Capture private GP appointment and registration enquiries around the clock, with a professional first response and no clinical advice.",
+    niche: "Private GPs",
+    audience:
+      "Private GP practices and clinics handling appointment requests, registrations, and service enquiries.",
+    pains: [
+      "Reception is busy with patients and cannot answer every call.",
+      "Patients expect a fast, professional response and convenient booking.",
+      "Appointment, registration, and service enquiries need different handling.",
+      "Out-of-hours enquiries go unanswered.",
+    ],
+    benefits: [
+      "Capture appointment and registration enquiries 24/7.",
+      "Route service, appointment, and registration requests appropriately.",
+      "Give a professional first response without clinical advice.",
+      "Follow up so enquiries become booked consultations.",
+    ],
+    features: [
+      "24/7 AI receptionist for private GP enquiries",
+      "Appointment and registration capture",
+      "Missed-call recovery",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture private consultation appointment requests.",
+      "Collect registration details for new patients.",
+      "Route health-check and service enquiries.",
+      "Follow up with patients awaiting a callback.",
+    ],
+    faq: [
+      {
+        question: "Does LeadClaw give medical advice?",
+        answer:
+          "No. It handles administrative intake and follow-up only. All medical advice and triage remain with qualified clinicians.",
+      },
+      {
+        question: "Can it flag urgent enquiries?",
+        answer:
+          "It can flag enquiries for prompt staff review, but it does not provide clinical triage or replace urgent or emergency care.",
+      },
+      {
+        question: "Do I keep my existing number?",
+        answer:
+          "Yes. It works alongside your number with call forwarding and a website widget.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-private-gps-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-podiatrists-uk", label: "AI receptionist for podiatrists" },
+      { href: "/ai-receptionist-for-cosmetic-clinics-uk", label: "AI receptionist for cosmetic clinics" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-cosmetic-clinics-uk",
+    title: "AI Receptionist for Cosmetic Clinics UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures cosmetic treatment consultation enquiries 24/7, recovers missed calls, and keeps follow-up moving for UK cosmetic clinics.",
+    h1: "AI receptionist for cosmetic clinics in the UK",
+    subheading:
+      "Capture consultation enquiries the moment they arrive, respond to missed calls, and follow up consistently — without giving clinical advice.",
+    niche: "Cosmetic clinics",
+    audience:
+      "Cosmetic and non-surgical treatment clinics managing high-value consultation enquiries across web, phone, and social.",
+    pains: [
+      "Prospective clients compare clinics and book with whoever responds first.",
+      "Consultation enquiries arrive in the evenings and at weekends.",
+      "Treatment and pricing questions repeat and consume staff time.",
+      "Follow-up across channels is hard to keep consistent.",
+    ],
+    benefits: [
+      "Respond to consultation enquiries instantly, on brand.",
+      "Capture treatment interest, contact details, and preferred times.",
+      "Recover missed and after-hours enquiries before clients book elsewhere.",
+      "Keep follow-up consistent without making clinical claims.",
+    ],
+    features: [
+      "24/7 AI receptionist for consultation enquiries",
+      "Missed-call and after-hours recovery",
+      "Treatment interest capture",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture interest in non-surgical and consultation-led treatments.",
+      "Answer common pricing and availability questions.",
+      "Route high-intent consultation requests to staff.",
+      "Track pending replies and follow-ups across the week.",
+    ],
+    faq: [
+      {
+        question: "Can LeadClaw advise on cosmetic treatments or suitability?",
+        answer:
+          "No. It handles administrative intake and follow-up only. Treatment advice, suitability, and consent remain with qualified professionals.",
+      },
+      {
+        question: "Can it capture out-of-hours enquiries?",
+        answer:
+          "Yes. Enquiries are captured at any time so your team has organised leads to action.",
+      },
+      {
+        question: "Does it handle sensitive enquiries appropriately?",
+        answer:
+          "It focuses on structured intake and routing; your team controls every clinical conversation, and data handling can be configured to your requirements.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-cosmetic-clinics-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-aesthetic-clinics-uk", label: "AI receptionist for aesthetic clinics" },
+      { href: "/ai-receptionist-for-hearing-clinics-uk", label: "AI receptionist for hearing clinics" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-hearing-clinics-uk",
+    title: "AI Receptionist for Hearing Clinics UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures hearing test and hearing-aid enquiries 24/7 for UK hearing clinics and audiologists, and recovers missed calls.",
+    h1: "AI receptionist for hearing clinics in the UK",
+    subheading:
+      "Capture hearing-test bookings and hearing-aid enquiries around the clock, and keep follow-up organised for your audiology team.",
+    niche: "Hearing clinics",
+    audience:
+      "Audiology and hearing-care clinics handling hearing-test bookings, hearing-aid enquiries, and aftercare.",
+    pains: [
+      "Reception is with clients and cannot answer every call.",
+      "Older clients may prefer phone and expect a patient, clear response.",
+      "Hearing-test and hearing-aid enquiries need different follow-up.",
+      "Out-of-hours enquiries go unanswered.",
+    ],
+    benefits: [
+      "Capture hearing-test and hearing-aid enquiries 24/7.",
+      "Collect contact details and reason for enquiry for callbacks.",
+      "Reduce front-desk phone load during appointments.",
+      "Follow up so enquiries become booked appointments.",
+    ],
+    features: [
+      "24/7 AI receptionist for hearing-care enquiries",
+      "Test and hearing-aid enquiry capture",
+      "Missed-call recovery",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture hearing-test booking requests.",
+      "Collect hearing-aid and aftercare enquiry details.",
+      "Recover missed calls during clinic hours.",
+      "Follow up with clients awaiting a callback.",
+    ],
+    faq: [
+      {
+        question: "Does LeadClaw give audiology advice?",
+        answer:
+          "No. It handles administrative intake and follow-up only. Clinical advice and assessment remain with qualified audiologists.",
+      },
+      {
+        question: "Can it capture out-of-hours enquiries?",
+        answer:
+          "Yes. Enquiries are captured any time, ready for the team to review.",
+      },
+      {
+        question: "Do I keep my existing number?",
+        answer:
+          "Yes. It works alongside your number with call forwarding and a website widget.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-hearing-clinics-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-private-gps-uk", label: "AI receptionist for private GPs" },
+      { href: "/ai-receptionist-for-cosmetic-clinics-uk", label: "AI receptionist for cosmetic clinics" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-marketing-agencies-uk",
+    title: "AI Receptionist for Marketing Agencies UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures and qualifies new-business enquiries 24/7 for UK marketing agencies, and follows up so discovery calls get booked.",
+    h1: "AI receptionist for marketing agencies in the UK",
+    subheading:
+      "Capture inbound new-business enquiries, qualify the budget and service fit, and book discovery calls — without interrupting client work.",
+    niche: "Marketing agencies",
+    audience:
+      "Marketing, creative, and digital agencies handling inbound new-business enquiries and discovery-call requests.",
+    pains: [
+      "The team is heads-down on client work when new-business enquiries land.",
+      "Enquiries need qualifying on budget and service fit before a call.",
+      "Good leads go cold without a fast, professional response.",
+      "Discovery-call scheduling creates back-and-forth admin.",
+    ],
+    benefits: [
+      "Capture new-business enquiries 24/7 with a professional first response.",
+      "Qualify service interest, budget range, and fit before booking a call.",
+      "Recover missed enquiries so good leads are not lost.",
+      "Follow up to get discovery calls booked.",
+    ],
+    features: [
+      "24/7 AI receptionist for new-business enquiries",
+      "Service and budget qualification",
+      "Discovery-call request capture",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture inbound enquiries from the website and referrals.",
+      "Qualify service interest and rough budget.",
+      "Route fit enquiries to the right team for a discovery call.",
+      "Follow up with prospects who have not replied.",
+    ],
+    faq: [
+      {
+        question: "Can it qualify new-business enquiries?",
+        answer:
+          "Yes. The intake asks about service interest and budget so your team focuses on the right opportunities.",
+      },
+      {
+        question: "Will it interrupt client work?",
+        answer:
+          "No. It handles the first response and qualification so the team only steps in for genuine opportunities.",
+      },
+      {
+        question: "Does it work with our website and phone?",
+        answer:
+          "Yes. It works alongside your existing number and website with a lightweight widget.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-marketing-agencies-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-web-design-agencies-uk", label: "AI receptionist for web design agencies" },
+      { href: "/ai-receptionist-for-consultants-uk", label: "AI receptionist for consultants" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-web-design-agencies-uk",
+    title: "AI Receptionist for Web Design Agencies UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures and qualifies website project enquiries 24/7 for UK web design agencies, and follows up so quotes and calls get booked.",
+    h1: "AI receptionist for web design agencies in the UK",
+    subheading:
+      "Capture website project enquiries, qualify scope and budget, and book scoping calls — even while the team is shipping client work.",
+    niche: "Web design agencies",
+    audience:
+      "Web design and development studios handling inbound project enquiries and quote requests.",
+    pains: [
+      "The team is in build mode when project enquiries arrive.",
+      "Enquiries need scope and budget detail before quoting.",
+      "Prospects expect a fast, professional reply or they move on.",
+      "Scoping-call scheduling is admin-heavy.",
+    ],
+    benefits: [
+      "Capture website project enquiries 24/7.",
+      "Qualify project type, scope, and budget range.",
+      "Recover missed enquiries so quality leads are not lost.",
+      "Follow up to get scoping calls and quotes moving.",
+    ],
+    features: [
+      "24/7 AI receptionist for project enquiries",
+      "Scope and budget qualification",
+      "Scoping-call request capture",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture new website and redesign enquiries.",
+      "Qualify scope, platform, and rough budget.",
+      "Route fit enquiries for a scoping call.",
+      "Follow up with prospects awaiting a quote.",
+    ],
+    faq: [
+      {
+        question: "Can it qualify project enquiries?",
+        answer:
+          "Yes. The intake asks about scope and budget so the team focuses on the right projects.",
+      },
+      {
+        question: "Will it interrupt the team's build work?",
+        answer:
+          "No. It handles first response and qualification so the team only engages real opportunities.",
+      },
+      {
+        question: "Does it work with our existing site?",
+        answer:
+          "Yes. It works alongside your website and phone with a lightweight widget.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-web-design-agencies-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-marketing-agencies-uk", label: "AI receptionist for marketing agencies" },
+      { href: "/ai-receptionist-for-it-support-companies-uk", label: "AI receptionist for IT support companies" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-recruitment-agencies-uk",
+    title: "AI Receptionist for Recruitment Agencies UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures client and candidate enquiries 24/7 for UK recruitment agencies, routes them correctly, and follows up so nothing is missed.",
+    h1: "AI receptionist for recruitment agencies in the UK",
+    subheading:
+      "Capture client vacancies and candidate enquiries around the clock, route each correctly, and keep follow-up moving while consultants are on calls.",
+    niche: "Recruitment agencies",
+    audience:
+      "Recruitment and staffing agencies handling client vacancy enquiries and candidate registrations.",
+    pains: [
+      "Consultants are on calls and cannot answer every enquiry.",
+      "Client and candidate enquiries need very different handling.",
+      "New vacancies and registrations arrive out of hours.",
+      "A missed client enquiry can mean a lost retained role.",
+    ],
+    benefits: [
+      "Capture client and candidate enquiries 24/7.",
+      "Route client vacancies and candidate registrations correctly.",
+      "Recover missed enquiries so roles and candidates are not lost.",
+      "Follow up to keep both sides of the desk moving.",
+    ],
+    features: [
+      "24/7 AI receptionist for recruitment enquiries",
+      "Client vs candidate routing",
+      "Vacancy and registration capture",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture new client vacancy enquiries.",
+      "Collect candidate registration details.",
+      "Route enquiries to the right consultant or desk.",
+      "Follow up with clients and candidates awaiting a reply.",
+    ],
+    faq: [
+      {
+        question: "Can it tell clients from candidates?",
+        answer:
+          "Yes. The intake asks qualifying questions and routes the enquiry to the right desk.",
+      },
+      {
+        question: "Can it capture out-of-hours enquiries?",
+        answer:
+          "Yes. Vacancies and registrations are captured any time, ready for consultants to action.",
+      },
+      {
+        question: "Does it work with our phone and website?",
+        answer:
+          "Yes. It works alongside your existing number and website with a widget.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-recruitment-agencies-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-marketing-agencies-uk", label: "AI receptionist for marketing agencies" },
+      { href: "/ai-receptionist-for-consultants-uk", label: "AI receptionist for consultants" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-it-support-companies-uk",
+    title: "AI Receptionist for IT Support Companies UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures IT support and managed-services enquiries 24/7, triages urgency, and recovers missed calls for UK IT support companies.",
+    h1: "AI receptionist for IT support companies in the UK",
+    subheading:
+      "Capture support and new-client enquiries around the clock, flag urgent issues, and keep follow-up moving while engineers are on tickets.",
+    niche: "IT support companies",
+    audience:
+      "Managed service providers and IT support companies handling support requests and new-business enquiries.",
+    pains: [
+      "Engineers are deep in tickets and cannot answer every call.",
+      "Urgent outages need fast acknowledgement and routing.",
+      "Support requests and new-business enquiries need different handling.",
+      "Out-of-hours enquiries can go unanswered.",
+    ],
+    benefits: [
+      "Capture support and sales enquiries 24/7.",
+      "Flag urgent issues for fast engineer review (admin, not resolution).",
+      "Route support requests and new-business enquiries appropriately.",
+      "Follow up so enquiries and leads are not lost.",
+    ],
+    features: [
+      "24/7 AI receptionist for IT enquiries",
+      "Urgency flagging for support requests",
+      "Support vs sales routing",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture support requests when the helpdesk is busy.",
+      "Flag potential outages for prompt engineer review.",
+      "Route new-business and managed-services enquiries.",
+      "Follow up with prospects and clients awaiting a reply.",
+    ],
+    faq: [
+      {
+        question: "Does LeadClaw resolve IT issues?",
+        answer:
+          "No. It captures and flags requests for your engineers. Diagnosis and resolution remain with your support team.",
+      },
+      {
+        question: "Can it flag urgent outages?",
+        answer:
+          "It can flag urgent enquiries for fast review, but it does not replace your monitoring or on-call processes.",
+      },
+      {
+        question: "Does it work with our phone and website?",
+        answer:
+          "Yes. It works alongside your existing number and website with a widget.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-it-support-companies-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-security-installers-uk", label: "AI receptionist for security installers" },
+      { href: "/ai-receptionist-for-web-design-agencies-uk", label: "AI receptionist for web design agencies" },
+      ...sharedLinks,
+    ],
+  },
+  {
+    slug: "ai-receptionist-for-consultants-uk",
+    title: "AI Receptionist for Consultants UK | LeadClaw",
+    metaDescription:
+      "LeadClaw captures and qualifies client enquiries 24/7 for UK consultants and consultancies, and follows up so discovery calls get booked.",
+    h1: "AI receptionist for consultants in the UK",
+    subheading:
+      "Capture inbound enquiries, qualify fit and scope, and book discovery calls — so you never miss a client opportunity while you are delivering work.",
+    niche: "Consultants",
+    audience:
+      "Independent consultants and consultancies handling inbound enquiries and discovery-call requests.",
+    pains: [
+      "You are delivering client work when new enquiries arrive.",
+      "Enquiries need qualifying on scope and fit before a call.",
+      "A slow response loses high-value engagements.",
+      "Scheduling discovery calls is admin you do not have time for.",
+    ],
+    benefits: [
+      "Capture inbound enquiries 24/7 with a professional first response.",
+      "Qualify scope, fit, and timing before booking a call.",
+      "Recover missed enquiries so engagements are not lost.",
+      "Follow up to get discovery calls booked.",
+    ],
+    features: [
+      "24/7 AI receptionist for client enquiries",
+      "Scope and fit qualification",
+      "Discovery-call request capture",
+      "Follow-up reminders",
+    ],
+    useCases: [
+      "Capture inbound enquiries from your website and referrals.",
+      "Qualify the engagement scope and fit.",
+      "Book discovery calls with qualified prospects.",
+      "Follow up with prospects awaiting a reply.",
+    ],
+    faq: [
+      {
+        question: "Can it qualify client enquiries?",
+        answer:
+          "Yes. The intake asks about scope and fit so you focus on the right engagements.",
+      },
+      {
+        question: "Will it interrupt my delivery work?",
+        answer:
+          "No. It handles the first response and qualification so you only step in for genuine opportunities.",
+      },
+      {
+        question: "Does it work with my website and phone?",
+        answer:
+          "Yes. It works alongside your existing number and website with a widget.",
+      },
+      {
+        question: "Is there a free trial?",
+        answer: "Yes — 7 days free, no card required.",
+      },
+    ],
+    canonicalPath: "/ai-receptionist-for-consultants-uk",
+    relatedLinks: [
+      { href: "/ai-receptionist-for-marketing-agencies-uk", label: "AI receptionist for marketing agencies" },
+      { href: "/ai-receptionist-for-recruitment-agencies-uk", label: "AI receptionist for recruitment agencies" },
+      ...sharedLinks,
+    ],
+  },
 ];
 
 export function getAiReceptionistPage(slug: string) {
