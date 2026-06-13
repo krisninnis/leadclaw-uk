@@ -1,3 +1,21 @@
+const fs = require("fs");
+const path = require("path");
+
+function walkFiles(dir, files = []) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (["node_modules", ".next"].includes(entry.name)) continue;
+
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      walkFiles(fullPath, files);
+    } else if (/\.(js|jsx|ts|tsx)$/.test(entry.name)) {
+      files.push(fullPath);
+    }
+  }
+
+  return files;
+}
+
 describe("LeadClaw billing plans", () => {
   it("uses customer-facing plan names and pound pricing labels", () => {
     const { PLAN_DISPLAY_NAMES, PLAN_MONTHLY_PRICES } = require("@/lib/plans");
@@ -75,5 +93,41 @@ describe("LeadClaw billing plans", () => {
     expect(planFromStripePriceId("price_pro_149", env)).toBe("pro");
     expect(planFromStripePriceId("price_unknown", env)).toBeNull();
     expect(planFromStripePriceId("", env)).toBeNull();
+  });
+
+  it("documents required Stripe rotation env vars", () => {
+    const envExample = fs.readFileSync(
+      path.join(process.cwd(), ".env.example"),
+      "utf8",
+    );
+
+    expect(envExample).toContain("STRIPE_SECRET_KEY=");
+    expect(envExample).toContain("STRIPE_WEBHOOK_SECRET=");
+    expect(envExample).toContain("STRIPE_PRICE_GROWTH=");
+    expect(envExample).toContain("STRIPE_PRICE_PRO=");
+    expect(envExample).toContain("NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=");
+  });
+
+  it("keeps server-only Stripe env vars out of client-marked files", () => {
+    const clientFiles = walkFiles(path.join(process.cwd(), "src")).filter(
+      (file) => {
+        const contents = fs.readFileSync(file, "utf8");
+        return contents.startsWith('"use client"') || contents.startsWith("'use client'");
+      },
+    );
+
+    const serverOnlyEnvNames = [
+      "STRIPE_SECRET_KEY",
+      "STRIPE_WEBHOOK_SECRET",
+      "STRIPE_PRICE_GROWTH",
+      "STRIPE_PRICE_PRO",
+    ];
+
+    for (const file of clientFiles) {
+      const contents = fs.readFileSync(file, "utf8");
+      for (const envName of serverOnlyEnvNames) {
+        expect(contents).not.toContain(envName);
+      }
+    }
   });
 });
