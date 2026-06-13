@@ -1,9 +1,10 @@
 # LeadClaw.uk
 
-## AI workflow automation suite for busy businesses
+## AI receptionist for UK businesses and clinics
 
-LeadClaw helps businesses capture requests, organise operational work, automate
-follow-ups, and save hours on repetitive admin and data tasks with AI.
+LeadClaw helps UK businesses capture enquiries, recover missed calls, organise
+follow-ups, and give prospects a professional first response when the team is
+busy or closed.
 
 **Live Platform:** https://leadclaw.uk
 
@@ -11,14 +12,13 @@ follow-ups, and save hours on repetitive admin and data tasks with AI.
 
 ## What LeadClaw Does
 
-LeadClaw combines lightweight intake capture with practical AI workflow tools:
+LeadClaw combines lightweight intake capture with practical receptionist tools:
 
 - AI Receptionist for website request capture
 - Lead Tracker for workspace visibility
 - Follow-Up Assistant for reminders and next steps
-- Data Cleaner for messy forms, lists, and notes
-- Document Extractor for structured detail capture
-- Weekly Report Bot for recurring operational summaries
+- Missed call recovery support
+- Enquiry summaries for weekly operational visibility
 - Stripe subscription lifecycle management
 - Admin operations dashboard
 - Compliance logging and audit trail
@@ -37,7 +37,7 @@ LeadClaw is made up of two main parts:
    - Website widget and request capture
    - Outreach tracking
 
-2. **Lead generation and workflow pipeline**
+2. **Lead generation and outreach pipeline**
    - Python
    - Google Places API
    - Enrichment scripts

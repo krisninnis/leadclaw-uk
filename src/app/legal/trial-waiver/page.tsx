@@ -24,13 +24,13 @@ export default function TrialWaiverPage() {
 
       <h2>2. Service setup consent</h2>
       <p>
-        By starting the trial, you authorise us to configure workflows, data mappings, and messaging logic based on the
+        By starting the trial, you authorise us to configure receptionist settings, data mappings, and messaging logic based on the
         information you provide.
       </p>
 
       <h2>3. Customer acknowledgment</h2>
       <ul>
-        <li>You are responsible for final review/approval of automations before live use.</li>
+        <li>You are responsible for final review/approval of AI receptionist settings before live use.</li>
         <li>You confirm your communications comply with GDPR/PECR and sector requirements.</li>
         <li>You will not use trial systems for unlawful or deceptive activity.</li>
       </ul>

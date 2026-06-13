@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     await (admin as unknown as SupabaseUntypedClient).from('client_messages').insert({
       user_id: user.id,
       sender: 'agent',
-      message: 'Got it — thanks. Our team is on this and you will get an update shortly.',
+      message: 'Got it - thanks. Our team is on this and you will get an update shortly.',
     })
   }
 

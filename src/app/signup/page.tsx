@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { FormEvent, Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { tryCreateClient } from "@/lib/supabase/client";
 import { queueGaEvent, trackGaEvent } from "@/lib/ga";
 import GoogleIcon from "@/components/auth/google-icon";
 import AccountFlowNotice from "@/components/auth/account-flow-notice";
@@ -17,7 +17,7 @@ function normalizePlan(_value: string | null): PlanSlug {
 function SignupContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = useMemo(() => tryCreateClient(), []);
 
   const plan = useMemo(
     () => normalizePlan(searchParams?.get("plan") ?? null),
@@ -46,6 +46,12 @@ function SignupContent() {
     setStatus("");
 
     try {
+      if (!supabase) {
+        setStatus("Authentication is not configured. Please contact support.");
+        setGoogleLoading(false);
+        return;
+      }
+
       const next = buildNextUrl();
 
       trackGaEvent(
@@ -133,6 +139,11 @@ function SignupContent() {
         setPasswordLoading(false);
         return;
       }
+      if (!supabase) {
+        setStatus("Authentication is not configured. Please contact support.");
+        setPasswordLoading(false);
+        return;
+      }
 
       const next = buildNextUrl();
 
@@ -202,6 +213,11 @@ function SignupContent() {
 
       if (!normalizedEmail) {
         setStatus("Enter your work email first.");
+        setMagicLinkLoading(false);
+        return;
+      }
+      if (!supabase) {
+        setStatus("Authentication is not configured. Please contact support.");
         setMagicLinkLoading(false);
         return;
       }
@@ -276,7 +292,7 @@ function SignupContent() {
             self-serve setup.
           </p>
           <p className="mt-2 text-xs font-medium text-muted-2">
-            Free forever • no card required • upgrade to Growth or Pro anytime
+            Free forever - no card required - upgrade to Growth or Pro anytime
           </p>
         </div>
 
@@ -292,7 +308,7 @@ function SignupContent() {
           </button>
 
           <p className="text-center text-xs text-muted-2">
-            Fastest option — start Basic instantly with no card details
+            Fastest option - start Basic instantly with no card details
           </p>
 
           <div className="flex items-center gap-3">
@@ -355,6 +371,16 @@ function SignupContent() {
 
           {status ? <p className="text-sm text-muted">{status}</p> : null}
         </div>
+
+        <p className="text-center text-sm text-muted">
+          <Link href="/" className="underline text-foreground">
+            Back to home
+          </Link>{" "}
+          |{" "}
+          <Link href="/pricing" className="underline text-foreground">
+            View pricing
+          </Link>
+        </p>
 
         <p className="text-center text-sm text-muted">
           Want the full 7-day Growth trial instead?{" "}

@@ -74,7 +74,7 @@ export default async function PortalSupportPage() {
               Need help with requests?
             </p>
             <p className="mt-2 text-sm leading-7 text-muted">
-              Ask for help understanding lead statuses, workflow, or what to do
+              Ask for help understanding lead statuses, setup, or what to do
               next with your captured requests.
             </p>
             <div className="mt-4">

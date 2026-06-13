@@ -171,6 +171,16 @@ a {
     transform 0.2s ease;
 }
 
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid rgba(6, 182, 212, 0.32);
+  outline-offset: 3px;
+}
+
 button,
 input,
 textarea,
@@ -239,12 +249,16 @@ html[data-theme="dark"] .card-premium {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  min-height: 44px;
+  max-width: 100%;
   border-radius: 999px;
   background: linear-gradient(135deg, var(--brand), var(--brand-strong));
   color: white;
   padding: 0.85rem 1.25rem;
   font-weight: 600;
   letter-spacing: -0.01em;
+  text-align: center;
+  white-space: normal;
   box-shadow: 0 10px 24px rgba(6, 182, 212, 0.22);
   transition:
     transform 0.2s ease,
@@ -266,6 +280,8 @@ html[data-theme="dark"] .card-premium {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  min-height: 44px;
+  max-width: 100%;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.88);
@@ -273,6 +289,8 @@ html[data-theme="dark"] .card-premium {
   padding: 0.85rem 1.25rem;
   font-weight: 600;
   letter-spacing: -0.01em;
+  text-align: center;
+  white-space: normal;
   transition:
     transform 0.2s ease,
     border-color 0.2s ease,
@@ -295,6 +313,7 @@ html[data-theme="dark"] .button-secondary:hover {
 
 .input-premium {
   width: 100%;
+  min-height: 44px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.9);
@@ -346,8 +365,29 @@ html[data-theme="dark"] .input-premium:focus {
 
 .grid-auto-fit {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
   gap: 1.25rem;
+}
+
+@media (max-width: 420px) {
+  .container-shell {
+    padding-inline: 0.875rem;
+  }
+
+  .section-shell {
+    padding-block: 3rem;
+  }
+
+  .card-premium,
+  .card {
+    border-radius: 20px;
+  }
+
+  .button-primary,
+  .button-secondary {
+    width: 100%;
+    padding-inline: 1rem;
+  }
 }
 
 .page-hero {

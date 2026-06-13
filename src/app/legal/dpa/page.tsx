@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Data Processing Addendum | LeadClaw",
   description:
-    "Review LeadClaw's data processing addendum for AI workflow automation services.",
+    "Review LeadClaw's data processing addendum for AI receptionist services.",
   alternates: {
     canonical: "/legal/dpa",
   },
@@ -30,7 +30,7 @@ export default function DpaPage() {
       <h2>3. Nature and purpose of processing</h2>
       <ul>
         <li>Collection and routing of inbound lead/contact data</li>
-        <li>Workflow automation and support operations</li>
+        <li>AI receptionist support operations</li>
         <li>Service analytics, diagnostics, and system security</li>
       </ul>
 

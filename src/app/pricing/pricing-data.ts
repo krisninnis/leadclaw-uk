@@ -55,7 +55,7 @@ export const plans: PricingPlan[] = [
     price: PLAN_MONTHLY_PRICES.growth.display,
     period: "/month",
     description:
-      "AI workflows for capturing requests, tracking leads, and automating follow-ups.",
+      "AI receptionist software for capturing enquiries, tracking leads, and following up faster.",
     mascot: "Panther",
     themeClass:
       "border-violet-200 bg-[linear-gradient(180deg,rgba(248,245,255,0.96),rgba(255,255,255,0.96))]",
@@ -66,10 +66,10 @@ export const plans: PricingPlan[] = [
     features: [
       "Everything in Basic",
       "Unlimited AI conversations",
-      "Follow-Up Assistant workflows",
+      "Follow-Up Assistant",
       "Lead notifications",
       "Lead Tracker workspace",
-      "Data Cleaner for messy inputs",
+      "Missed call recovery support",
       "7-day free trial included",
     ],
     cta: "/free-trial?plan=growth",
@@ -80,7 +80,7 @@ export const plans: PricingPlan[] = [
     price: PLAN_MONTHLY_PRICES.pro.display,
     period: "/month",
     description:
-      "Advanced automation and reporting tools for teams with more complex operations.",
+      "Advanced AI receptionist and reporting tools for busier teams.",
     mascot: "Dragon",
     themeClass:
       "border-cyan-200 bg-[linear-gradient(180deg,rgba(236,254,255,0.96),rgba(255,255,255,0.96))]",
@@ -89,9 +89,9 @@ export const plans: PricingPlan[] = [
       "inline-flex items-center justify-center rounded-full bg-cyan-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-cyan-700",
     features: [
       "Everything in Growth",
-      "Advanced automation flows",
-      "Document Extractor workflows",
-      "Weekly Report Bot",
+      "Advanced reception automations",
+      "Enquiry summary support",
+      "Weekly enquiry reports",
       "Performance analytics dashboard",
       "Priority onboarding support",
       "Custom AI tuning for your workspace",
@@ -114,15 +114,15 @@ export const comparisonRows: ComparisonRow[] = [
     values: ["Not included", "Included", "Included"],
   },
   {
-    label: "Data Cleaner",
+    label: "Missed call recovery",
     values: ["Not included", "Included", "Included"],
   },
   {
-    label: "Document Extractor",
+    label: "Enquiry summaries",
     values: ["Not included", "Not included", "Included"],
   },
   {
-    label: "Weekly Report Bot",
+    label: "Weekly enquiry reports",
     values: ["Not included", "Not included", "Included"],
   },
   {
@@ -139,7 +139,7 @@ export const faqs: PricingFaq[] = [
   {
     question: "How does the free trial work?",
     answer:
-      "You start on the Growth plan for 7 days. This lets you experience core workflow automation, request capture, and follow-ups before deciding to continue.",
+      "You start on the Growth plan for 7 days. This lets you experience the AI receptionist, enquiry capture, and follow-up support before deciding to continue.",
   },
   {
     question: "What happens after the 7-day trial?",
@@ -154,6 +154,6 @@ export const faqs: PricingFaq[] = [
   {
     question: "Can this help my team save admin time?",
     answer:
-      "Yes. LeadClaw captures requests, keeps work visible, and automates routine follow-ups so your team spends less time chasing details manually.",
+      "Yes. LeadClaw captures enquiries, keeps follow-up visible, and automates routine reminders so your team spends less time chasing details manually.",
   },
 ];

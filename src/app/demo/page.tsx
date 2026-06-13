@@ -7,9 +7,9 @@ import TrialCtaLink from "@/components/trial-cta-link";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const metadata: Metadata = {
-  title: "LeadClaw Demo | AI workflow automation",
+  title: "LeadClaw Demo | AI Receptionist Software",
   description:
-    "Preview how LeadClaw captures requests, routes work, and automates follow-ups for business teams.",
+    "Preview how LeadClaw captures enquiries, supports missed call recovery, and keeps follow-ups organised for UK businesses.",
   alternates: {
     canonical: "/demo",
   },
@@ -86,7 +86,7 @@ export default async function DemoPage({
             <div className="max-w-4xl space-y-4">
               <div className="badge-soft">
                 <span className="h-2 w-2 rounded-full bg-brand" />
-                Live workflow demo
+                Live AI receptionist demo
               </div>
 
               <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
@@ -98,7 +98,7 @@ export default async function DemoPage({
                   ? `This demo is tailored for ${clinicName} in ${clinicCity}.`
                   : `This demo is tailored for ${clinicName}.`}{" "}
                 Use the widget on this page to see how LeadClaw can capture
-                website requests and turn them into organised, follow-up-ready
+                website enquiries and turn them into organised, follow-up-ready
                 work for your team.
               </p>
 
@@ -119,13 +119,13 @@ export default async function DemoPage({
                 Personalised for {clinicName}
               </p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
-                A realistic example of your website intake flow
+                A realistic example of your website enquiry flow
               </h2>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">
                 This page uses the business details we found for{" "}
                 <strong className="text-foreground">{clinicName}</strong>
                 {clinicCity ? ` in ${clinicCity}` : ""} to show how LeadClaw
-                could help capture requests when your team is busy or offline.
+                could help capture enquiries when your team is busy or offline.
               </p>
             </div>
           ) : null}
@@ -190,7 +190,7 @@ export default async function DemoPage({
                     2. The intake is saved instantly
                   </p>
                   <p className="mt-2 text-sm leading-7 text-muted">
-                    Each request is stored against the correct workspace.
+                    Each enquiry is stored against the correct workspace.
                   </p>
                 </div>
 
@@ -199,7 +199,7 @@ export default async function DemoPage({
                     3. Your team follows up from the portal
                   </p>
                   <p className="mt-2 text-sm leading-7 text-muted">
-                    Teams can review, update, and manage requests from one
+                    Teams can review, update, and manage enquiries from one
                     simple dashboard.
                   </p>
                 </div>

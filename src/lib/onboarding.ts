@@ -131,7 +131,7 @@ Support: ${input.supportEmail}`
         : ""
     }
 
-— Clawbot`,
+- Clawbot`,
   };
 }
 

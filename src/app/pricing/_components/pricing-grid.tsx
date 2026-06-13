@@ -61,7 +61,7 @@ function primaryLabel(slug: "basic" | "growth" | "pro") {
 function supportCopy(slug: "basic" | "growth" | "pro") {
   if (slug === "basic") return "Free forever - no card required";
   if (slug === "growth") {
-    return "Try the full Growth workflow for 7 days - no card required";
+    return "Try the full Growth AI receptionist for 7 days - no card required";
   }
   return "Try Pro automation free for 7 days - no card required";
 }
@@ -78,7 +78,7 @@ function planSummary(slug: "basic" | "growth" | "pro") {
     return "Built for businesses that want a simple free intake widget with self-serve setup.";
   }
   if (slug === "growth") {
-    return "Most teams should start here to experience LeadClaw's core automation and follow-up workflow.";
+    return "Most teams should start here to experience LeadClaw's core AI receptionist and follow-up support.";
   }
   return "Built for teams that want advanced automation, stronger reporting, and priority support.";
 }

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Terms and Conditions | LeadClaw",
   description:
-    "Read the terms and conditions for using LeadClaw AI workflow automation services.",
+    "Read the terms and conditions for using LeadClaw AI receptionist services.",
   alternates: {
     canonical: "/legal/terms",
   },
@@ -23,7 +23,7 @@ export default function TermsPage() {
 
       <h2>2. Service scope</h2>
       <p>
-        We provide AI-assisted lead capture, workflow automation, onboarding support, and subscription software for UK
+        We provide AI-assisted lead capture, AI receptionist support, onboarding support, and subscription software for UK
         businesses. Service details are defined in your selected plan and onboarding configuration.
       </p>
 

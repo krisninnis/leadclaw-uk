@@ -12,7 +12,7 @@ type Props = {
   saveTrialIntake: (intake: object) => void;
   saveIntakeToBackend: (intake: object) => Promise<void>;
   buildNextUrl: () => string;
-  supabase: ReturnType<typeof import("@/lib/supabase/client").createClient>;
+  supabase: ReturnType<typeof import("@/lib/supabase/client").tryCreateClient>;
 };
 
 type TrialIntakeInput = {
@@ -64,6 +64,12 @@ export default function SignupForm({
     setGoogleLoading(true);
     setStatus("");
     try {
+      if (!supabase) {
+        setStatus("Authentication is not configured. Please contact support.");
+        setGoogleLoading(false);
+        return;
+      }
+
       const intake = buildIntake(collectIntakeInput());
       saveTrialIntake(intake);
       const next = buildNextUrl();
@@ -133,6 +139,11 @@ export default function SignupForm({
         setPasswordLoading(false);
         return;
       }
+      if (!supabase) {
+        setStatus("Authentication is not configured. Please contact support.");
+        setPasswordLoading(false);
+        return;
+      }
 
       const intake = buildIntake(collectIntakeInput());
       saveTrialIntake(intake);
@@ -184,6 +195,11 @@ export default function SignupForm({
     try {
       if (!email.trim()) {
         setStatus("Enter your work email first.");
+        setMagicLinkLoading(false);
+        return;
+      }
+      if (!supabase) {
+        setStatus("Authentication is not configured. Please contact support.");
         setMagicLinkLoading(false);
         return;
       }
@@ -247,12 +263,12 @@ export default function SignupForm({
             <span className="font-medium text-foreground">
               {selectedPlanLabel}
             </span>{" "}
-            plan for 7 days with full access to the core LeadClaw AI workflow
-            suite.
+            plan for 7 days with full access to the LeadClaw AI receptionist.
+            It helps capture enquiries, missed calls, and follow-ups.
           </p>
           <p className="mt-2 text-xs font-medium text-muted-2">
-            No card required • keep {selectedPlanLabel}, switch plans, or move
-            to free Basic after the trial
+            No card required - keep {selectedPlanLabel}, switch plans, or move
+            to free Basic after the trial.
           </p>
         </div>
 
@@ -268,7 +284,7 @@ export default function SignupForm({
           </button>
 
           <p className="text-center text-xs text-muted-2">
-            Fastest option — start your {selectedPlanLabel} trial with no card
+            Fastest option - start your {selectedPlanLabel} trial with no card
             details
           </p>
 
@@ -356,6 +372,15 @@ export default function SignupForm({
           {status ? <p className="text-sm text-muted">{status}</p> : null}
         </div>
 
+        <p className="text-center text-sm text-muted">
+          <Link href="/" className="underline text-foreground">
+            Back to home
+          </Link>{" "}
+          |{" "}
+          <Link href="/pricing" className="underline text-foreground">
+            View pricing
+          </Link>
+        </p>
         <p className="text-center text-sm text-muted">
           Want the free widget only?{" "}
           <Link href="/signup?plan=basic" className="underline text-foreground">

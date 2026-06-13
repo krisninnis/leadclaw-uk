@@ -1,7 +1,7 @@
 "use client";
 import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { tryCreateClient } from "@/lib/supabase/client";
 import { normalizeTrialPlan } from "@/lib/plans";
 import AccountFlowNotice from "@/components/auth/account-flow-notice";
 import SignupForm from "./_components/signup-form";
@@ -20,7 +20,7 @@ type TrialIntakeInput = {
 
 function FreeTrialContent() {
   const searchParams = useSearchParams();
-  const supabase = createClient();
+  const supabase = useMemo(() => tryCreateClient(), []);
   const selectedPlan = useMemo(
     () => normalizeTrialPlan(searchParams?.get("plan") ?? null),
     [searchParams],

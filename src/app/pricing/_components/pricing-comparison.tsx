@@ -12,12 +12,12 @@ export default function PricingComparison() {
                   Which plan is right for you?
                 </p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                  Pick the plan that matches your team&apos;s current workflow.
+                  Pick the plan that matches your enquiry volume.
                 </h2>
                 <p className="mt-4 text-lg leading-8 text-muted">
-                  Basic is for simple request capture. Growth adds core
-                  follow-up automation. Pro is for teams that need more advanced
-                  extraction, reporting, and support.
+                  Basic is for simple enquiry capture. Growth adds core
+                  follow-up support. Pro is for teams that need more advanced
+                  reception automations, reporting, and support.
                 </p>
               </div>
 
@@ -25,7 +25,7 @@ export default function PricingComparison() {
                 <div className="rounded-[24px] border border-amber-200 bg-amber-50/80 p-5">
                   <p className="text-sm font-medium text-amber-800">Basic</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-                    Capture requests
+                    Capture enquiries
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
                     Best for businesses starting with a lightweight intake
@@ -40,17 +40,17 @@ export default function PricingComparison() {
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
                     The strongest all-round choice for teams ready to automate
-                    common intake and follow-up work.
+                    common enquiry and follow-up work.
                   </p>
                 </div>
 
                 <div className="rounded-[24px] border border-cyan-200 bg-cyan-50/80 p-5">
                   <p className="text-sm font-medium text-cyan-800">Pro</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-                    Extend workflows
+                    Scale reception
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    Ideal for teams that need document extraction, reporting,
+                    Ideal for teams that need deeper enquiry summaries,
                     analytics, and priority onboarding.
                   </p>
                 </div>
@@ -67,49 +67,51 @@ export default function PricingComparison() {
               Compare plans
             </p>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              A clear view of what changes as your workflows grow
+              A clear view of what changes as enquiry volume grows
             </h2>
             <p className="mt-4 text-lg leading-8 text-muted">
-              Keep the choice simple. Every plan captures requests. The
+              Keep the choice simple. Every plan captures enquiries. The
               difference is how much automation, reporting, and support your
               workspace needs.
             </p>
           </div>
 
-          <div className="mt-10 overflow-hidden rounded-[28px] border border-border bg-white shadow-[var(--shadow-card)]">
-            <div className="grid grid-cols-4 border-b border-border bg-surface-2 text-sm font-semibold text-foreground">
-              <div className="p-4 md:p-5">Feature</div>
-              <div className="p-4 text-center md:p-5">Basic</div>
-              <div className="bg-violet-50/70 p-4 text-center md:p-5">
-                Growth
+          <div className="mt-10 overflow-x-auto rounded-[28px] border border-border bg-white shadow-[var(--shadow-card)]">
+            <div className="min-w-[720px]">
+              <div className="grid grid-cols-4 border-b border-border bg-surface-2 text-sm font-semibold text-foreground">
+                <div className="p-4 md:p-5">Feature</div>
+                <div className="p-4 text-center md:p-5">Basic</div>
+                <div className="bg-violet-50/70 p-4 text-center md:p-5">
+                  Growth
+                </div>
+                <div className="p-4 text-center md:p-5">Pro</div>
               </div>
-              <div className="p-4 text-center md:p-5">Pro</div>
-            </div>
 
-            {comparisonRows.map((row, index) => (
-              <div
-                key={row.label}
-                className={[
-                  "grid grid-cols-4 text-sm",
-                  index !== comparisonRows.length - 1
-                    ? "border-b border-border"
-                    : "",
-                ].join(" ")}
-              >
-                <div className="p-4 font-medium text-foreground md:p-5">
-                  {row.label}
+              {comparisonRows.map((row, index) => (
+                <div
+                  key={row.label}
+                  className={[
+                    "grid grid-cols-4 text-sm",
+                    index !== comparisonRows.length - 1
+                      ? "border-b border-border"
+                      : "",
+                  ].join(" ")}
+                >
+                  <div className="p-4 font-medium text-foreground md:p-5">
+                    {row.label}
+                  </div>
+                  <div className="p-4 text-center text-muted md:p-5">
+                    {row.values[0]}
+                  </div>
+                  <div className="bg-violet-50/40 p-4 text-center text-muted md:p-5">
+                    {row.values[1]}
+                  </div>
+                  <div className="p-4 text-center text-muted md:p-5">
+                    {row.values[2]}
+                  </div>
                 </div>
-                <div className="p-4 text-center text-muted md:p-5">
-                  {row.values[0]}
-                </div>
-                <div className="bg-violet-50/40 p-4 text-center text-muted md:p-5">
-                  {row.values[1]}
-                </div>
-                <div className="p-4 text-center text-muted md:p-5">
-                  {row.values[2]}
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </section>

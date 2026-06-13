@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 type Profile = {
@@ -174,16 +175,41 @@ export default function ProfilePage() {
   })();
 
   return (
-    <div className="space-y-6 p-6 max-w-lg mx-auto">
-      <h1 className="text-2xl font-semibold">Your Profile</h1>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <div className="card-premium p-6 md:p-8">
+        <p className="text-xs font-medium uppercase tracking-widest text-muted">
+          Profile
+        </p>
+        <h1 className="mt-2 text-2xl font-semibold text-foreground">
+          Your profile
+        </h1>
+        <p className="mt-2 text-sm leading-7 text-muted">
+          Keep your contact details up to date for billing, support, and
+          workspace setup.
+        </p>
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+          <Link href="/portal" className="button-secondary">
+            Back to portal
+          </Link>
+          <Link href="/portal/billing" className="button-secondary">
+            Manage billing
+          </Link>
+          <Link href="/portal/support" className="button-secondary">
+            Contact support
+          </Link>
+        </div>
+      </div>
 
       {loading ? <p>Loading...</p> : null}
 
-      <div className="mb-4">
-        <p>Profile Completeness: {completeness}%</p>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+      <div className="card-premium space-y-5 p-6 md:p-8">
+      <div>
+        <p className="text-sm font-medium text-foreground">
+          Profile completeness: {completeness}%
+        </p>
+        <div className="mt-2 h-2.5 w-full rounded-full bg-surface-3">
           <div
-            className="bg-blue-500 h-2.5 rounded-full"
+            className="h-2.5 rounded-full bg-brand"
             style={{ width: `${completeness}%` }}
           />
         </div>
@@ -193,7 +219,7 @@ export default function ProfilePage() {
         <label className="block text-sm font-medium">Full Name</label>
         <input
           type="text"
-          className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+          className="input-premium mt-2"
           value={profile.name ?? ""}
           onChange={(e) => setProfile({ ...profile, name: e.target.value })}
         />
@@ -203,7 +229,7 @@ export default function ProfilePage() {
         <label className="block text-sm font-medium">Phone Number</label>
         <input
           type="text"
-          className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+          className="input-premium mt-2"
           value={profile.phone ?? ""}
           onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
         />
@@ -215,7 +241,7 @@ export default function ProfilePage() {
         </label>
         <input
           type="text"
-          className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+          className="input-premium mt-2"
           value={profile.clinic_name ?? ""}
           onChange={(e) =>
             setProfile({ ...profile, clinic_name: e.target.value })
@@ -227,7 +253,7 @@ export default function ProfilePage() {
         <label className="block text-sm font-medium">Email Address</label>
         <input
           type="email"
-          className="w-full border px-3 py-2 mt-2 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500"
+          className="input-premium mt-2"
           value={profile.email ?? ""}
           onChange={(e) => setProfile({ ...profile, email: e.target.value })}
         />
@@ -236,7 +262,7 @@ export default function ProfilePage() {
       <button
         onClick={handleSaveProfile}
         disabled={saving || loading}
-        className="mt-4 w-full bg-blue-600 text-white py-2 rounded-md shadow-md hover:bg-blue-700 disabled:opacity-50 transition"
+        className="button-primary w-full disabled:opacity-50"
       >
         {saving ? "Saving..." : "Save Profile"}
       </button>
@@ -244,7 +270,7 @@ export default function ProfilePage() {
       <button
         onClick={handleDeleteAccount}
         disabled={deleting || loading}
-        className="mt-4 w-full bg-red-600 text-white py-2 rounded-md shadow-md hover:bg-red-700 disabled:opacity-50 transition"
+        className="inline-flex min-h-11 w-full items-center justify-center rounded-full bg-red-600 px-4 py-2 font-semibold text-white shadow-sm transition hover:bg-red-700 disabled:opacity-50"
       >
         {deleting ? "Deleting..." : "Delete Account"}
       </button>
@@ -253,13 +279,14 @@ export default function ProfilePage() {
         <p
           className={`mt-2 text-sm ${
             status.toLowerCase().includes("success")
-              ? "text-green-500"
-              : "text-red-500"
+              ? "text-emerald-600"
+              : "text-red-600"
           }`}
         >
           {status}
         </p>
       ) : null}
+      </div>
     </div>
   );
 }

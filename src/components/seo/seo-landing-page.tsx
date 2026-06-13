@@ -16,7 +16,7 @@ export default function SeoLandingPage({ page }: SeoLandingPageProps) {
     "@context": "https://schema.org",
     "@type": "Service",
     name: page.h1,
-    serviceType: "AI workflow automation",
+    serviceType: "AI receptionist software",
     description: page.metaDescription,
     url: `${siteUrl}${page.canonicalPath}`,
     provider: {
@@ -74,16 +74,15 @@ export default function SeoLandingPage({ page }: SeoLandingPageProps) {
               {page.subheading}
             </p>
             <p className="mt-5 max-w-3xl text-base leading-8 text-muted">
-              LeadClaw helps {page.niche.toLowerCase()} capture requests,
-              organise operational work, automate follow-ups, and save time on
-              repetitive admin with AI. It supports teams with intake and
-              workflow visibility while your people stay in control of review,
-              advice, and decisions.
+              LeadClaw gives {page.niche.toLowerCase()} an AI receptionist that
+              answers calls and website enquiries, captures the lead, and keeps
+              follow-up moving so no enquiry is missed. Your people stay in
+              control of review, advice, and decisions.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/demo" className="button-primary">
-                View demo
+                Book a demo
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <TrialCtaLink
@@ -116,7 +115,7 @@ export default function SeoLandingPage({ page }: SeoLandingPageProps) {
             <p className="mt-4 text-sm leading-7 text-muted">
               LeadClaw does not replace professional judgement, clinical
               review, medical advice, treatment planning, or reception staff.
-              It helps your team handle the admin around those workflows.
+              It helps your team handle the admin around those enquiries.
             </p>
           </div>
         </section>
@@ -124,7 +123,7 @@ export default function SeoLandingPage({ page }: SeoLandingPageProps) {
         <section>
           <SectionHeading
             eyebrow="Pain points"
-            title={`Common workflow gaps for ${page.niche.toLowerCase()}`}
+            title={`Common enquiry gaps for ${page.niche.toLowerCase()}`}
             description="These are the kinds of operational issues LeadClaw is designed to make easier to track, route, and follow up."
           />
           <div className="mt-8 grid gap-4 md:grid-cols-2">
@@ -139,8 +138,8 @@ export default function SeoLandingPage({ page }: SeoLandingPageProps) {
         <section>
           <SectionHeading
             eyebrow="How it works"
-            title="AI receptionist plus workflow automation"
-            description="LeadClaw gives your team a structured path from first request to follow-up, without making sensitive decisions on your behalf."
+            title="How LeadClaw works"
+            description="LeadClaw gives your team a clear path from first enquiry to follow-up, without making sensitive decisions on your behalf."
           />
           <ol className="mt-8 grid gap-4 md:grid-cols-4">
             {page.features.map((feature, index) => (
@@ -161,7 +160,7 @@ export default function SeoLandingPage({ page }: SeoLandingPageProps) {
             <SectionHeading
               eyebrow="Use cases"
               title={`Ways ${page.niche.toLowerCase()} use LeadClaw`}
-              description="The workflow can start with request capture and expand into follow-up, reporting, document handling, and data cleanup."
+              description="LeadClaw can start with enquiry capture and expand into missed call recovery, follow-up reminders, and simple reporting."
             />
           </div>
           <div className="grid gap-4">
@@ -215,12 +214,12 @@ export default function SeoLandingPage({ page }: SeoLandingPageProps) {
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-                See how LeadClaw could fit your workflow
+                See how LeadClaw could fit your reception process
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-muted">
-                Start with intake and lead tracking, then add follow-up
-                automation, data cleanup, document extraction, and reporting as
-                your operations mature.
+                Start with enquiry capture and lead tracking, then add
+                follow-up support, missed call recovery, and reporting as your
+                reception process matures.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">

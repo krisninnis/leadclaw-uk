@@ -7,21 +7,21 @@ export default function PricingHero() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="badge-soft mb-5">
             <span className="h-2 w-2 rounded-full bg-brand" />
-            Simple SaaS pricing for AI workflows
+            Simple pricing for an AI receptionist
           </div>
 
           <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-            Choose the LeadClaw plan that fits your team&apos;s workflow stage.
+            Choose the LeadClaw plan that fits your enquiry volume.
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted sm:text-xl">
-            Every plan helps your business capture requests, organise work, and
-            reduce repetitive follow-up and admin.
+            Every plan helps your business capture enquiries, recover missed
+            calls, and keep follow-up moving.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/demo" className="button-secondary">
-              View demo
+              Book demo
             </Link>
             <Link href="/contact" className="button-primary">
               Talk to us

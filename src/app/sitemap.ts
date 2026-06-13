@@ -1,4 +1,5 @@
 import { MetadataRoute } from "next";
+import { aiReceptionistPages } from "@/lib/ai-receptionist-pages";
 import { seoPages } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -60,6 +61,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified,
       changeFrequency: "monthly",
       priority: 0.8,
+    },
+    // Primary AI receptionist SEO pages - highest SEO priority
+    ...aiReceptionistPages.map((page) => ({
+      url: `${baseUrl}${page.canonicalPath}`,
+      lastModified,
+      changeFrequency:
+        page.slug === "ai-receptionist-uk"
+          ? ("weekly" as const)
+          : ("monthly" as const),
+      priority: page.slug === "ai-receptionist-uk" ? 0.95 : 0.9,
+    })),
+    {
+      url: `${baseUrl}/compare`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: `${baseUrl}/resources`,
+      lastModified,
+      changeFrequency: "weekly",
+      priority: 0.6,
     },
     // SEO landing pages - high priority
     {

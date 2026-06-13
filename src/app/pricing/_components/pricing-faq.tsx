@@ -13,9 +13,9 @@ export default function PricingFaq() {
               The real cost is usually the admin your team repeats every week.
             </h2>
             <p className="mt-4 text-lg leading-8 text-muted">
-              Businesses spend time chasing requests, copying data, following up
-              manually, and building reports by hand. LeadClaw helps reduce that
-              friction by turning recurring work into simple AI workflows.
+              Businesses spend time chasing enquiries, returning missed calls,
+              and following up manually. LeadClaw helps reduce that friction
+              with an AI receptionist and simple follow-up support.
             </p>
 
             <div className="mt-8 rounded-[24px] border border-border bg-white p-5">
@@ -24,8 +24,8 @@ export default function PricingFaq() {
                 One saved admin hour can outweigh the subscription.
               </p>
               <p className="mt-2 text-sm leading-7 text-muted">
-                That makes request capture, follow-up, data cleanup, and
-                reporting automation easy to value.
+                That makes enquiry capture, missed call recovery, and follow-up
+                support easy to value.
               </p>
             </div>
           </div>

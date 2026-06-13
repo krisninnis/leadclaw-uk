@@ -43,14 +43,10 @@ function isActive(pathname: string, href: string) {
 
 export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
   const pathname = usePathname() ?? "";
-  const totalItems = links.length + 1;
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-white/95 backdrop-blur-xl lg:hidden">
-      <div
-        className="grid"
-        style={{ gridTemplateColumns: `repeat(${totalItems}, minmax(0, 1fr))` }}
-      >
+      <div className="flex gap-1 overflow-x-auto px-2 [scrollbar-width:none]">
         {links.map((link) => {
           const active = isActive(pathname, link.href);
           return (
@@ -58,7 +54,7 @@ export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
               key={`${link.href}-mobile`}
               href={link.href}
               className={[
-                "flex flex-col items-center justify-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors",
+                "flex min-w-20 flex-col items-center justify-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors",
                 active
                   ? "text-brand-strong"
                   : "text-muted hover:text-foreground",
@@ -80,7 +76,7 @@ export default function PortalMobileNav({ links }: { links: PortalLink[] }) {
         <Link
           href="/portal/profile"
           className={[
-            "flex flex-col items-center justify-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors",
+            "flex min-w-20 flex-col items-center justify-center gap-1 px-2 py-3 text-[11px] font-medium transition-colors",
             pathname.startsWith("/portal/profile")
               ? "text-brand-strong"
               : "text-muted hover:text-foreground",

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import SolutionsByClinicType from "@/components/seo/solutions-by-clinic-type";
 
 export const metadata: Metadata = {
-  title: "How LeadClaw Works | AI workflow automation",
+  title: "How LeadClaw Works | AI Receptionist Software",
   description:
-    "See how LeadClaw helps businesses start with AI request capture, workflow setup, follow-ups, and lead tracking.",
+    "See how LeadClaw helps businesses start with AI receptionist intake, enquiry capture, follow-ups, and lead tracking.",
   alternates: {
     canonical: "/how-it-works",
   },
@@ -17,7 +17,7 @@ export default function HowItWorksPage() {
       <ol className="list-decimal space-y-3 pl-5 text-slate-700">
         <li>Submit quick application form (3-5 minutes).</li>
         <li>Approve waiver + trial terms (no calls required).</li>
-        <li>We configure your AI assistant in 48-72 hours.</li>
+        <li>We configure your AI receptionist in 48-72 hours.</li>
         <li>You run 7-day free trial with live lead tracking.</li>
         <li>Only continue to monthly subscription if satisfied.</li>
       </ol>

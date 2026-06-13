@@ -2,12 +2,12 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { tryCreateClient } from "@/lib/supabase/client";
 import TrialCtaLink from "@/components/trial-cta-link";
 import GoogleIcon from "@/components/auth/google-icon";
 
 export default function LoginForm({ next }: { next: string }) {
-  const supabase = createClient();
+  const supabase = tryCreateClient();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,6 +24,12 @@ export default function LoginForm({ next }: { next: string }) {
     setStatus("Redirecting to Google...");
 
     try {
+      if (!supabase) {
+        setStatus("Authentication is not configured. Please contact support.");
+        setGoogleLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -58,6 +64,12 @@ export default function LoginForm({ next }: { next: string }) {
     setStatus("Signing you in...");
 
     try {
+      if (!supabase) {
+        setStatus("Authentication is not configured. Please contact support.");
+        setPasswordLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
         password,
@@ -90,6 +102,12 @@ export default function LoginForm({ next }: { next: string }) {
     setStatus("Sending magic link...");
 
     try {
+      if (!supabase) {
+        setStatus("Authentication is not configured. Please contact support.");
+        setMagicLinkLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithOtp({
         email: trimmedEmail,
         options: {
@@ -192,6 +210,20 @@ export default function LoginForm({ next }: { next: string }) {
           >
             Start free trial
           </TrialCtaLink>
+        </p>
+
+        <p className="text-sm text-center text-muted">
+          <Link href="/" className="underline text-foreground">
+            Back to home
+          </Link>{" "}
+          |{" "}
+          <Link href="/pricing" className="underline text-foreground">
+            View pricing
+          </Link>{" "}
+          |{" "}
+          <Link href="/contact" className="underline text-foreground">
+            Contact support
+          </Link>
         </p>
       </div>
     </div>

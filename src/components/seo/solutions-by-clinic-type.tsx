@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { aiReceptionistPages } from "@/lib/ai-receptionist-pages";
 import { seoPages } from "@/lib/seo-pages";
 
 type SolutionsByClinicTypeProps = {
@@ -6,11 +7,26 @@ type SolutionsByClinicTypeProps = {
   className?: string;
 };
 
-const solutionLinks = seoPages.map((page) => ({
+const featuredLinks = aiReceptionistPages.map((page) => ({
   href: page.canonicalPath,
   label: page.title.replace(" UK | LeadClaw", "").replace(" | LeadClaw", ""),
   description: page.subheading,
 }));
+
+const solutionLinks = [
+  ...featuredLinks,
+  ...seoPages
+    .filter(
+      (page) =>
+        page.slug !== "ai-receptionist-for-physiotherapy-clinics-uk" &&
+        page.slug !== "ai-receptionist-for-chiropractors-uk",
+    )
+    .map((page) => ({
+      href: page.canonicalPath,
+      label: page.title.replace(" UK | LeadClaw", "").replace(" | LeadClaw", ""),
+      description: page.subheading,
+    })),
+];
 
 export default function SolutionsByClinicType({
   variant = "homepage",
@@ -20,15 +36,16 @@ export default function SolutionsByClinicType({
     <>
       <div className="max-w-3xl">
         <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
-          By clinic type
+          By business type
         </p>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
           Solutions by Clinic Type
         </h2>
         <p className="mt-4 text-base leading-7 text-muted md:text-lg">
-          Explore LeadClaw workflows for teams that need AI receptionist,
-          intake capture, lead tracking, and follow-up automation tailored to
-          common clinic and practice operations.
+          See how LeadClaw answers calls and website enquiries, captures leads,
+          and keeps follow-up moving for your industry - from dental and
+          aesthetic clinics to physiotherapists, chiropractors, and other UK
+          service businesses.
         </p>
       </div>
 

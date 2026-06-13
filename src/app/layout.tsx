@@ -6,9 +6,9 @@ import AppShell from "@/components/app-shell";
 import PHProvider from "@/components/posthog-provider";
 
 export const metadata: Metadata = {
-  title: "LeadClaw | AI workflow automation suite",
+  title: "LeadClaw | AI Receptionist for UK Businesses",
   description:
-    "LeadClaw helps businesses capture requests, organise operational work, automate follow-ups, and save hours on repetitive admin and data tasks with AI.",
+    "LeadClaw is AI receptionist software for UK businesses and clinics. Capture enquiries, recover missed calls, follow up faster, and book more appointments.",
   icons: {
     icon: "/favicon.ico",
   },
@@ -17,33 +17,33 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://www.leadclaw.uk",
     siteName: "LeadClaw",
-    title: "LeadClaw | AI workflow automation suite",
+    title: "LeadClaw | AI Receptionist for UK Businesses",
     description:
-      "Capture requests, organise work, automate follow-ups, and reduce repetitive admin with LeadClaw's AI workflow tools.",
+      "Capture enquiries, recover missed calls, follow up faster, and book more appointments with LeadClaw's AI receptionist.",
     images: [
       {
         url: "/brand/mascots/panther-growth.jpg",
         width: 1200,
         height: 630,
-        alt: "LeadClaw AI workflow automation suite",
+        alt: "LeadClaw AI receptionist software",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "LeadClaw | AI workflow automation suite",
+    title: "LeadClaw | AI Receptionist for UK Businesses",
     description:
-      "Capture requests, organise work, automate follow-ups, and reduce repetitive admin with LeadClaw.",
+      "Capture enquiries, recover missed calls, and follow up faster with LeadClaw.",
     images: ["/brand/mascots/panther-growth.jpg"],
   },
   keywords: [
-    "AI workflow automation",
     "AI receptionist",
-    "lead tracker",
-    "automated follow-up assistant",
-    "data cleaner",
-    "document extractor",
-    "weekly report bot",
+    "AI receptionist UK",
+    "AI receptionist software",
+    "missed call recovery",
+    "lead capture",
+    "appointment booking",
+    "clinic receptionist software",
   ],
 };
 

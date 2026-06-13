@@ -1,4 +1,4 @@
-export type SeoFaq = {
+﻿export type SeoFaq = {
   question: string;
   answer: string;
 };
@@ -36,7 +36,7 @@ export const seoPages: SeoPage[] = [
     slug: "ai-receptionist-for-beauty-clinics-uk",
     title: "AI Receptionist for Beauty Clinics UK | LeadClaw",
     metaDescription:
-      "LeadClaw helps UK beauty clinics capture treatment requests, organise follow-ups, and keep client enquiries moving with AI workflow automation.",
+      "LeadClaw helps UK beauty clinics capture treatment requests, organise follow-ups, and keep client enquiries moving with AI receptionist software.",
     h1: "AI receptionist for beauty clinics in the UK",
     subheading:
       "Capture new treatment requests, organise consultations, and follow up with potential clients without adding more repetitive admin to the day.",
@@ -59,7 +59,7 @@ export const seoPages: SeoPage[] = [
       "AI Receptionist for website request capture",
       "Lead Tracker for consultation and booking interest",
       "Follow-Up Assistant for non-clinical reminders",
-      "Weekly Report Bot for request volume and response trends",
+      "Weekly Enquiry Summary for request volume and response trends",
     ],
     useCases: [
       "Capture facial, brows, lashes, skin, and body treatment requests from a website widget.",
@@ -81,12 +81,12 @@ export const seoPages: SeoPage[] = [
       {
         question: "Can it help with Instagram or website leads?",
         answer:
-          "LeadClaw can help organise details from web requests and follow-up workflows. Social workflows should be connected carefully based on the channels you use.",
+          "LeadClaw can help organise details from web requests and follow-up processes. Social processes should be connected carefully based on the channels you use.",
       },
       {
         question: "Is this only for larger beauty clinics?",
         answer:
-          "No. Small teams can use the Basic intake widget, while busier clinics can add more workflow automation as request volume grows.",
+          "No. Small teams can use the Basic intake widget, while busier clinics can add more AI receptionist support as request volume grows.",
       },
     ],
     canonicalPath: "/seo/ai-receptionist-for-beauty-clinics-uk",
@@ -103,7 +103,7 @@ export const seoPages: SeoPage[] = [
       "Use LeadClaw to capture med spa requests, qualify admin details, organise follow-ups, and reduce repetitive intake work with AI.",
     h1: "AI receptionist for med spas in the UK",
     subheading:
-      "A safer way to manage high-value treatment interest, consultation requests, and non-clinical follow-up across your med spa workflow.",
+      "A safer way to manage high-value treatment interest, consultation requests, and non-clinical follow-up across your med spa process.",
     niche: "Med spas",
     audience:
       "Med spas and advanced treatment studios that need consistent admin handling for consultation requests and repeat client interest.",
@@ -123,7 +123,7 @@ export const seoPages: SeoPage[] = [
       "AI Receptionist for structured treatment interest capture",
       "Lead Tracker for consultation and callback status",
       "Follow-Up Assistant for polite non-clinical nudges",
-      "Document Extractor for organising admin notes and uploaded files",
+      "Enquiry Summary for organising admin notes and uploaded files",
     ],
     useCases: [
       "Capture interest in skin, laser, injectable, wellness, or consultation-led services.",
@@ -150,7 +150,7 @@ export const seoPages: SeoPage[] = [
       {
         question: "Can med spas use LeadClaw with existing processes?",
         answer:
-          "Yes. The goal is to add structured intake and follow-up around your current review and booking workflow.",
+          "Yes. The goal is to add structured intake and follow-up around your current review and booking process.",
       },
     ],
     canonicalPath: "/seo/ai-receptionist-for-med-spas-uk",
@@ -164,7 +164,7 @@ export const seoPages: SeoPage[] = [
     slug: "ai-receptionist-for-skin-clinics-uk",
     title: "AI Receptionist for Skin Clinics UK | LeadClaw",
     metaDescription:
-      "LeadClaw helps skin clinics capture consultation requests, organise admin tasks, and automate non-clinical follow-ups with AI workflows.",
+      "LeadClaw helps skin clinics capture consultation requests, organise admin tasks, and automate non-clinical follow-ups with AI receptionist support.",
     h1: "AI receptionist for skin clinics in the UK",
     subheading:
       "Keep new skin consultation requests organised, collect the right admin context, and make follow-up easier for your front desk or clinic team.",
@@ -187,7 +187,7 @@ export const seoPages: SeoPage[] = [
       "AI Receptionist for skin consultation request capture",
       "Lead Tracker for pending replies and next actions",
       "Follow-Up Assistant for consultation reminders",
-      "Data Cleaner for organising request notes and duplicated details",
+      "Lead Tracker for organising request notes and duplicated details",
     ],
     useCases: [
       "Capture acne, pigmentation, laser, peel, or consultation interest from a website.",
@@ -251,7 +251,7 @@ export const seoPages: SeoPage[] = [
       "AI Receptionist for appointment request capture",
       "Lead Tracker for new patient and callback status",
       "Follow-Up Assistant for non-clinical admin reminders",
-      "Weekly Report Bot for request and response summaries",
+      "Weekly Enquiry Summary for request and response summaries",
     ],
     useCases: [
       "Capture requests for physiotherapy, sports injury support, rehab, or mobility appointments.",
@@ -263,7 +263,7 @@ export const seoPages: SeoPage[] = [
       {
         question: "Can LeadClaw triage injuries or give physiotherapy advice?",
         answer:
-          "No. It is for administrative intake and workflow support only. Clinical triage and advice remain with qualified professionals.",
+          "No. It is for administrative intake and process support only. Clinical triage and advice remain with qualified professionals.",
       },
       {
         question: "Can it capture out-of-hours appointment requests?",
@@ -273,7 +273,7 @@ export const seoPages: SeoPage[] = [
       {
         question: "Can it support multiple clinic locations?",
         answer:
-          "The workflow can collect location preference and route requests according to your operational setup.",
+          "The process can collect location preference and route requests according to your operational setup.",
       },
       {
         question: "Will it replace a receptionist?",
@@ -315,7 +315,7 @@ export const seoPages: SeoPage[] = [
       "AI Receptionist for new patient request capture",
       "Lead Tracker for callback and booking interest",
       "Follow-Up Assistant for non-clinical reminders",
-      "Data Cleaner for tidying duplicated contact details",
+      "Lead Tracker for tidying duplicated contact details",
     ],
     useCases: [
       "Capture website requests for first appointments, returning patients, or general availability.",
@@ -332,17 +332,17 @@ export const seoPages: SeoPage[] = [
       {
         question: "Can it help with missed calls?",
         answer:
-          "Yes. It can support missed-call recovery workflows by capturing details and prompting non-clinical follow-up.",
+          "Yes. It can support missed-call recovery processes by capturing details and prompting non-clinical follow-up.",
       },
       {
         question: "Can chiropractic staff review every request?",
         answer:
-          "Yes. LeadClaw organises the workflow so your team can review requests before booking or escalation.",
+          "Yes. LeadClaw organises the process so your team can review requests before booking or escalation.",
       },
       {
         question: "Is setup complicated?",
         answer:
-          "The initial workflow can start with a website intake widget and expand as your admin process becomes clearer.",
+          "The initial process can start with a website intake widget and expand as your admin process becomes clearer.",
       },
     ],
     canonicalPath: "/seo/ai-receptionist-for-chiropractors-uk",
@@ -356,7 +356,7 @@ export const seoPages: SeoPage[] = [
     slug: "ai-receptionist-for-osteopaths-uk",
     title: "AI Receptionist for Osteopaths UK | LeadClaw",
     metaDescription:
-      "LeadClaw helps osteopathy clinics capture appointment requests, organise follow-ups, and reduce repetitive admin with AI workflows.",
+      "LeadClaw helps osteopathy clinics capture appointment requests, organise follow-ups, and reduce repetitive admin with AI receptionist support.",
     h1: "AI receptionist for osteopaths in the UK",
     subheading:
       "A practical intake and follow-up layer for osteopathy clinics that want clearer request handling without automating clinical decisions.",
@@ -373,13 +373,13 @@ export const seoPages: SeoPage[] = [
       "Capture new patient requests in a structured way for later staff review.",
       "Keep follow-up tasks visible across open enquiries, replies, and callback lists.",
       "Reduce repeated admin questions around availability and preferred contact details.",
-      "Maintain clear boundaries between workflow automation and professional judgement.",
+      "Maintain clear boundaries between AI receptionist support and professional judgement.",
     ],
     features: [
       "AI Receptionist for web request capture",
       "Lead Tracker for new patient interest",
       "Follow-Up Assistant for admin prompts",
-      "Weekly Report Bot for clinic request summaries",
+      "Weekly Enquiry Summary for clinic request summaries",
     ],
     useCases: [
       "Collect appointment requests from a website without needing a full form rebuild.",
@@ -401,12 +401,12 @@ export const seoPages: SeoPage[] = [
       {
         question: "Can it send follow-ups?",
         answer:
-          "It can support non-clinical follow-up workflows, such as reminders to reply or prompts to complete next-step details.",
+          "It can support non-clinical follow-up processes, such as reminders to reply or prompts to complete next-step details.",
       },
       {
         question: "Does it require changing my booking system?",
         answer:
-          "Not necessarily. LeadClaw can start as an intake and workflow layer around your existing admin process.",
+          "Not necessarily. LeadClaw can start as an intake and process layer around your existing admin process.",
       },
     ],
     canonicalPath: "/seo/ai-receptionist-for-osteopaths-uk",
@@ -420,17 +420,17 @@ export const seoPages: SeoPage[] = [
     slug: "dental-missed-call-recovery-uk",
     title: "Dental Missed Call Recovery UK | LeadClaw",
     metaDescription:
-      "LeadClaw helps dental practices capture missed enquiries, organise callbacks, and automate safe non-clinical follow-up workflows.",
+      "LeadClaw helps dental practices capture missed enquiries, organise callbacks, and automate safe non-clinical follow-up processes.",
     h1: "Dental missed call recovery for UK practices",
     subheading:
-      "Turn missed calls and web requests into organised callback tasks, clear intake notes, and safer non-clinical follow-up workflows.",
+      "Turn missed calls and web requests into organised callback tasks, clear intake notes, and safer non-clinical follow-up processes.",
     niche: "Dental practices",
     audience:
       "Private dental practices, mixed practices, and treatment coordinators who want a clearer process for missed patient enquiries.",
     pains: [
       "Missed calls can disappear into voicemail or call logs before anyone owns the follow-up.",
       "High-value treatment interest may need fast admin contact and careful handover.",
-      "Callback notes often sit outside the main lead tracking workflow.",
+      "Callback notes often sit outside the main lead tracking process.",
       "Dental practices need follow-up automation that avoids clinical advice and treatment promises.",
     ],
     benefits: [
@@ -443,7 +443,7 @@ export const seoPages: SeoPage[] = [
       "Missed request capture for calls and website interest",
       "Lead Tracker for callback and treatment enquiry status",
       "Follow-Up Assistant for non-clinical reminders",
-      "Weekly Report Bot for missed enquiry trends",
+      "Weekly Enquiry Summary for missed enquiry trends",
     ],
     useCases: [
       "Recover implant, orthodontic, hygiene, cosmetic, or general appointment interest.",
@@ -465,18 +465,18 @@ export const seoPages: SeoPage[] = [
       {
         question: "Can treatment coordinators use it?",
         answer:
-          "Yes. It can help treatment coordinators see new interest, callback status, and pending replies in one workflow.",
+          "Yes. It can help treatment coordinators see new interest, callback status, and pending replies in one process.",
       },
       {
         question: "Can it work with existing phone processes?",
         answer:
-          "Yes. It can support the admin workflow around missed calls and web requests without replacing your phone system.",
+          "Yes. It can support the admin process around missed calls and web requests without replacing your phone system.",
       },
     ],
     canonicalPath: "/seo/dental-missed-call-recovery-uk",
     relatedLinks: [
       { href: "/seo/dental-lead-generation-software-uk", label: "Dental lead generation software" },
-      { href: "/seo/ai-agent-for-dental-clinics-uk", label: "AI workflow automation for dental clinics" },
+      { href: "/seo/ai-agent-for-dental-clinics-uk", label: "AI receptionist software for dental clinics" },
       ...commonRelatedLinks,
     ],
   },
@@ -484,10 +484,10 @@ export const seoPages: SeoPage[] = [
     slug: "dental-lead-generation-software-uk",
     title: "Dental Lead Generation Software UK | LeadClaw",
     metaDescription:
-      "LeadClaw gives dental practices AI-powered intake, lead tracking, and follow-up automation for treatment and appointment enquiries.",
+      "LeadClaw gives dental practices AI receptionist intake, lead tracking, and follow-up automation for treatment and appointment enquiries.",
     h1: "Dental lead generation software for UK practices",
     subheading:
-      "Capture treatment enquiries, organise callbacks, and keep dental lead follow-up moving with AI workflow automation.",
+      "Capture treatment enquiries, organise callbacks, and keep dental lead follow-up moving with AI receptionist software.",
     niche: "Dental lead generation",
     audience:
       "Dental practices and treatment teams that want better handling of website enquiries, campaign responses, and consultation requests.",
@@ -507,7 +507,7 @@ export const seoPages: SeoPage[] = [
       "AI Receptionist for dental enquiry capture",
       "Lead Tracker for treatment interest and callback status",
       "Follow-Up Assistant for admin reminders",
-      "Data Cleaner for duplicate and incomplete lead details",
+      "Lead Tracker for duplicate and incomplete lead details",
     ],
     useCases: [
       "Capture implant, Invisalign-style, whitening, cosmetic, hygiene, or general appointment requests.",
@@ -519,7 +519,7 @@ export const seoPages: SeoPage[] = [
       {
         question: "Is LeadClaw a dental marketing agency?",
         answer:
-          "No. LeadClaw is an AI workflow automation suite for capturing, organising, and following up with enquiries.",
+          "No. LeadClaw is AI receptionist software for capturing, organising, and following up with enquiries.",
       },
       {
         question: "Does it guarantee dental leads?",
@@ -527,20 +527,20 @@ export const seoPages: SeoPage[] = [
           "No. It helps manage and follow up with enquiries but does not guarantee lead volume, bookings, or rankings.",
       },
       {
-        question: "Can it support treatment coordinator workflows?",
+        question: "Can it support treatment coordinator processes?",
         answer:
           "Yes. It can organise request details, status, and next-step tasks for treatment coordination teams.",
       },
       {
         question: "Can staff approve messages?",
         answer:
-          "LeadClaw workflows can be configured around staff review, especially for sensitive or regulated communication.",
+          "LeadClaw processes can be configured around staff review, especially for sensitive or regulated communication.",
       },
     ],
     canonicalPath: "/seo/dental-lead-generation-software-uk",
     relatedLinks: [
       { href: "/seo/dental-missed-call-recovery-uk", label: "Dental missed call recovery" },
-      { href: "/seo/ai-agent-for-dental-clinics-uk", label: "AI workflow automation for dental clinics" },
+      { href: "/seo/ai-agent-for-dental-clinics-uk", label: "AI receptionist software for dental clinics" },
       ...commonRelatedLinks,
     ],
   },
@@ -562,7 +562,7 @@ export const seoPages: SeoPage[] = [
       "Automation must avoid promises about suitability, results, or medical outcomes.",
     ],
     benefits: [
-      "Capture consultation interest in a structured workflow before staff review.",
+      "Capture consultation interest in a structured process before staff review.",
       "Keep follow-up tasks visible across new, contacted, reviewing, and pending enquiries.",
       "Reduce repetitive admin around first responses, reminders, and lead summaries.",
       "Support compliant communication boundaries by keeping advice and suitability with professionals.",
@@ -570,25 +570,25 @@ export const seoPages: SeoPage[] = [
     features: [
       "AI Receptionist for consultation request capture",
       "Lead Tracker for high-value enquiry stages",
-      "Document Extractor for organising uploaded admin materials",
+      "Enquiry Summary for organising uploaded admin materials",
       "Follow-Up Assistant for non-clinical next-step reminders",
     ],
     useCases: [
       "Capture hair restoration consultation requests from website visitors.",
       "Collect contact details, preferred times, location, and broad treatment interest.",
-      "Track whether a request needs a callback, photo review workflow, or consultation booking.",
+      "Track whether a request needs a callback, photo review process, or consultation booking.",
       "Summarise weekly lead stages and unresolved follow-up tasks.",
     ],
     faq: [
       {
         question: "Can LeadClaw assess hair transplant suitability?",
         answer:
-          "No. LeadClaw handles administrative intake and workflow support. Suitability and treatment advice remain with qualified professionals.",
+          "No. LeadClaw handles administrative intake and process support. Suitability and treatment advice remain with qualified professionals.",
       },
       {
         question: "Can it handle uploaded photos or documents?",
         answer:
-          "It can support workflows that organise uploaded admin materials for staff review, depending on your configured process.",
+          "It can support processes that organise uploaded admin materials for staff review, depending on your configured process.",
       },
       {
         question: "Does it promise more consultations?",
@@ -612,10 +612,10 @@ export const seoPages: SeoPage[] = [
     slug: "ai-receptionist-for-cosmetic-surgery-clinics-uk",
     title: "AI Receptionist for Cosmetic Surgery Clinics UK | LeadClaw",
     metaDescription:
-      "LeadClaw helps cosmetic surgery clinics capture consultation requests, route admin work, and automate safe follow-up workflows.",
+      "LeadClaw helps cosmetic surgery clinics capture consultation requests, route admin work, and automate safe follow-up processes.",
     h1: "AI receptionist for cosmetic surgery clinics in the UK",
     subheading:
-      "A workflow automation layer for consultation-led cosmetic clinics that need structured intake, careful follow-up, and clear staff review.",
+      "An AI receptionist and follow-up layer for consultation-led cosmetic clinics that need structured intake, careful follow-up, and clear staff review.",
     niche: "Cosmetic surgery clinics",
     audience:
       "Cosmetic surgery clinics, patient coordinators, and private practice teams managing complex consultation and follow-up journeys.",
@@ -633,9 +633,9 @@ export const seoPages: SeoPage[] = [
     ],
     features: [
       "AI Receptionist for consultation request intake",
-      "Lead Tracker for patient coordinator workflows",
-      "Document Extractor for organising admin materials",
-      "Weekly Report Bot for high-value request summaries",
+      "Lead Tracker for patient coordinator processes",
+      "Enquiry Summary for organising admin materials",
+      "Weekly Enquiry Summary for high-value request summaries",
     ],
     useCases: [
       "Capture requests for consultation-led cosmetic procedures without giving advice.",
@@ -657,12 +657,12 @@ export const seoPages: SeoPage[] = [
       {
         question: "Can it handle sensitive enquiries?",
         answer:
-          "It can support structured intake and routing, but sensitive workflows should be configured with appropriate staff review and data handling.",
+          "It can support structured intake and routing, but sensitive processes should be configured with appropriate staff review and data handling.",
       },
       {
         question: "Does it guarantee bookings?",
         answer:
-          "No. LeadClaw improves workflow visibility and follow-up consistency but does not guarantee bookings or outcomes.",
+          "No. LeadClaw improves process visibility and follow-up consistency but does not guarantee bookings or outcomes.",
       },
     ],
     canonicalPath: "/seo/ai-receptionist-for-cosmetic-surgery-clinics-uk",
@@ -677,3 +677,4 @@ export const seoPages: SeoPage[] = [
 export function getSeoPage(slug: string) {
   return seoPages.find((page) => page.slug === slug);
 }
+

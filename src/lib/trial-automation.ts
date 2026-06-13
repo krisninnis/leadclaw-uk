@@ -27,20 +27,20 @@ export function renderTrialEmail(input: { stage: TrialStage; checkoutUrl: string
 
   if (input.stage === 'd5') {
     return {
-      subject: 'Your trial ends soon - keep automations running',
-      text: `Hi ${who}, your trial is nearly over.\n\nUpgrade now to keep request capture, follow-ups, and workflow automations active:\n${input.checkoutUrl}`,
+      subject: 'Your trial ends soon - keep LeadClaw running',
+      text: `Hi ${who}, your trial is nearly over.\n\nUpgrade now to keep enquiry capture, follow-ups, and your AI receptionist active:\n${input.checkoutUrl}`,
     }
   }
 
   if (input.stage === 'd6') {
     return {
-      subject: 'Final day of trial - avoid losing active automations',
+      subject: 'Final day of trial - keep your AI receptionist active',
       text: `Hi ${who}, this is your final trial day.\n\nContinue without interruption here:\n${input.checkoutUrl}`,
     }
   }
 
   return {
     subject: 'Your trial has ended - reactivate in one click',
-    text: `Hi ${who}, your trial has ended.\n\nReactivate now to resume your automations:\n${input.checkoutUrl}`,
+    text: `Hi ${who}, your trial has ended.\n\nReactivate now to resume your AI receptionist:\n${input.checkoutUrl}`,
   }
 }

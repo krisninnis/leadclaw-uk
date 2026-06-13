@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "Outreach Compliance Checklist | LeadClaw",
   description:
-    "Use LeadClaw's UK outreach compliance checklist for GDPR and PECR-aware business workflows.",
+    "Use LeadClaw's UK outreach compliance checklist for GDPR and PECR-aware business operations.",
   alternates: {
     canonical: "/legal/compliance-checklist",
   },

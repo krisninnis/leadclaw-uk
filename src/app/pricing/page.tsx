@@ -8,9 +8,9 @@ import type { Metadata } from "next";
 import GaEventOnMount from "@/components/analytics/ga-event-on-mount";
 
 export const metadata: Metadata = {
-  title: "LeadClaw Pricing | AI workflow automation",
+  title: "LeadClaw Pricing | AI Receptionist Software",
   description:
-    "Simple pricing for LeadClaw's AI workflow automation suite. Start free, try Growth for 7 days, and upgrade when your team is ready.",
+    "Simple pricing for LeadClaw AI receptionist software. Start free, try Growth for 7 days with no card, and upgrade when your team is ready.",
   alternates: {
     canonical: "/pricing",
   },

@@ -16,7 +16,7 @@ const softwareSchema = {
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   description:
-    "AI workflow automation suite that helps businesses capture requests, organise work, automate follow-ups, and reduce repetitive admin.",
+    "AI receptionist software that helps UK businesses capture enquiries, recover missed calls, follow up faster, and book more appointments.",
   url: "https://www.leadclaw.uk",
   offers: [
     {
@@ -24,97 +24,97 @@ const softwareSchema = {
       name: "Basic",
       price: "0",
       priceCurrency: "GBP",
-      description: "Free AI intake widget for business websites",
+      description: "Free AI receptionist intake widget for business websites",
     },
     {
       "@type": "Offer",
       name: "Growth",
       price: "79",
       priceCurrency: "GBP",
-      description: "AI workflows with follow-ups and work tracking",
+      description: "AI receptionist with lead capture and follow-up support",
     },
     {
       "@type": "Offer",
       name: "Pro",
       price: "149",
       priceCurrency: "GBP",
-      description: "Advanced automation for teams with complex operations",
+      description: "Advanced AI receptionist support for busy teams",
     },
   ],
 };
 
 const painPoints = [
-  "Requests get missed when nobody replies quickly",
-  "Teams lose time moving data between tools",
-  "Follow-ups slip when work is spread across inboxes",
+  "Enquiries arrive while your team is busy with customers",
+  "Missed calls and forms turn into cold leads",
+  "Follow-ups slip when details are spread across inboxes",
 ];
 
 const features = [
   {
-    title: "AI Receptionist",
+    title: "24/7 AI Receptionist",
     description:
-      "Capture website requests the moment someone is ready to ask for help, even when your team is busy or offline.",
+      "Capture website enquiries the moment someone is ready to ask for help, even when your team is busy or closed.",
   },
   {
-    title: "Lead Tracker",
+    title: "Missed Call Recovery",
     description:
-      "Keep new requests organised in one workspace so your team can see what is new, contacted, assigned, completed, or lost.",
+      "Give callers and website visitors a clear next step instead of leaving warm leads unanswered.",
+  },
+  {
+    title: "Lead Capture",
+    description:
+      "Collect names, phone numbers, services, preferred times, and notes in one simple workspace.",
   },
   {
     title: "Follow-Up Assistant",
     description:
-      "Trigger reminders, replies, and next steps so important work does not depend on someone remembering manually.",
+      "Prompt timely replies and reminders so potential customers are not left waiting.",
   },
   {
-    title: "Data Cleaner",
+    title: "Reception Inbox",
     description:
-      "Turn messy forms, lists, and notes into cleaner records your team can actually use.",
+      "Keep new enquiries, callback notes, and next actions visible for your team.",
   },
   {
-    title: "Document Extractor",
+    title: "Weekly Enquiry Summary",
     description:
-      "Pull useful details from documents, messages, and submissions so repetitive admin takes less time.",
-  },
-  {
-    title: "Weekly Report Bot",
-    description:
-      "Summarise intake, follow-up activity, and operational progress into a simple recurring report for the team.",
+      "See where enquiries came from, which services people asked about, and what needs attention.",
   },
 ];
 
 const stats = [
-  { label: "24/7 intake capture", value: "Always on" },
+  { label: "24/7 enquiry capture", value: "Always on" },
   { label: "Setup style", value: "Lightweight widget" },
-  { label: "Team workflow", value: "Workspace based" },
-  { label: "Best for", value: "Busy teams" },
+  { label: "Follow-up", value: "Tracked" },
+  { label: "Best for", value: "UK service teams" },
 ];
 
 const steps = [
   {
     step: "01",
-    title: "Someone sends a request",
+    title: "Someone makes an enquiry",
     description:
-      "A customer, prospect, or teammate submits a question, lead, document, or admin task.",
+      "A visitor asks a question, requests a callback, or submits an appointment enquiry.",
   },
   {
     step: "02",
-    title: "LeadClaw captures the intake",
+    title: "LeadClaw captures the details",
     description:
-      "The AI workflow collects the details, classifies the intent, and stores the request in your workspace.",
+      "The AI receptionist collects the key information and stores the enquiry in your workspace.",
   },
   {
     step: "03",
     title: "Your team follows up faster",
     description:
-      "The right person sees the next action, while automations handle reminders, follow-ups, and routine updates.",
+      "Your team sees the next action clearly, with follow-up support to keep warm leads moving.",
   },
 ];
 
 const trustPoints = [
-  "Designed around simple workspace workflows",
-  "Portal-based request visibility for your team",
+  "Built in the UK for businesses that cannot afford to miss enquiries",
+  "Portal-based enquiry visibility for your team",
   "Website widget installation model already in place",
-  "Built to support multiple business workflows over time",
+  "No invented ratings, fake testimonials, or hidden card requirement",
 ];
 
 export default function Home() {
@@ -130,18 +130,18 @@ export default function Home() {
             <div className="max-w-3xl">
               <div className="badge-soft mb-5">
                 <span className="h-2 w-2 rounded-full bg-brand" />
-                AI front desk for UK businesses
+                AI receptionist for UK businesses
               </div>
 
               <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
-                Never miss another enquiry. LeadClaw answers, captures, and
-                follows up with every lead — 24/7.
+                Never miss another enquiry. LeadClaw captures, follows up, and
+                helps you book more appointments.
               </h1>
 
               <p className="mt-6 max-w-2xl text-lg leading-8 text-muted sm:text-xl">
-                Your AI front desk replies to website and missed-call enquiries
-                instantly, captures the details, and chases follow-ups — so you
-                book more appointments without lifting a finger.
+                LeadClaw is AI receptionist software for UK businesses and
+                clinics. It captures website enquiries, supports missed call
+                recovery, and keeps follow-ups organised 24/7.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -153,11 +153,11 @@ export default function Home() {
                   Start free trial
                 </TrialCtaLink>
                 <Link href="/demo" className="button-secondary">
-                  View demo
+                  Book a demo
                 </Link>
               </div>
               <p className="mt-3 text-sm font-medium text-muted">
-                7-day free trial · no card required · cancel anytime
+                7-day free trial - no card required - cancel anytime
               </p>
 
               <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:max-w-2xl">
@@ -178,14 +178,14 @@ export default function Home() {
                 <div className="mb-4 flex items-center justify-between">
                   <div>
                     <p className="text-sm font-semibold text-foreground">
-                      AI workflow preview
+                      AI receptionist preview
                     </p>
                     <p className="text-sm text-muted">
-                      Example request journey
+                      Example enquiry
                     </p>
                   </div>
                   <div className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-strong">
-                    Live capture flow
+                    Live enquiry capture
                   </div>
                 </div>
 
@@ -200,22 +200,22 @@ export default function Home() {
                           LeadClaw AI Receptionist
                         </p>
                         <p className="text-xs text-muted">
-                          Friendly request assistant
+                          Answers calls &amp; enquiries 24/7
                         </p>
                       </div>
                     </div>
 
                     <div className="space-y-3 text-sm">
                       <div className="max-w-[85%] rounded-2xl rounded-tl-md bg-surface-2 px-4 py-3 text-foreground">
-                        Hi! I can help capture requests, documents, follow-ups,
-                        or general questions.
+                        Hi, thanks for getting in touch. I can book you in or
+                        take a message - how can I help?
                       </div>
                       <div className="ml-auto max-w-[80%] rounded-2xl rounded-tr-md bg-brand-soft px-4 py-3 text-foreground">
-                        I need help with a customer request and a weekly report.
+                        I&apos;d like to book an appointment this week.
                       </div>
                       <div className="max-w-[90%] rounded-2xl rounded-tl-md bg-surface-2 px-4 py-3 text-foreground">
-                        Great - leave your details and the right workflow can
-                        route this to your team.
+                        Of course - leave your name and number and the team will
+                        confirm your slot shortly.
                       </div>
                     </div>
                   </div>
@@ -227,11 +227,11 @@ export default function Home() {
                           Workspace inbox
                         </p>
                         <p className="text-xs text-muted">
-                          New request arrives instantly
+                          New enquiry arrives instantly
                         </p>
                       </div>
                       <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-                        New request
+                        New enquiry
                       </span>
                     </div>
 
@@ -264,16 +264,16 @@ export default function Home() {
             <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
-                  Why operational work slips
+                  Why enquiries get missed
                 </p>
                 <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                  Most missed opportunities are not caused by lack of demand.
+                  Most lost customers are not caused by a lack of demand.
                 </h2>
                 <p className="mt-4 max-w-2xl text-base leading-7 text-muted md:text-lg">
-                  They slip because requests arrive while the team is busy,
+                  They slip because enquiries arrive while the team is busy,
                   details are scattered across tools, or nobody follows up fast
-                  enough. LeadClaw captures the intake and keeps the next action
-                  visible.
+                  enough. LeadClaw captures the enquiry and keeps the next
+                  action visible.
                 </p>
               </div>
 
@@ -281,24 +281,24 @@ export default function Home() {
                 <div className="rounded-[24px] border border-border bg-white p-5">
                   <p className="text-sm font-medium text-muted">Busy team</p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
-                    Work first
+                    Customers first
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    Teams are often doing the work, not watching every inbox,
-                    form, or spreadsheet in real time.
+                    Teams are often serving customers, not watching every call,
+                    form, or inbox in real time.
                   </p>
                 </div>
 
                 <div className="rounded-[24px] border border-border bg-white p-5">
                   <p className="text-sm font-medium text-muted">
-                    Manual data work
+                    Scattered details
                   </p>
                   <p className="mt-3 text-2xl font-semibold tracking-tight text-foreground">
                     Details drift
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    Important details get copied, retyped, postponed, or left
-                    in the wrong place.
+                    Contact details, service needs, and callback times get
+                    copied, postponed, or left in the wrong place.
                   </p>
                 </div>
 
@@ -310,8 +310,8 @@ export default function Home() {
                     Warm leads cool
                   </p>
                   <p className="mt-2 text-sm leading-6 text-muted">
-                    The longer the delay, the more likely a customer, prospect,
-                    or internal requester moves on.
+                    The longer the delay, the more likely a customer or
+                    prospect moves on.
                   </p>
                 </div>
               </div>
@@ -327,11 +327,11 @@ export default function Home() {
               How LeadClaw works
             </p>
             <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-              A simple 3-step flow from request to organised follow-up
+              A simple 3-step flow from enquiry to organised follow-up
             </h2>
             <p className="mt-4 text-lg leading-8 text-muted">
-              No bloated setup. No complicated process. Just a cleaner path from
-              incoming requests to visible next actions.
+              No bloated setup. No complicated process. Just a clearer path
+              from incoming enquiries to visible next actions.
             </p>
           </div>
 
@@ -361,20 +361,20 @@ export default function Home() {
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div className="max-w-2xl">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
-                Core product categories
+                What LeadClaw does
               </p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                A practical AI workflow suite for modern teams
+                A practical AI receptionist for busy service teams
               </h2>
               <p className="mt-4 text-lg leading-8 text-muted">
                 LeadClaw is not trying to replace your team. It helps them
-                capture requests, organise work, clean data, extract details,
-                and respond with less friction.
+                answer faster, capture the right details, recover missed
+                enquiries, and keep follow-up visible.
               </p>
             </div>
 
             <div className="rounded-full border border-border bg-white px-4 py-2 text-sm font-medium text-muted shadow-sm">
-              Lightweight setup | Faster follow-up | Workflow focused
+              Lightweight setup | Faster follow-up | Reception focused
             </div>
           </div>
 
@@ -398,7 +398,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       <SolutionsByClinicType />
 
       <section className="section-shell">
@@ -406,16 +405,15 @@ export default function Home() {
           <div className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
             <div className="card-premium p-6 md:p-8">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
-                Built for useful automation
+                The maths is simple
               </p>
               <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-                One saved admin hour can quickly justify the platform.
+                One recovered enquiry can quickly justify the platform.
               </h2>
               <p className="mt-4 max-w-2xl text-lg leading-8 text-muted">
-                If your business already receives requests, documents, leads, or
-                recurring reporting work, the real problem is usually friction.
-                LeadClaw helps capture the work, route it, and automate the
-                repetitive steps around it.
+                If your business already receives calls, website enquiries, or
+                quote requests, the real problem is usually response speed.
+                LeadClaw helps capture the details and keep follow-up moving.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -447,20 +445,19 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       <section className="section-shell pt-0">
         <div className="container-shell">
           <div className="rounded-[32px] border border-border bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(230,251,255,0.94))] p-8 shadow-[var(--shadow-pop)] md:p-12">
             <div className="mx-auto max-w-3xl text-center">
               <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
-                Ready to reduce repetitive admin?
+                Ready to stop missing enquiries?
               </p>
               <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
-                Give your business AI workflows that capture and organise work.
+                Give your business an AI receptionist that captures enquiries.
               </h2>
               <p className="mt-5 text-lg leading-8 text-muted">
-                Start with a free trial, see how the workflow fits your team,
-                and turn more incoming requests into clear next actions.
+                Start with a free trial, see how LeadClaw fits your team, and
+                turn more incoming enquiries into clear next actions.
               </p>
 
               <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -472,7 +469,7 @@ export default function Home() {
                   Start free trial
                 </TrialCtaLink>
                 <Link href="/demo" className="button-secondary">
-                  View demo
+                  Book a demo
                 </Link>
               </div>
             </div>

@@ -16,3 +16,11 @@ export function createClient() {
   // Return the initialized client
   return client;
 }
+
+export function tryCreateClient() {
+  try {
+    return createClient();
+  } catch {
+    return null;
+  }
+}

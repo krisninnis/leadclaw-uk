@@ -1,36 +1,10 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import SeoLandingPage from "@/components/seo/seo-landing-page";
-import { getSeoPage, seoPages } from "@/lib/seo-pages";
+import type { SeoPage } from "@/lib/seo-pages";
 
 const siteUrl = "https://www.leadclaw.uk";
 const ogImage = "/brand/mascots/panther-growth.jpg";
 
-type SeoRouteProps = {
-  params: Promise<{
-    slug: string;
-  }>;
-};
-
-export const dynamic = "force-static";
-export const dynamicParams = false;
-
-export function generateStaticParams() {
-  return seoPages.map((page) => ({
-    slug: page.slug,
-  }));
-}
-
-export async function generateMetadata({
-  params,
-}: SeoRouteProps): Promise<Metadata> {
-  const { slug } = await params;
-  const page = getSeoPage(slug);
-
-  if (!page) {
-    return {};
-  }
-
+export function buildSeoPageMetadata(page: SeoPage): Metadata {
   const url = `${siteUrl}${page.canonicalPath}`;
 
   return {
@@ -65,15 +39,4 @@ export async function generateMetadata({
       images: [ogImage],
     },
   };
-}
-
-export default async function SeoPage({ params }: SeoRouteProps) {
-  const { slug } = await params;
-  const page = getSeoPage(slug);
-
-  if (!page) {
-    notFound();
-  }
-
-  return <SeoLandingPage page={page} />;
 }

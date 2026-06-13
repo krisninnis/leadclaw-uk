@@ -17,7 +17,7 @@ export default function PrivacyPage() {
 
       <h2>1. Who we are</h2>
       <p>
-        LeadClaw AI (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) provides AI lead capture and workflow software. We are the controller for
+        LeadClaw AI (&quot;we&quot;, &quot;us&quot;, &quot;our&quot;) provides AI lead capture and receptionist software. We are the controller for
         personal data collected through our website and account onboarding.
       </p>
 

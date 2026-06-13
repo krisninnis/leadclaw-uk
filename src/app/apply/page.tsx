@@ -41,7 +41,7 @@ export default function ApplyPage() {
         <Input name="phone" label="Phone" required />
         <Input name="city" label="City" required />
         <Input name="website" label="Website/Instagram" />
-        <Input name="services" label="Workflows to automate" placeholder="Request capture, follow-ups, reports" required />
+        <Input name="services" label="Reception tasks to support" placeholder="Request capture, follow-ups, reports" required />
         <Input name="leadVolume" label="Approx leads per month" />
         <div className="md:col-span-2">
           <label className="mb-1 block text-sm font-medium">Notes</label>

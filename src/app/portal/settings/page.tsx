@@ -92,7 +92,7 @@ export default function PortalSettingsPage() {
                 className="mt-1 w-full"
               />
               <p className="mt-2 text-xs text-muted">
-                Leave blank to skip the review button in emails — the email will
+                Leave blank to skip the review button in emails - the email will
                 still be sent without a direct link.
               </p>
             </div>
