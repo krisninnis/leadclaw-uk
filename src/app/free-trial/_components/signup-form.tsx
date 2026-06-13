@@ -66,7 +66,6 @@ export default function SignupForm({
     try {
       const intake = buildIntake(collectIntakeInput());
       saveTrialIntake(intake);
-      await saveIntakeToBackend(intake);
       const next = buildNextUrl();
       trackGaEvent(
         "signup_started",
