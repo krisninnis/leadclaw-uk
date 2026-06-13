@@ -52,6 +52,7 @@ const sections = [
   {
     title: "Topics",
     links: [
+      { href: "/best-ai-receptionist-uk", label: "Best AI receptionist UK guide" },
       { href: "/ai-receptionist-uk", label: "What is an AI receptionist?" },
       { href: "/seo/missed-call-recovery-uk", label: "Missed-call recovery for UK businesses" },
       { href: "/compare", label: "Compare AI receptionist options" },

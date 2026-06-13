@@ -84,6 +84,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.6,
     },
+    {
+      url: `${baseUrl}/best-ai-receptionist-uk`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.85,
+    },
     // SEO landing pages - high priority
     {
       url: `${baseUrl}/seo/ai-agent-for-aesthetic-clinics-uk`,
