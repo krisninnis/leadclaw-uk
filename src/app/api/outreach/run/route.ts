@@ -78,6 +78,9 @@ const STALE_OUTREACH_COPY_PATTERNS = [
   "visitors drop off",
   "simple website assistant",
 ];
+const OUTREACH_LEAD_SELECT =
+  "id,company_name,city,niche,created_at,contact_email,status,score,lead_quality_score,pecr_classification,company_number,outreach_subject,outreach_message,follow_up_stage,last_contacted_at";
+const OUTREACH_DIAGNOSTIC_LIMIT = 200;
 
 type OutreachLeadRow = {
   id: string;
@@ -464,6 +467,161 @@ function applyEmailSelectionGuards(query: SupabaseUntypedQueryBuilder) {
   );
 }
 
+function hasText(value?: string | null) {
+  return Boolean(String(value || "").trim());
+}
+
+function staticOutreachSkipReasons(
+  lead: OutreachLeadRow,
+  minLeadQualityScore: number,
+) {
+  const reasons: string[] = [];
+  const email = normalizeEmail(lead.contact_email);
+  const leadQualityScore = Number(lead.lead_quality_score);
+
+  if (lead.status !== "queued") {
+    reasons.push(`status_${lead.status || "missing"}`);
+  }
+
+  if (lead.pecr_classification !== "corporate") {
+    reasons.push(`classification_${lead.pecr_classification || "missing"}`);
+  }
+
+  if (!email) {
+    reasons.push("missing_contact_email");
+  } else if (isBadEmail(email)) {
+    reasons.push("invalid_email");
+  }
+
+  if (!hasText(lead.outreach_subject)) {
+    reasons.push("missing_outreach_subject");
+  }
+
+  if (!hasText(lead.outreach_message)) {
+    reasons.push("missing_outreach_message");
+  }
+
+  if (!Number.isFinite(leadQualityScore)) {
+    reasons.push("missing_lead_quality_score");
+  } else if (leadQualityScore < minLeadQualityScore) {
+    reasons.push("lead_quality_below_min");
+  }
+
+  if (lead.last_contacted_at) {
+    reasons.push("already_contacted");
+  }
+
+  if (Number(lead.follow_up_stage || 0) > 0) {
+    reasons.push("follow_up_stage_gt_0");
+  }
+
+  return reasons;
+}
+
+function buildOutreachFilterCounts(
+  rows: OutreachLeadRow[],
+  minLeadQualityScore: number,
+) {
+  const counts: Array<{ filter: string; count: number }> = [
+    { filter: "candidate_count_before_filtering", count: rows.length },
+  ];
+  let remaining = rows;
+
+  remaining = remaining.filter((lead) => lead.status === "queued");
+  counts.push({ filter: "status_queued", count: remaining.length });
+
+  remaining = remaining.filter(
+    (lead) => lead.pecr_classification === "corporate",
+  );
+  counts.push({ filter: "pecr_classification_corporate", count: remaining.length });
+
+  remaining = remaining.filter((lead) => Boolean(normalizeEmail(lead.contact_email)));
+  counts.push({ filter: "contact_email_present", count: remaining.length });
+
+  remaining = remaining.filter((lead) => lead.outreach_subject !== null);
+  counts.push({ filter: "outreach_subject_not_null", count: remaining.length });
+
+  remaining = remaining.filter((lead) => lead.outreach_message !== null);
+  counts.push({ filter: "outreach_message_not_null", count: remaining.length });
+
+  remaining = remaining.filter((lead) => {
+    const leadQualityScore = Number(lead.lead_quality_score);
+    return (
+      Number.isFinite(leadQualityScore) &&
+      leadQualityScore >= minLeadQualityScore
+    );
+  });
+  counts.push({ filter: "lead_quality_at_or_above_min", count: remaining.length });
+
+  remaining = remaining.filter(
+    (lead) => !isBadEmail(normalizeEmail(lead.contact_email)),
+  );
+  counts.push({ filter: "email_selection_guards", count: remaining.length });
+
+  remaining = remaining.filter((lead) => !lead.last_contacted_at);
+  counts.push({ filter: "not_already_contacted", count: remaining.length });
+
+  remaining = remaining.filter((lead) => Number(lead.follow_up_stage || 0) === 0);
+  counts.push({ filter: "follow_up_stage_zero", count: remaining.length });
+
+  return counts;
+}
+
+async function logOutreachCandidateDiagnostics({
+  admin,
+  minLeadQualityScore,
+  scopedNiches,
+  scopedCreatedAfter,
+}: {
+  admin: unknown;
+  minLeadQualityScore: number;
+  scopedNiches: string[];
+  scopedCreatedAfter: string | null;
+}) {
+  let diagnosticQuery = (admin as unknown as SupabaseUntypedClient)
+    .from("leads")
+    .select(OUTREACH_LEAD_SELECT)
+    .gte("lead_quality_score", minLeadQualityScore);
+
+  if (scopedNiches.length > 0) {
+    diagnosticQuery = diagnosticQuery.in("niche", scopedNiches);
+  }
+
+  if (scopedCreatedAfter) {
+    diagnosticQuery = diagnosticQuery.gte("created_at", scopedCreatedAfter);
+  }
+
+  const { data, error } = await diagnosticQuery
+    .order("lead_quality_score", { ascending: false })
+    .limit(OUTREACH_DIAGNOSTIC_LIMIT);
+
+  if (error) {
+    console.warn("[outreach.run] candidate diagnostics unavailable", {
+      error: error.message,
+    });
+    return;
+  }
+
+  const rows = (data || []) as OutreachLeadRow[];
+  const skipped = rows
+    .map((lead) => ({
+      id: lead.id,
+      businessName: lead.company_name,
+      reasons: staticOutreachSkipReasons(lead, minLeadQualityScore),
+    }))
+    .filter((lead) => lead.reasons.length > 0);
+
+  console.log("[outreach.run] candidate diagnostics", {
+    minLeadQualityScore,
+    scopedNiches,
+    scopedCreatedAfter,
+    diagnosticLimit: OUTREACH_DIAGNOSTIC_LIMIT,
+    candidateCountBeforeFiltering: rows.length,
+    filterCounts: buildOutreachFilterCounts(rows, minLeadQualityScore),
+    skipped,
+  });
+}
+
 function outreachTokenFromRequest(req: Request) {
   const explicitToken = req.headers.get("x-outreach-run-token")?.trim();
   if (explicitToken) return explicitToken;
@@ -572,11 +730,16 @@ export async function POST(req: Request) {
     });
   }
 
+  await logOutreachCandidateDiagnostics({
+    admin,
+    minLeadQualityScore,
+    scopedNiches,
+    scopedCreatedAfter,
+  });
+
   let leadQuery = (admin as unknown as SupabaseUntypedClient)
     .from("leads")
-    .select(
-      "id,company_name,city,niche,created_at,contact_email,status,score,lead_quality_score,pecr_classification,company_number,outreach_subject,outreach_message,follow_up_stage,last_contacted_at",
-    )
+    .select(OUTREACH_LEAD_SELECT)
     .eq("status", "queued")
     .eq("pecr_classification", "corporate")
     .not("contact_email", "is", null)

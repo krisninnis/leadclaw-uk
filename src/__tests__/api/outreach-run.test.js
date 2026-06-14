@@ -32,11 +32,19 @@ function makeChain(finalResult) {
   };
 }
 
-function makeAdmin({ leads = [], sentToday = [] } = {}) {
+function makeAdmin({ leads = [], diagnosticLeads = leads, sentToday = [] } = {}) {
   const outreachEventsSelect = makeChain({ data: sentToday, error: null });
   const outreachEventsInsert = jest.fn().mockResolvedValue({ error: null });
   const outreachLogInsert = jest.fn().mockResolvedValue({ error: null });
+  const diagnosticLeadsSelect = makeChain({
+    data: diagnosticLeads,
+    error: null,
+  });
   const leadsSelect = makeChain({ data: leads, error: null });
+  const leadsSelectMock = jest
+    .fn()
+    .mockReturnValueOnce(diagnosticLeadsSelect)
+    .mockReturnValue(leadsSelect);
   const leadsUpdateChain = {
     eq: jest.fn().mockReturnThis(),
     gte: jest.fn().mockResolvedValue({ error: null }),
@@ -60,7 +68,7 @@ function makeAdmin({ leads = [], sentToday = [] } = {}) {
 
       if (table === "leads") {
         return {
-          select: jest.fn(() => leadsSelect),
+          select: leadsSelectMock,
           update: leadsUpdate,
         };
       }
@@ -74,7 +82,9 @@ function makeAdmin({ leads = [], sentToday = [] } = {}) {
     outreachEventsSelect,
     outreachEventsInsert,
     outreachLogInsert,
+    diagnosticLeadsSelect,
     leadsSelect,
+    leadsSelectMock,
     leadsUpdate,
     leadsUpdateChain,
   };
@@ -444,6 +454,68 @@ describe("POST /api/outreach/run", () => {
         outreach_message: expect.stringContaining("AI receptionist"),
       }),
     );
+  });
+
+  it("diagnoses high-quality corporate leads that are not queued", async () => {
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const emailModuleMock = {
+      isSuppressed: jest.fn().mockResolvedValue(false),
+      sendEmail: jest.fn().mockResolvedValue({
+        ok: true,
+        id: "email_123",
+      }),
+    };
+    const mockDb = makeAdmin({
+      diagnosticLeads: [
+        makeLead({
+          id: "lead_new",
+          company_name: "Ready But New Ltd",
+          contact_email: "ready@example.co.uk",
+          status: "new",
+          lead_quality_score: 95,
+          pecr_classification: "corporate",
+        }),
+      ],
+      leads: [],
+    });
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    jest.doMock("@/lib/email", () => emailModuleMock);
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn().mockResolvedValue(undefined),
+    }));
+
+    const { res, body } = await postOutreachRun();
+    const diagnosticsCall = logSpy.mock.calls.find(
+      ([message]) => message === "[outreach.run] candidate diagnostics",
+    );
+
+    expect(res.status).toBe(200);
+    expect(body.sentCount).toBe(0);
+    expect(emailModuleMock.sendEmail).not.toHaveBeenCalled();
+    expect(diagnosticsCall).toBeDefined();
+    expect(diagnosticsCall[1]).toEqual(
+      expect.objectContaining({
+        candidateCountBeforeFiltering: 1,
+        filterCounts: expect.arrayContaining([
+          { filter: "candidate_count_before_filtering", count: 1 },
+          { filter: "status_queued", count: 0 },
+        ]),
+        skipped: [
+          expect.objectContaining({
+            id: "lead_new",
+            businessName: "Ready But New Ltd",
+            reasons: ["status_new"],
+          }),
+        ],
+      }),
+    );
+
+    logSpy.mockRestore();
   });
 
   it("regenerates stale stored copy with AI receptionist positioning and production links", async () => {
