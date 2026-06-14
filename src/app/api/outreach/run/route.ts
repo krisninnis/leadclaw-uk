@@ -69,6 +69,16 @@ const BLOCKED_EMAIL_QUERY_PATTERNS = [
   "%banner%",
 ];
 
+const PRODUCTION_APP_URL = "https://www.leadclaw.uk";
+const STALE_OUTREACH_COPY_PATTERNS = [
+  "website assistant",
+  "leadclaw-uk.vercel.app",
+  "worth a quick look",
+  "founding-client perks",
+  "visitors drop off",
+  "simple website assistant",
+];
+
 type OutreachLeadRow = {
   id: string;
   company_name: string;
@@ -97,28 +107,66 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function inferBusinessContext(company: string) {
-  const c = company.toLowerCase();
+function normalizeNiche(value?: string | null) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[-\s]+/g, "_");
+}
 
-  if (c.includes("studio") || c.includes("agency")) {
-    return { label: "service business", pain: "manual request follow-up" };
+function nicheContext(niche?: string | null) {
+  const normalized = normalizeNiche(niche);
+
+  if (["plumber", "plumbers", "plumbing"].includes(normalized)) {
+    return "For plumbing teams, LeadClaw helps capture missed calls while you are on jobs, after-hours enquiries, emergency callout requests, and booking or callback details before the customer tries someone else.";
   }
 
-  if (c.includes("consult") || c.includes("advisor")) {
-    return {
-      label: "advisory business",
-      pain: "scattered intake and admin tasks",
-    };
+  if (["heating", "heating_engineer", "heating_engineers"].includes(normalized)) {
+    return "For heating engineers, LeadClaw helps capture boiler breakdown enquiries, emergency heating requests, out-of-hours calls, and callback details when the team is already out helping customers.";
   }
 
-  if (c.includes("group") || c.includes("services")) {
-    return {
-      label: "operations-led business",
-      pain: "repetitive admin and follow-ups",
-    };
+  if (["electrician", "electricians", "electrical"].includes(normalized)) {
+    return "For electricians, LeadClaw helps turn website visitors, quote requests, missed calls, and callback requests into clear details your team can follow up.";
   }
 
-  return { label: "business", pain: "missed requests and repetitive admin" };
+  if (
+    [
+      "beauty",
+      "aesthetic",
+      "aesthetics",
+      "aesthetic_clinic",
+      "aesthetic_clinics",
+      "beauty_clinic",
+      "beauty_clinics",
+    ].includes(normalized)
+  ) {
+    return "For beauty and aesthetic clinics, LeadClaw helps capture consultation or booking enquiries, out-of-hours interest, missed calls, and callback details without making treatment decisions.";
+  }
+
+  return "For UK service businesses, LeadClaw helps capture missed calls, quote requests, out-of-hours enquiries, and booking or callback details when the team is busy.";
+}
+
+function demoUrlForLead(id: string) {
+  return `${PRODUCTION_APP_URL}/demo?source=outreach&lead=${encodeURIComponent(id)}`;
+}
+
+function hasStaleOutreachCopy(value?: string | null) {
+  const lower = String(value || "").toLowerCase();
+  return STALE_OUTREACH_COPY_PATTERNS.some((pattern) =>
+    lower.includes(pattern),
+  );
+}
+
+function hasCurrentOutreachPositioning(value?: string | null) {
+  return String(value || "").toLowerCase().includes("ai receptionist");
+}
+
+function canUseStoredInitialMessage(value?: string | null) {
+  return hasCurrentOutreachPositioning(value) && !hasStaleOutreachCopy(value);
+}
+
+function buildInitialSubject(lead: { company_name: string }) {
+  return `AI receptionist idea for ${lead.company_name}`;
 }
 
 function variantFromId(id: string) {
@@ -130,15 +178,21 @@ function renderInitialMessage(lead: {
   id: string;
   company_name: string;
   city?: string | null;
+  niche?: string | null;
+  contact_email?: string | null;
   outreach_message?: string | null;
 }) {
-  if (lead.outreach_message?.trim()) {
-    return lead.outreach_message.trim();
+  const storedMessage = lead.outreach_message?.trim();
+
+  if (storedMessage && canUseStoredInitialMessage(storedMessage)) {
+    return storedMessage;
   }
 
   const company = lead.company_name;
   const city = lead.city;
-  const ctx = inferBusinessContext(company);
+  const context = nicheContext(lead.niche);
+  const demoUrl = demoUrlForLead(lead.id);
+  const unsubUrl = unsubscribeUrl(lead.contact_email);
   const v = variantFromId(lead.id);
 
   if (v === 0) {
@@ -146,62 +200,85 @@ function renderInitialMessage(lead: {
 
 I came across your business${city ? ` in ${city}` : ""} and wanted to reach out.
 
-I'm building LeadClaw, a brand-new startup that helps businesses capture website requests, organise operational work, and automate follow-ups with AI.
+I'm building LeadClaw, an AI receptionist for UK service businesses. It helps capture missed calls, quote requests, out-of-hours enquiries, and booking or callback details when the team is busy.
 
-It's free to get started, with an optional paid subscription later, and there's also a no-obligation free trial.
+${context}
 
-Because we're still early, we're improving the product constantly and listening closely to feedback from real teams.
+I put together a quick demo for your business here:
+${demoUrl}
 
-The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits that won't be offered once we grow.
+If it looks useful, you can start with a no-obligation free trial and see whether it helps ${company} respond faster.
 
-Would you like me to send over a very short example of how it could work for ${company}?
+Would it be worth a look?
 
 Best,
 Kris
 LeadClaw
 
-Reply "no" to opt out.`;
+---
+Lead Claw Ltd (Company No. 13546017)
+206 Whitechapel Road, London, E1 1AA
+We found your business on Google Maps.
+Privacy policy: ${PRODUCTION_APP_URL}/legal/privacy
+Data rights: privacy@leadclaw.uk
+Unsubscribe: ${unsubUrl}`;
   }
 
   if (v === 1) {
     return `Hi ${company} team,
 
-Just a quick note - we help ${ctx.label}s${city ? ` in ${city}` : ""} respond faster when calls, forms, documents, or messages come in at busy times.
+Just a quick note after finding ${company}${city ? ` in ${city}` : ""}.
 
-LeadClaw is a brand-new startup, free to get started, with an optional paid subscription later and a no-obligation free trial.
+LeadClaw is an AI receptionist for UK service businesses. It gives people a simple way to leave details when nobody can answer, then helps the team follow up on missed calls, quote requests, out-of-hours enquiries, bookings, and callbacks.
 
-We're updating the product constantly, and early users get a real chance to shape what we build with direct feedback.
+${context}
 
-The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits that won't be available later.
+Here is a quick demo link:
+${demoUrl}
 
-Would it help if I sent over a very short example for ${company}?
+If this could help reduce missed enquiries for ${company}, the free trial is there to test it without a long setup.
+
+Would it be useful to take a look?
 
 Best,
 Kris
 LeadClaw
 
-Reply "no" to opt out.`;
+---
+Lead Claw Ltd (Company No. 13546017)
+206 Whitechapel Road, London, E1 1AA
+We found your business on Google Maps.
+Privacy policy: ${PRODUCTION_APP_URL}/legal/privacy
+Data rights: privacy@leadclaw.uk
+Unsubscribe: ${unsubUrl}`;
   }
 
   return `Hi ${company} team,
 
 Saw your business and thought I'd reach out.
 
-I'm building LeadClaw, a brand-new startup that helps businesses capture requests, route work, automate follow-ups, and reduce repetitive admin with AI.
+LeadClaw is an AI receptionist for UK service businesses. It helps capture missed calls, quote requests, out-of-hours enquiries, and booking or callback details, then keeps follow-up easier for the team.
 
-It's free to get started, with an optional paid subscription later, and there's a no-obligation free trial as well.
+${context}
 
-We're still early, so the product is always improving, and early users get a genuine chance to shape it with feedback.
+I put together a quick demo for ${company} here:
+${demoUrl}
 
-The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits we won't offer once LeadClaw grows.
+If it fits, you can try LeadClaw without a long setup and see whether it helps your team respond faster.
 
-Want me to send a short example tailored to ${company}?
+Worth a look?
 
 Best,
 Kris
 LeadClaw
 
-Reply "no" to opt out.`;
+---
+Lead Claw Ltd (Company No. 13546017)
+206 Whitechapel Road, London, E1 1AA
+We found your business on Google Maps.
+Privacy policy: ${PRODUCTION_APP_URL}/legal/privacy
+Data rights: privacy@leadclaw.uk
+Unsubscribe: ${unsubUrl}`;
 }
 
 function renderFollowUp1(lead: { company_name: string }) {
@@ -209,13 +286,9 @@ function renderFollowUp1(lead: { company_name: string }) {
 
 Just checking if you saw my last note.
 
-LeadClaw is a brand-new startup for businesses, free to get started, with an optional paid subscription later and a no-obligation free trial.
+LeadClaw is an AI receptionist for UK service businesses. It helps capture missed calls, quote requests, out-of-hours enquiries, and booking or callback details when the team is busy.
 
-We're improving it constantly, and early users get a real chance to shape the product with feedback.
-
-The first 100 clients will also get founding-client perks like priority support, early feature access, and future benefits that won't be offered later.
-
-If you'd like, I can send over a very short example of how it could work for ${lead.company_name}.
+If useful, I can send over the quick demo again for ${lead.company_name}.
 
 Best,
 Kris
@@ -229,11 +302,7 @@ function renderFollowUp2(lead: { company_name: string }) {
 
 Final quick note from me.
 
-If improving request response times or reducing repetitive admin is on your radar, I'd be happy to send a short example tailored to your business.
-
-LeadClaw is a new startup, free to get started, with an optional paid subscription later and a no-obligation free trial.
-
-We're still early, so the product is always improving, and the first 100 clients will receive founding-client perks like priority support, early feature access, and future benefits that won't be available later.
+If missed calls, quote requests, out-of-hours enquiries, or callback capture are on your radar, LeadClaw is an AI receptionist built to make those first details easier to collect.
 
 If not, no worries at all.
 
@@ -614,6 +683,13 @@ export async function POST(req: Request) {
     let nextStage = followUpStage;
 
     if (followUpStage === 0) {
+      if (
+        !canUseStoredInitialMessage(lead.outreach_message) ||
+        hasStaleOutreachCopy(subject)
+      ) {
+        subject = buildInitialSubject(lead);
+      }
+
       text = renderInitialMessage(lead);
       nextStage = 1;
     } else if (followUpStage === 1) {

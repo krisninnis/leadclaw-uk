@@ -104,7 +104,7 @@ describe("POST /api/outreach/run", () => {
     process.env.OUTREACH_BATCH_SIZE = "5";
     process.env.OUTREACH_MIN_LEAD_QUALITY_SCORE = "90";
     process.env.OUTREACH_PER_EMAIL_DELAY_MS = "0";
-    process.env.NEXT_PUBLIC_APP_URL = "https://leadclaw.uk";
+    process.env.NEXT_PUBLIC_APP_URL = "https://www.leadclaw.uk";
   });
 
   it("returns 401 when bearer token is missing", async () => {
@@ -267,6 +267,9 @@ describe("POST /api/outreach/run", () => {
       company_name: "Bright Clinic",
       contact_email: "owner@brightclinic.co.uk",
       company_number: "98765432",
+      outreach_subject: "Worth a quick look?",
+      outreach_message:
+        "I'm building LeadClaw, a simple website assistant that helps capture enquiries before visitors drop off.",
     });
     const mockDb = makeAdmin({ leads: [lead] });
 
@@ -295,7 +298,7 @@ describe("POST /api/outreach/run", () => {
       expect.objectContaining({
         email: "owner@brightclinic.co.uk",
         business_name: "Bright Clinic",
-        subject: "Reviewed subject",
+        subject: "AI receptionist idea for Bright Clinic",
         email_number: 1,
         status: "sent",
         classification: "corporate",
@@ -307,10 +310,103 @@ describe("POST /api/outreach/run", () => {
       expect.objectContaining({
         status: "contacted",
         follow_up_stage: 1,
-        outreach_subject: "Reviewed subject",
-        outreach_message: expect.stringContaining("Reviewed message"),
+        outreach_subject: "AI receptionist idea for Bright Clinic",
+        outreach_message: expect.stringContaining("AI receptionist"),
       }),
     );
+  });
+
+  it("regenerates stale stored copy with AI receptionist positioning and production links", async () => {
+    const mockDb = makeAdmin({
+      leads: [
+        makeLead({
+          id: "lead_1",
+          company_name: "Pipe Pros",
+          contact_email: "owner@pipepros.co.uk",
+          niche: "plumber",
+          outreach_subject: "Worth a quick look?",
+          outreach_message:
+            "I'm building LeadClaw, a simple website assistant that helps capture and follow up on enquiries before visitors drop off. https://leadclaw-uk.vercel.app/demo?source=outreach",
+        }),
+      ],
+    });
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    jest.doMock("@/lib/email", () => ({
+      isSuppressed: jest.fn().mockResolvedValue(false),
+      sendEmail: jest.fn().mockResolvedValue({
+        ok: true,
+        id: "email_123",
+      }),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn().mockResolvedValue(undefined),
+    }));
+
+    const emailModule = require("@/lib/email");
+    const { body } = await postOutreachRun();
+    const emailPayload = emailModule.sendEmail.mock.calls[0][0];
+
+    expect(body.sentCount).toBe(1);
+    expect(emailPayload.subject).toBe("AI receptionist idea for Pipe Pros");
+    expect(emailPayload.text).toContain("AI receptionist");
+    expect(emailPayload.text).toContain("missed calls");
+    expect(emailPayload.text).toContain("emergency callout requests");
+    expect(emailPayload.text).toContain(
+      "https://www.leadclaw.uk/demo?source=outreach&lead=lead_1",
+    );
+    expect(emailPayload.text).toContain(
+      "Unsubscribe: https://www.leadclaw.uk/api/unsubscribe?email=owner%40pipepros.co.uk",
+    );
+    expect(emailPayload.text).not.toContain("website assistant");
+    expect(emailPayload.text).not.toContain("leadclaw-uk.vercel.app");
+    expect(emailPayload.text).not.toContain("founding-client perks");
+  });
+
+  it.each([
+    ["plumber", "emergency callout requests"],
+    ["heating", "boiler breakdown enquiries"],
+    ["electrician", "quote requests"],
+    ["beauty", "consultation or booking enquiries"],
+    ["general_service", "UK service businesses"],
+  ])("keeps industry-specific outreach copy for %s", async (niche, expected) => {
+    const mockDb = makeAdmin({
+      leads: [
+        makeLead({
+          id: `lead_${niche}`,
+          company_name: "Example Service Co",
+          contact_email: `${niche}@service-example.co.uk`,
+          niche,
+          outreach_subject: "Worth a quick look?",
+          outreach_message: "simple website assistant",
+        }),
+      ],
+    });
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    jest.doMock("@/lib/email", () => ({
+      isSuppressed: jest.fn().mockResolvedValue(false),
+      sendEmail: jest.fn().mockResolvedValue({
+        ok: true,
+        id: "email_123",
+      }),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn().mockResolvedValue(undefined),
+    }));
+
+    const emailModule = require("@/lib/email");
+    await postOutreachRun();
+
+    expect(emailModule.sendEmail.mock.calls[0][0].text).toContain(expected);
   });
 
   it("does not select fake image or logo emails from the outreach query", async () => {
