@@ -52,6 +52,22 @@ const BLOCKED_PREFIXES = [
 ];
 
 const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
+const BLOCKED_EMAIL_QUERY_PATTERNS = [
+  "%.png%",
+  "%.jpg%",
+  "%.jpeg%",
+  "%.svg%",
+  "%.webp%",
+  "%.gif%",
+  "%.css%",
+  "%.js%",
+  "%.woff%",
+  "%@2x%",
+  "%@3x%",
+  "%logo%",
+  "%icon%",
+  "%banner%",
+];
 
 type OutreachLeadRow = {
   id: string;
@@ -64,6 +80,7 @@ type OutreachLeadRow = {
   score: number | null;
   lead_quality_score: number | null;
   pecr_classification: string | null;
+  company_number: string | null;
   outreach_subject: string | null;
   outreach_message: string | null;
   follow_up_stage: number | null;
@@ -370,6 +387,14 @@ function parseIsoDate(raw: unknown) {
   return parsed.toISOString();
 }
 
+function applyEmailSelectionGuards(query: SupabaseUntypedQueryBuilder) {
+  return BLOCKED_EMAIL_QUERY_PATTERNS.reduce(
+    (currentQuery, pattern) =>
+      currentQuery.not("contact_email", "ilike", pattern),
+    query,
+  );
+}
+
 export async function POST(req: Request) {
   const startedAt = Date.now();
 
@@ -395,14 +420,14 @@ export async function POST(req: Request) {
     );
   }
 
-  const dailyCap = boundedInt(process.env.OUTREACH_DAILY_CAP, 1, 0, 5);
+  const dailyCap = boundedInt(process.env.OUTREACH_DAILY_CAP, 5, 0, 5);
   const minLeadQualityScore = boundedInt(
     process.env.OUTREACH_MIN_LEAD_QUALITY_SCORE,
     90,
     0,
     100,
   );
-  const batchSize = boundedInt(process.env.OUTREACH_BATCH_SIZE, 1, 1, 5);
+  const batchSize = boundedInt(process.env.OUTREACH_BATCH_SIZE, 5, 1, 5);
   const perEmailDelayMs = boundedInt(
     process.env.OUTREACH_PER_EMAIL_DELAY_MS,
     50,
@@ -456,7 +481,7 @@ export async function POST(req: Request) {
   let leadQuery = (admin as unknown as SupabaseUntypedClient)
     .from("leads")
     .select(
-      "id,company_name,city,niche,created_at,contact_email,status,score,lead_quality_score,pecr_classification,outreach_subject,outreach_message,follow_up_stage,last_contacted_at",
+      "id,company_name,city,niche,created_at,contact_email,status,score,lead_quality_score,pecr_classification,company_number,outreach_subject,outreach_message,follow_up_stage,last_contacted_at",
     )
     .eq("status", "queued")
     .eq("pecr_classification", "corporate")
@@ -464,6 +489,8 @@ export async function POST(req: Request) {
     .not("outreach_subject", "is", null)
     .not("outreach_message", "is", null)
     .gte("lead_quality_score", minLeadQualityScore);
+
+  leadQuery = applyEmailSelectionGuards(leadQuery);
 
   if (scopedNiches.length > 0) {
     leadQuery = leadQuery.in("niche", scopedNiches);
@@ -658,6 +685,8 @@ export async function POST(req: Request) {
       continue;
     }
 
+    const sentAt = new Date().toISOString();
+
     sent.push({ id: lead.id, email, subject });
 
     await (admin as unknown as SupabaseUntypedClient).from("outreach_events").insert({
@@ -672,13 +701,39 @@ export async function POST(req: Request) {
       },
     });
 
+    const { error: outreachLogError } = await (
+      admin as unknown as SupabaseUntypedClient
+    )
+      .from("outreach_log")
+      .insert({
+        email,
+        business_name: lead.company_name,
+        subject,
+        sent_at: sentAt,
+        email_number: nextStage,
+        status: "sent",
+        classification: lead.pecr_classification,
+        company_number: lead.company_number || null,
+        google_place_id: null,
+      });
+
+    if (outreachLogError) {
+      console.error("[outreach.run] outreach_log insert failed", {
+        leadId: lead.id,
+        email,
+        error: outreachLogError.message,
+      });
+    }
+
     await (admin as unknown as SupabaseUntypedClient)
       .from("leads")
       .update({
         status: "contacted",
         follow_up_stage: nextStage,
-        last_contacted_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        last_contacted_at: sentAt,
+        outreach_subject: subject,
+        outreach_message: deliverableText,
+        updated_at: sentAt,
       })
       .eq("id", lead.id)
       .eq("status", "queued")
