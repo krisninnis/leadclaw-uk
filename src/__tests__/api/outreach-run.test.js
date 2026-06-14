@@ -438,7 +438,7 @@ describe("POST /api/outreach/run", () => {
       expect.objectContaining({
         email: "owner@brightclinic.co.uk",
         business_name: "Bright Clinic",
-        subject: "AI receptionist idea for Bright Clinic",
+        subject: "Quick idea for Bright Clinic",
         email_number: 1,
         status: "sent",
         classification: "corporate",
@@ -450,7 +450,7 @@ describe("POST /api/outreach/run", () => {
       expect.objectContaining({
         status: "contacted",
         follow_up_stage: 1,
-        outreach_subject: "AI receptionist idea for Bright Clinic",
+        outreach_subject: "Quick idea for Bright Clinic",
         outreach_message: expect.stringContaining("AI receptionist"),
       }),
     );
@@ -554,13 +554,39 @@ describe("POST /api/outreach/run", () => {
     const emailPayload = emailModule.sendEmail.mock.calls[0][0];
 
     expect(body.sentCount).toBe(1);
-    expect(emailPayload.subject).toBe("AI receptionist idea for Pipe Pros");
+    expect(emailPayload.subject).toBe("Quick idea for Pipe Pros");
+    expect(emailPayload.text).toContain("Hi Pipe Pros team");
+    expect(emailPayload.text).toContain("Pipe Pros in London as a plumbing business");
     expect(emailPayload.text).toContain("AI receptionist");
     expect(emailPayload.text).toContain("missed calls");
-    expect(emailPayload.text).toContain("emergency callout requests");
+    expect(emailPayload.text).toContain("quote requests");
+    expect(emailPayload.text).toContain("after-hours enquiries");
+    expect(emailPayload.text).toContain("try another local business");
+    expect(emailPayload.text).toContain("answer common website enquiries");
+    expect(emailPayload.text).toContain("capture quote requests");
+    expect(emailPayload.text).toContain("collect callback details");
+    expect(emailPayload.text).toContain("turn visitors into booked jobs");
+    expect(emailPayload.text).toContain("works 24/7");
+    expect(emailPayload.text).toContain(
+      "For plumbing businesses, emergency callouts, leak enquiries, and quote requests",
+    );
     expect(emailPayload.text).toContain(
       "https://www.leadclaw.uk/demo?source=outreach&lead=lead_1",
     );
+    expect(emailPayload.text).toContain(
+      "LeadClaw is built by Claw Labs, a UK software and automation company.",
+    );
+    expect(emailPayload.text.indexOf("Claw Labs")).toBeGreaterThan(
+      emailPayload.text.indexOf("personalised demo"),
+    );
+    expect(emailPayload.text.slice(0, 300)).not.toContain("Claw Labs");
+    expect(emailPayload.text.match(/Claw Labs/g)).toHaveLength(1);
+    expect(emailPayload.text).toContain("Kris Ninnis");
+    expect(emailPayload.text).toContain("Founder, LeadClaw");
+    expect(emailPayload.text).toContain(
+      "Privacy policy: https://www.leadclaw.uk/legal/privacy",
+    );
+    expect(emailPayload.text).toContain("Data rights: privacy@leadclaw.uk");
     expect(emailPayload.text).toContain(
       "Unsubscribe: https://www.leadclaw.uk/api/unsubscribe?email=owner%40pipepros.co.uk",
     );
@@ -570,11 +596,13 @@ describe("POST /api/outreach/run", () => {
   });
 
   it.each([
-    ["plumber", "emergency callout requests"],
-    ["heating", "boiler breakdown enquiries"],
-    ["electrician", "quote requests"],
-    ["beauty", "consultation or booking enquiries"],
-    ["general_service", "UK service businesses"],
+    ["plumber", "emergency callouts, leak enquiries"],
+    ["heating", "emergency callouts and boiler enquiries"],
+    ["electrician", "quote requests and urgent callouts"],
+    ["roofer", "storm damage enquiries"],
+    ["estate_agent", "valuation requests and viewing enquiries"],
+    ["beauty", "treatment enquiries and consultation requests"],
+    ["general_service", "missed calls, quote requests, and after-hours enquiries"],
   ])("keeps industry-specific outreach copy for %s", async (niche, expected) => {
     const mockDb = makeAdmin({
       leads: [

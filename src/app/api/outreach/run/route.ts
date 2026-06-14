@@ -121,15 +121,23 @@ function nicheContext(niche?: string | null) {
   const normalized = normalizeNiche(niche);
 
   if (["plumber", "plumbers", "plumbing"].includes(normalized)) {
-    return "For plumbing teams, LeadClaw helps capture missed calls while you are on jobs, after-hours enquiries, emergency callout requests, and booking or callback details before the customer tries someone else.";
+    return "For plumbing businesses, emergency callouts, leak enquiries, and quote requests often arrive when you are already on a job, driving, or out of hours.";
   }
 
   if (["heating", "heating_engineer", "heating_engineers"].includes(normalized)) {
-    return "For heating engineers, LeadClaw helps capture boiler breakdown enquiries, emergency heating requests, out-of-hours calls, and callback details when the team is already out helping customers.";
+    return "For plumbing and heating businesses, emergency callouts and boiler enquiries often happen when you are already on a job, driving, or out of hours.";
   }
 
   if (["electrician", "electricians", "electrical"].includes(normalized)) {
-    return "For electricians, LeadClaw helps turn website visitors, quote requests, missed calls, and callback requests into clear details your team can follow up.";
+    return "For electrical contractors, quote requests and urgent callouts can arrive while you are on-site and unable to respond straight away.";
+  }
+
+  if (["roofer", "roofers", "roofing"].includes(normalized)) {
+    return "For roofing businesses, storm damage enquiries, repair requests, and quote forms can arrive fast, especially when you are already out on a job.";
+  }
+
+  if (["estate_agent", "estate_agents", "estate-agents", "property"].includes(normalized)) {
+    return "For estate agents, valuation requests and viewing enquiries can be lost if nobody follows up quickly.";
   }
 
   if (
@@ -143,10 +151,54 @@ function nicheContext(niche?: string | null) {
       "beauty_clinics",
     ].includes(normalized)
   ) {
-    return "For beauty and aesthetic clinics, LeadClaw helps capture consultation or booking enquiries, out-of-hours interest, missed calls, and callback details without making treatment decisions.";
+    return "For clinics, treatment enquiries and consultation requests often arrive while reception is busy or outside opening hours.";
   }
 
-  return "For UK service businesses, LeadClaw helps capture missed calls, quote requests, out-of-hours enquiries, and booking or callback details when the team is busy.";
+  return "For UK service businesses, missed calls, quote requests, and after-hours enquiries can turn into lost work if nobody replies quickly.";
+}
+
+function nicheDescription(niche?: string | null) {
+  const normalized = normalizeNiche(niche);
+
+  if (["plumber", "plumbers", "plumbing"].includes(normalized)) {
+    return "plumbing business";
+  }
+
+  if (["heating", "heating_engineer", "heating_engineers"].includes(normalized)) {
+    return "plumbing and heating business";
+  }
+
+  if (["electrician", "electricians", "electrical"].includes(normalized)) {
+    return "electrical contractor";
+  }
+
+  if (["roofer", "roofers", "roofing"].includes(normalized)) {
+    return "roofing business";
+  }
+
+  if (["estate_agent", "estate_agents", "estate-agents", "property"].includes(normalized)) {
+    return "estate agency";
+  }
+
+  if (
+    [
+      "beauty",
+      "aesthetic",
+      "aesthetics",
+      "aesthetic_clinic",
+      "aesthetic_clinics",
+      "beauty_clinic",
+      "beauty_clinics",
+    ].includes(normalized)
+  ) {
+    return "clinic";
+  }
+
+  if (normalized) {
+    return "service business";
+  }
+
+  return "";
 }
 
 function demoUrlForLead(id: string) {
@@ -165,16 +217,34 @@ function hasCurrentOutreachPositioning(value?: string | null) {
 }
 
 function canUseStoredInitialMessage(value?: string | null) {
-  return hasCurrentOutreachPositioning(value) && !hasStaleOutreachCopy(value);
+  const message = String(value || "");
+
+  return (
+    hasCurrentOutreachPositioning(message) &&
+    !hasStaleOutreachCopy(message) &&
+    message.includes(PRODUCTION_APP_URL) &&
+    message.includes("LeadClaw is built by Claw Labs") &&
+    message.includes("Kris Ninnis")
+  );
 }
 
 function buildInitialSubject(lead: { company_name: string }) {
-  return `AI receptionist idea for ${lead.company_name}`;
+  return `Quick idea for ${lead.company_name}`;
 }
 
 function variantFromId(id: string) {
   const n = Array.from(id || "").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
   return n % 3;
+}
+
+function complianceFooter(email?: string | null) {
+  return `---
+Lead Claw Ltd (Company No. 13546017)
+206 Whitechapel Road, London, E1 1AA
+We found your business on Google Maps.
+Privacy policy: ${PRODUCTION_APP_URL}/legal/privacy
+Data rights: privacy@leadclaw.uk
+Unsubscribe: ${unsubscribeUrl(email)}`;
 }
 
 function renderInitialMessage(lead: {
@@ -194,97 +264,93 @@ function renderInitialMessage(lead: {
   const company = lead.company_name;
   const city = lead.city;
   const context = nicheContext(lead.niche);
+  const industry = nicheDescription(lead.niche);
   const demoUrl = demoUrlForLead(lead.id);
-  const unsubUrl = unsubscribeUrl(lead.contact_email);
   const v = variantFromId(lead.id);
+  const locationText = city ? ` in ${city}` : "";
+  const industryText = industry ? ` as a ${industry}` : "";
+  const opener =
+    v === 0
+      ? `A quick idea for ${company}${locationText}${industryText}.`
+      : v === 1
+        ? `I found ${company}${locationText}${industryText} and thought this might be useful.`
+        : `I was looking at ${company}${locationText}${industryText} and noticed a common problem for service businesses.`;
 
   if (v === 0) {
     return `Hi ${company} team,
 
-I came across your business${city ? ` in ${city}` : ""} and wanted to reach out.
+${opener}
 
-I'm building LeadClaw, an AI receptionist for UK service businesses. It helps capture missed calls, quote requests, out-of-hours enquiries, and booking or callback details when the team is busy.
+For many service businesses, missed calls, quote requests, and after-hours enquiries are easy to lose when nobody replies quickly. Often the next thing a customer does is try another local business.
 
 ${context}
 
-I put together a quick demo for your business here:
+LeadClaw is an AI receptionist for UK service businesses. It can answer common website enquiries, capture quote requests, collect callback details, and help turn visitors into booked jobs. It works 24/7 when the business is busy, on-site, or closed.
+
+I put together a personalised demo for ${company}:
 ${demoUrl}
 
-If it looks useful, you can start with a no-obligation free trial and see whether it helps ${company} respond faster.
+If it looks useful, you can try LeadClaw without a long setup and see whether it helps ${company} respond faster.
 
-Would it be worth a look?
+LeadClaw is built by Claw Labs, a UK software and automation company.
 
 Best,
-Kris
-LeadClaw
+Kris Ninnis
+Founder, LeadClaw
 
----
-Lead Claw Ltd (Company No. 13546017)
-206 Whitechapel Road, London, E1 1AA
-We found your business on Google Maps.
-Privacy policy: ${PRODUCTION_APP_URL}/legal/privacy
-Data rights: privacy@leadclaw.uk
-Unsubscribe: ${unsubUrl}`;
+${complianceFooter(lead.contact_email)}`;
   }
 
   if (v === 1) {
     return `Hi ${company} team,
 
-Just a quick note after finding ${company}${city ? ` in ${city}` : ""}.
+${opener}
 
-LeadClaw is an AI receptionist for UK service businesses. It gives people a simple way to leave details when nobody can answer, then helps the team follow up on missed calls, quote requests, out-of-hours enquiries, bookings, and callbacks.
+For many service businesses, missed calls, quote requests, and after-hours enquiries are easy to lose when nobody replies quickly. Often the next thing a customer does is try another local business.
 
 ${context}
 
-Here is a quick demo link:
+LeadClaw is an AI receptionist for UK service businesses. It can answer common website enquiries, capture quote requests, collect callback details, and help turn visitors into booked jobs. It works 24/7 when the business is busy, on-site, or closed.
+
+Here is a personalised demo for ${company}:
 ${demoUrl}
 
 If this could help reduce missed enquiries for ${company}, the free trial is there to test it without a long setup.
 
-Would it be useful to take a look?
+LeadClaw is built by Claw Labs, a UK software and automation company.
 
 Best,
-Kris
-LeadClaw
+Kris Ninnis
+Founder, LeadClaw
 
----
-Lead Claw Ltd (Company No. 13546017)
-206 Whitechapel Road, London, E1 1AA
-We found your business on Google Maps.
-Privacy policy: ${PRODUCTION_APP_URL}/legal/privacy
-Data rights: privacy@leadclaw.uk
-Unsubscribe: ${unsubUrl}`;
+${complianceFooter(lead.contact_email)}`;
   }
 
   return `Hi ${company} team,
 
-Saw your business and thought I'd reach out.
+${opener}
 
-LeadClaw is an AI receptionist for UK service businesses. It helps capture missed calls, quote requests, out-of-hours enquiries, and booking or callback details, then keeps follow-up easier for the team.
+For many service businesses, missed calls, quote requests, and after-hours enquiries can be expensive when customers need help quickly and try the next business instead.
 
 ${context}
 
-I put together a quick demo for ${company} here:
+LeadClaw is an AI receptionist for UK service businesses. It can answer common website enquiries, capture quote requests, collect callback details, and help turn visitors into booked jobs. It works 24/7 when the business is busy, on-site, or closed.
+
+I put together a personalised demo for ${company} here:
 ${demoUrl}
 
 If it fits, you can try LeadClaw without a long setup and see whether it helps your team respond faster.
 
-Worth a look?
+LeadClaw is built by Claw Labs, a UK software and automation company.
 
 Best,
-Kris
-LeadClaw
+Kris Ninnis
+Founder, LeadClaw
 
----
-Lead Claw Ltd (Company No. 13546017)
-206 Whitechapel Road, London, E1 1AA
-We found your business on Google Maps.
-Privacy policy: ${PRODUCTION_APP_URL}/legal/privacy
-Data rights: privacy@leadclaw.uk
-Unsubscribe: ${unsubUrl}`;
+${complianceFooter(lead.contact_email)}`;
 }
 
-function renderFollowUp1(lead: { company_name: string }) {
+function renderFollowUp1(lead: { company_name: string; contact_email?: string | null }) {
   return `Hi ${lead.company_name} team,
 
 Just checking if you saw my last note.
@@ -294,13 +360,13 @@ LeadClaw is an AI receptionist for UK service businesses. It helps capture misse
 If useful, I can send over the quick demo again for ${lead.company_name}.
 
 Best,
-Kris
-LeadClaw
+Kris Ninnis
+Founder, LeadClaw
 
-Reply "no" to opt out.`;
+${complianceFooter(lead.contact_email)}`;
 }
 
-function renderFollowUp2(lead: { company_name: string }) {
+function renderFollowUp2(lead: { company_name: string; contact_email?: string | null }) {
   return `Hi ${lead.company_name} team,
 
 Final quick note from me.
@@ -310,17 +376,16 @@ If missed calls, quote requests, out-of-hours enquiries, or callback capture are
 If not, no worries at all.
 
 Best,
-Kris
-LeadClaw
+Kris Ninnis
+Founder, LeadClaw
 
-Reply "no" to opt out.`;
+${complianceFooter(lead.contact_email)}`;
 }
 
 function unsubscribeUrl(email?: string | null) {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.leadclaw.uk";
   return email
-    ? `${appUrl}/api/unsubscribe?email=${encodeURIComponent(email)}`
-    : `${appUrl}/api/unsubscribe`;
+    ? `${PRODUCTION_APP_URL}/api/unsubscribe?email=${encodeURIComponent(email)}`
+    : `${PRODUCTION_APP_URL}/api/unsubscribe`;
 }
 
 function appendTextUnsubscribe(text: string, email?: string | null) {
