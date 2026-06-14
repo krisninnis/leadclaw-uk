@@ -14,10 +14,13 @@ jobs:
           OUTREACH_RUN_TOKEN: ${{ secrets.OUTREACH_RUN_TOKEN }}
         run: |
           set -e
+          : "${OUTREACH_BASE_URL:?Missing OUTREACH_BASE_URL secret}"
+          : "${OUTREACH_RUN_TOKEN:?Missing OUTREACH_RUN_TOKEN secret}"
 
-          RESPONSE=$(curl --fail --show-error --silent \
+          RESPONSE=$(curl --fail-with-body --show-error --silent \
             -X POST "${OUTREACH_BASE_URL}/api/outreach/run" \
             -H "Authorization: Bearer ${OUTREACH_RUN_TOKEN}" \
+            -H "X-Outreach-Run-Token: ${OUTREACH_RUN_TOKEN}" \
             -H "Content-Type: application/json")
 
           echo "Outreach API response:"

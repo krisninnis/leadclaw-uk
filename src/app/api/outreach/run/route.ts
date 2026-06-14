@@ -464,13 +464,38 @@ function applyEmailSelectionGuards(query: SupabaseUntypedQueryBuilder) {
   );
 }
 
+function outreachTokenFromRequest(req: Request) {
+  const explicitToken = req.headers.get("x-outreach-run-token")?.trim();
+  if (explicitToken) return explicitToken;
+
+  const auth = req.headers.get("authorization")?.trim() || "";
+  const bearer = auth.match(/^Bearer\s+(.+)$/i);
+  return bearer?.[1]?.trim() || "";
+}
+
+function isAuthorizedOutreachRun(req: Request) {
+  const token = process.env.OUTREACH_RUN_TOKEN?.trim();
+  const suppliedToken = outreachTokenFromRequest(req);
+
+  return Boolean(token && suppliedToken && suppliedToken === token);
+}
+
+function logOutreachAuthFailure(req: Request) {
+  console.warn("[outreach.run] unauthorized", {
+    tokenConfigured: process.env.OUTREACH_RUN_TOKEN?.trim() ? "yes" : "no",
+    authHeaderPresent: req.headers.get("authorization") ? "yes" : "no",
+    outreachTokenHeaderPresent: req.headers.get("x-outreach-run-token")
+      ? "yes"
+      : "no",
+  });
+}
+
 export async function POST(req: Request) {
   const startedAt = Date.now();
 
-  const token = process.env.OUTREACH_RUN_TOKEN?.trim();
-  const auth = req.headers.get("authorization") || "";
+  if (!isAuthorizedOutreachRun(req)) {
+    logOutreachAuthFailure(req);
 
-  if (!token || auth !== `Bearer ${token}`) {
     return NextResponse.json(
       { ok: false, error: "unauthorized" },
       { status: 401 },

@@ -80,14 +80,12 @@ function makeAdmin({ leads = [], sentToday = [] } = {}) {
   };
 }
 
-async function postOutreachRun() {
+async function postOutreachRun(headers = { authorization: "Bearer test-token" }) {
   const { POST } = require("@/app/api/outreach/run/route");
 
   const req = new Request("http://localhost:3000/api/outreach/run", {
     method: "POST",
-    headers: {
-      authorization: "Bearer test-token",
-    },
+    headers,
   });
 
   const res = await POST(req);
@@ -108,6 +106,8 @@ describe("POST /api/outreach/run", () => {
   });
 
   it("returns 401 when bearer token is missing", async () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
     jest.doMock("@/lib/supabase/admin", () => ({
       createAdminClient: jest.fn(),
     }));
@@ -135,6 +135,14 @@ describe("POST /api/outreach/run", () => {
       ok: false,
       error: "unauthorized",
     });
+    expect(warnSpy).toHaveBeenCalledWith("[outreach.run] unauthorized", {
+      tokenConfigured: "yes",
+      authHeaderPresent: "no",
+      outreachTokenHeaderPresent: "no",
+    });
+    expect(JSON.stringify(warnSpy.mock.calls)).not.toContain("test-token");
+
+    warnSpy.mockRestore();
   });
 
   it("returns 400 when Supabase admin is not configured", async () => {
@@ -158,6 +166,128 @@ describe("POST /api/outreach/run", () => {
       ok: false,
       error: "supabase_not_configured",
     });
+  });
+
+  it("accepts the explicit GitHub outreach token header", async () => {
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(null),
+    }));
+
+    jest.doMock("@/lib/email", () => ({
+      isSuppressed: jest.fn(),
+      sendEmail: jest.fn(),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn(),
+    }));
+
+    const { res, body } = await postOutreachRun({
+      "x-outreach-run-token": "test-token",
+    });
+
+    expect(res.status).toBe(400);
+    expect(body).toEqual({
+      ok: false,
+      error: "supabase_not_configured",
+    });
+  });
+
+  it("accepts a case-insensitive bearer token with flexible spacing", async () => {
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(null),
+    }));
+
+    jest.doMock("@/lib/email", () => ({
+      isSuppressed: jest.fn(),
+      sendEmail: jest.fn(),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn(),
+    }));
+
+    const { res, body } = await postOutreachRun({
+      authorization: "bearer   test-token   ",
+    });
+
+    expect(res.status).toBe(400);
+    expect(body).toEqual({
+      ok: false,
+      error: "supabase_not_configured",
+    });
+  });
+
+  it("rejects an incorrect explicit outreach token", async () => {
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn(),
+    }));
+
+    jest.doMock("@/lib/email", () => ({
+      isSuppressed: jest.fn(),
+      sendEmail: jest.fn(),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn(),
+    }));
+
+    const { res, body } = await postOutreachRun({
+      "x-outreach-run-token": "wrong-token",
+    });
+
+    expect(res.status).toBe(401);
+    expect(body).toEqual({
+      ok: false,
+      error: "unauthorized",
+    });
+    expect(warnSpy).toHaveBeenCalledWith("[outreach.run] unauthorized", {
+      tokenConfigured: "yes",
+      authHeaderPresent: "no",
+      outreachTokenHeaderPresent: "yes",
+    });
+    expect(JSON.stringify(warnSpy.mock.calls)).not.toContain("wrong-token");
+    expect(JSON.stringify(warnSpy.mock.calls)).not.toContain("test-token");
+
+    warnSpy.mockRestore();
+  });
+
+  it("logs when the deployed route has no configured outreach token", async () => {
+    delete process.env.OUTREACH_RUN_TOKEN;
+    const warnSpy = jest.spyOn(console, "warn").mockImplementation(() => {});
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn(),
+    }));
+
+    jest.doMock("@/lib/email", () => ({
+      isSuppressed: jest.fn(),
+      sendEmail: jest.fn(),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn(),
+    }));
+
+    const { res, body } = await postOutreachRun({
+      authorization: "Bearer test-token",
+    });
+
+    expect(res.status).toBe(401);
+    expect(body).toEqual({
+      ok: false,
+      error: "unauthorized",
+    });
+    expect(warnSpy).toHaveBeenCalledWith("[outreach.run] unauthorized", {
+      tokenConfigured: "no",
+      authHeaderPresent: "yes",
+      outreachTokenHeaderPresent: "no",
+    });
+    expect(JSON.stringify(warnSpy.mock.calls)).not.toContain("test-token");
+
+    warnSpy.mockRestore();
   });
 
   it("sends multiple eligible leads when batchSize is greater than 1", async () => {
