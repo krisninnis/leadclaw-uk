@@ -1,0 +1,79 @@
+name: Lead Scraper
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Run without importing leads"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      limit:
+        description: "Maximum leads to discover/import"
+        required: true
+        default: "5"
+      niche_mode:
+        description: "Niche mode"
+        required: true
+        default: "clinic"
+        type: choice
+        options:
+          - clinic
+          - local-service
+          - custom
+      niches:
+        description: "Optional space-separated niches for custom runs"
+        required: false
+        default: ""
+      locations:
+        description: "Space-separated locations"
+        required: true
+        default: "London"
+
+jobs:
+  run-scraper:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate scraper
+        run: |
+          python -m compileall leadclaw-lead-scraper
+          python -m unittest discover -s leadclaw-lead-scraper -p "test_*.py"
+
+      - name: Run scraper
+        env:
+          GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
+          LEAD_IMPORT_TOKEN: ${{ secrets.LEAD_IMPORT_TOKEN }}
+          LEADCLAW_IMPORT_URL: ${{ secrets.LEADCLAW_IMPORT_URL }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ARGS=(
+            "--limit" "${{ inputs.limit }}"
+            "--niche-mode" "${{ inputs.niche_mode }}"
+            "--locations" ${{ inputs.locations }}
+          )
+
+          if [ -n "${{ inputs.niches }}" ]; then
+            ARGS+=("--niches" ${{ inputs.niches }})
+          fi
+
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            ARGS+=("--dry-run")
+          else
+            : "${GOOGLE_PLACES_API_KEY:?Missing GOOGLE_PLACES_API_KEY secret}"
+            : "${LEAD_IMPORT_TOKEN:?Missing LEAD_IMPORT_TOKEN secret}"
+            ARGS+=("--live")
+          fi
+
+          python leadclaw-lead-scraper/places_batch.py "${ARGS[@]}"

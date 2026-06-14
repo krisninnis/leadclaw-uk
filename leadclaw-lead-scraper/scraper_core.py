@@ -1,0 +1,378 @@
+from __future__ import annotations
+
+import json
+import os
+import time
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Any, Callable
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
+
+from niche_config import queries_for
+
+PRODUCTION_IMPORT_URL = "https://www.leadclaw.uk/api/leads/import"
+
+CLINIC_NICHES = ["beauty", "dental"]
+LOCAL_SERVICE_NICHES = [
+    "plumber",
+    "electrician",
+    "heating",
+    "roofer",
+    "garage",
+    "estate_agent",
+]
+DEFAULT_LOCATIONS = ["London"]
+
+SOCIAL_OR_PLATFORM_HOSTS = (
+    "facebook.com",
+    "instagram.com",
+    "x.com",
+    "twitter.com",
+    "linkedin.com",
+    "youtube.com",
+    "tiktok.com",
+)
+
+
+@dataclass(frozen=True)
+class ScraperConfig:
+    dry_run: bool
+    limit: int
+    niche_mode: str
+    niches: list[str]
+    locations: list[str]
+    delay_seconds: float
+    google_places_api_key: str
+    import_url: str
+    import_token: str
+
+
+def utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def log_event(event: str, **fields: Any) -> None:
+    payload = {"event": event, "ts": utc_now(), **fields}
+    print(json.dumps(payload, sort_keys=True))
+
+
+def select_niches(niche_mode: str, explicit_niches: list[str] | None = None) -> list[str]:
+    cleaned = [n.strip() for n in explicit_niches or [] if n and n.strip()]
+    if cleaned:
+        return cleaned
+
+    if niche_mode == "clinic":
+        return list(CLINIC_NICHES)
+
+    if niche_mode == "local-service":
+        return list(LOCAL_SERVICE_NICHES)
+
+    if niche_mode == "custom":
+        raise ValueError("--niche-mode custom requires --niches")
+
+    raise ValueError(f"Unsupported niche mode: {niche_mode}")
+
+
+def build_config(
+    *,
+    dry_run: bool,
+    limit: int,
+    niche_mode: str,
+    niches: list[str] | None,
+    locations: list[str] | None,
+    delay_seconds: float,
+    env: dict[str, str] | None = None,
+) -> ScraperConfig:
+    env = env or os.environ
+    selected_niches = select_niches(niche_mode, niches)
+    selected_locations = [l.strip() for l in locations or [] if l and l.strip()]
+
+    if not selected_locations:
+        selected_locations = list(DEFAULT_LOCATIONS)
+
+    if limit < 1:
+        raise ValueError("--limit must be at least 1")
+
+    if limit > 200:
+        raise ValueError("--limit must be 200 or lower")
+
+    if delay_seconds < 0:
+        raise ValueError("--delay-seconds cannot be negative")
+
+    google_key = (env.get("GOOGLE_PLACES_API_KEY") or "").strip()
+    import_url = (env.get("LEADCLAW_IMPORT_URL") or PRODUCTION_IMPORT_URL).strip()
+    import_token = (env.get("LEAD_IMPORT_TOKEN") or "").strip()
+
+    if not dry_run and not google_key:
+        raise ValueError("GOOGLE_PLACES_API_KEY is required for live runs")
+
+    if not dry_run and not import_url:
+        raise ValueError("LEADCLAW_IMPORT_URL is required for live runs")
+
+    if not dry_run and not import_token:
+        raise ValueError("LEAD_IMPORT_TOKEN is required for live imports")
+
+    return ScraperConfig(
+        dry_run=dry_run,
+        limit=limit,
+        niche_mode=niche_mode,
+        niches=selected_niches,
+        locations=selected_locations,
+        delay_seconds=delay_seconds,
+        google_places_api_key=google_key,
+        import_url=import_url,
+        import_token=import_token,
+    )
+
+
+def is_valid_website(raw: str | None) -> bool:
+    if not raw:
+        return False
+
+    value = raw.strip().lower()
+    return value.startswith("https://") or value.startswith("http://")
+
+
+def is_obviously_low_quality_website(raw: str | None) -> bool:
+    if not raw:
+        return False
+
+    value = raw.lower()
+    return any(host in value for host in SOCIAL_OR_PLATFORM_HOSTS)
+
+
+def normalize_website(raw: str | None) -> str:
+    return (raw or "").strip().rstrip("/")
+
+
+def normalize_text(raw: str | None) -> str:
+    return " ".join((raw or "").strip().lower().split())
+
+
+def lead_key(lead: dict[str, Any]) -> str:
+    website = normalize_website(lead.get("website"))
+    email = normalize_text(lead.get("contact_email"))
+
+    if website:
+        return f"website:{website.lower()}"
+
+    if email:
+        return f"email:{email}"
+
+    return (
+        "name_city:"
+        f"{normalize_text(lead.get('company_name'))}|{normalize_text(lead.get('city'))}"
+    )
+
+
+def dedupe_leads(leads: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    seen: set[str] = set()
+    kept: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+
+    for lead in leads:
+        key = lead_key(lead)
+        if key in seen:
+            skipped.append({"lead": lead, "reason": "duplicate_in_batch"})
+            continue
+
+        seen.add(key)
+        kept.append(lead)
+
+    return kept, skipped
+
+
+def fetch_json(url: str, params: dict[str, Any], timeout: int = 20) -> dict[str, Any]:
+    full_url = f"{url}?{urlencode(params)}"
+    request = Request(
+        full_url,
+        headers={"User-Agent": "LeadClawResearchBot/1.0 (+https://www.leadclaw.uk)"},
+    )
+
+    with urlopen(request, timeout=timeout) as response:
+        data = response.read(1_000_000)
+        return json.loads(data.decode("utf-8"))
+
+
+def google_text_search(api_key: str, query: str) -> dict[str, Any]:
+    return fetch_json(
+        "https://maps.googleapis.com/maps/api/place/textsearch/json",
+        {"query": query, "key": api_key},
+    )
+
+
+def google_place_details(api_key: str, place_id: str) -> dict[str, Any]:
+    return fetch_json(
+        "https://maps.googleapis.com/maps/api/place/details/json",
+        {
+            "place_id": place_id,
+            "fields": ",".join(
+                [
+                    "name",
+                    "website",
+                    "formatted_phone_number",
+                    "formatted_address",
+                    "rating",
+                    "user_ratings_total",
+                ]
+            ),
+            "key": api_key,
+        },
+    )
+
+
+def lead_from_place(
+    *,
+    place: dict[str, Any],
+    details: dict[str, Any],
+    niche: str,
+    city: str,
+) -> tuple[dict[str, Any] | None, str | None]:
+    result = details.get("result") or {}
+    name = str(result.get("name") or place.get("name") or "").strip()
+
+    if not name:
+        return None, "missing_company_name"
+
+    website = str(result.get("website") or "").strip()
+    if website and not is_valid_website(website):
+        return None, "invalid_website"
+
+    if is_obviously_low_quality_website(website):
+        return None, "platform_only_website"
+
+    rating = result.get("rating") or place.get("rating")
+    review_count = result.get("user_ratings_total") or place.get("user_ratings_total")
+    phone = str(result.get("formatted_phone_number") or "").strip()
+    address = str(result.get("formatted_address") or place.get("formatted_address") or "").strip()
+
+    notes = {
+        "address": address or None,
+        "rating": rating,
+        "review_count": review_count,
+        "source": "google-places-textsearch",
+        "email_collection": "not_attempted_by_scraper",
+    }
+
+    return (
+        {
+            "niche": niche,
+            "company_name": name,
+            "website": website,
+            "contact_email": "",
+            "contact_phone": phone,
+            "city": city,
+            "source": "google-places",
+            "notes": json.dumps(notes, sort_keys=True),
+        },
+        None,
+    )
+
+
+def discover_leads(config: ScraperConfig) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    leads: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+
+    if not config.google_places_api_key:
+        log_event("scraper_plan_only_no_google_key", dry_run=config.dry_run)
+        return leads, skipped
+
+    for location in config.locations:
+        for niche in config.niches:
+            for query in queries_for(niche):
+                if len(leads) >= config.limit:
+                    break
+
+                search_query = f"{query} {location} UK"
+                log_event(
+                    "google_places_search_started",
+                    location=location,
+                    niche=niche,
+                    query=search_query,
+                )
+
+                try:
+                    search = google_text_search(config.google_places_api_key, search_query)
+                except (HTTPError, URLError, TimeoutError, ValueError) as exc:
+                    log_event(
+                        "google_places_search_failed",
+                        location=location,
+                        niche=niche,
+                        error=str(exc),
+                    )
+                    continue
+
+                for place in search.get("results", []):
+                    if len(leads) >= config.limit:
+                        break
+
+                    place_id = str(place.get("place_id") or "")
+                    if not place_id:
+                        skipped.append({"place": place.get("name"), "reason": "missing_place_id"})
+                        continue
+
+                    time.sleep(config.delay_seconds)
+
+                    try:
+                        details = google_place_details(config.google_places_api_key, place_id)
+                    except (HTTPError, URLError, TimeoutError, ValueError) as exc:
+                        skipped.append({"place": place.get("name"), "reason": "details_failed"})
+                        log_event(
+                            "google_place_details_failed",
+                            place_id=place_id,
+                            error=str(exc),
+                        )
+                        continue
+
+                    lead, reason = lead_from_place(
+                        place=place,
+                        details=details,
+                        niche=niche,
+                        city=location,
+                    )
+
+                    if not lead:
+                        skipped.append({"place": place.get("name"), "reason": reason or "skipped"})
+                        continue
+
+                    leads.append(lead)
+                    log_event(
+                        "lead_discovered",
+                        company_name=lead["company_name"],
+                        city=location,
+                        niche=niche,
+                    )
+
+                    time.sleep(config.delay_seconds)
+
+    deduped, duplicate_skips = dedupe_leads(leads)
+    skipped.extend(duplicate_skips)
+    return deduped[: config.limit], skipped
+
+
+def import_leads(config: ScraperConfig, leads: list[dict[str, Any]]) -> dict[str, Any]:
+    if config.dry_run:
+        return {
+            "ok": True,
+            "dry_run": True,
+            "would_import": len(leads),
+            "leads": leads,
+        }
+
+    payload = json.dumps({"leads": leads}).encode("utf-8")
+    request = Request(
+        config.import_url,
+        data=payload,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {config.import_token}",
+            "X-Lead-Import-Token": config.import_token,
+            "Content-Type": "application/json",
+            "User-Agent": "LeadClawLeadScraper/1.0",
+        },
+    )
+
+    with urlopen(request, timeout=30) as response:
+        return json.loads(response.read(1_000_000).decode("utf-8"))
