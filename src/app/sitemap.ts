@@ -1,5 +1,6 @@
 import { MetadataRoute } from "next";
 import { aiReceptionistPages } from "@/lib/ai-receptionist-pages";
+import { seoArticlePages } from "@/lib/seo-article-pages";
 import { seoPages } from "@/lib/seo-pages";
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -90,6 +91,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly",
       priority: 0.85,
     },
+    ...seoArticlePages.map((page) => ({
+      url: `${baseUrl}${page.canonicalPath}`,
+      lastModified,
+      changeFrequency: "monthly" as const,
+      priority: 0.82,
+    })),
     // SEO landing pages - high priority
     {
       url: `${baseUrl}/seo/ai-agent-for-aesthetic-clinics-uk`,

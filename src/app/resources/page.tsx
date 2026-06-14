@@ -54,6 +54,10 @@ const sections = [
     links: [
       { href: "/best-ai-receptionist-uk", label: "Best AI receptionist UK guide" },
       { href: "/ai-receptionist-uk", label: "What is an AI receptionist?" },
+      { href: "/ai-receptionist-vs-answering-service", label: "AI receptionist vs answering service" },
+      { href: "/ai-receptionist-vs-virtual-receptionist", label: "AI receptionist vs virtual receptionist" },
+      { href: "/how-much-does-an-answering-service-cost-uk", label: "Answering service costs UK" },
+      { href: "/missed-call-statistics-uk", label: "Missed call statistics UK" },
       { href: "/seo/missed-call-recovery-uk", label: "Missed-call recovery for UK businesses" },
       { href: "/compare", label: "Compare AI receptionist options" },
     ],
