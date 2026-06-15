@@ -317,7 +317,8 @@ export function buildOutreachSubject(companyName: string) {
 
 export function buildOutreachMessage(lead: LeadEnrichmentRow) {
   const company = String(lead.company_name || "").trim();
-  const email = normalizeEmail(lead.contact_email);
+  const normalizedEmail = normalizeEmail(lead.contact_email);
+  const email = isValidEmail(normalizedEmail) ? normalizedEmail : "";
   const city = String(lead.city || "").trim();
   const industry = nicheDescription(lead.niche);
   const locationText = city ? ` in ${city}` : "";
@@ -365,6 +366,9 @@ export function buildLeadEnrichmentPatch(
   const skippedReasons: string[] = [];
   const companyName = String(lead.company_name || "").trim();
   const email = normalizeEmail(lead.contact_email);
+  const hasWebsiteOrPhone = Boolean(
+    String(lead.website || "").trim() || String(lead.contact_phone || "").trim(),
+  );
 
   const pecr = lead.pecr_classification
     ? {
@@ -394,11 +398,15 @@ export function buildLeadEnrichmentPatch(
     skippedReasons.push("missing_company_name");
   }
 
-  if (!email || !isValidEmail(email)) {
-    skippedReasons.push("missing_or_invalid_contact_email");
+  if (email && !isValidEmail(email)) {
+    skippedReasons.push("invalid_contact_email");
   }
 
-  if (companyName && email && isValidEmail(email)) {
+  if (!hasWebsiteOrPhone) {
+    skippedReasons.push("missing_website_or_phone");
+  }
+
+  if (companyName && hasWebsiteOrPhone) {
     if (!lead.outreach_subject) {
       patch.outreach_subject = buildOutreachSubject(companyName);
     }

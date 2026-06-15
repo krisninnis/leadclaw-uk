@@ -140,6 +140,17 @@ export async function POST(req: Request) {
   for (const lead of rows) {
     const { patch, skippedReasons } = buildLeadEnrichmentPatch(lead);
     const fields = Object.keys(patch);
+    const subjectGenerated = Boolean(patch.outreach_subject);
+    const messageGenerated = Boolean(patch.outreach_message);
+
+    if (subjectGenerated || messageGenerated) {
+      console.log("[outreach.backfill] outreach copy generated", {
+        leadId: lead.id,
+        subjectGenerated: patch.outreach_subject || null,
+        messageGenerated,
+        messageLength: patch.outreach_message?.length || 0,
+      });
+    }
 
     if (fields.length === 0) {
       skippedCount += 1;
@@ -179,6 +190,9 @@ export async function POST(req: Request) {
       failedCount += 1;
       console.warn("[outreach.backfill] lead update failed", {
         leadId: lead.id,
+        subjectGenerated: patch.outreach_subject || null,
+        messageGenerated,
+        saveSucceeded: false,
         error: updateError.message,
       });
 
@@ -194,6 +208,14 @@ export async function POST(req: Request) {
     }
 
     updatedCount += 1;
+    console.log("[outreach.backfill] lead update saved", {
+      leadId: lead.id,
+      fields,
+      subjectGenerated: patch.outreach_subject || null,
+      messageGenerated,
+      saveSucceeded: true,
+    });
+
     results.push({
       id: lead.id,
       companyName: lead.company_name,

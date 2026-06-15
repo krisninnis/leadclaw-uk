@@ -139,7 +139,7 @@ describe("POST /api/outreach/backfill", () => {
     );
   });
 
-  it("does not generate outreach copy when the contact email is missing", async () => {
+  it("generates outreach copy when contact email is missing but website or phone exists", async () => {
     const mockDb = makeAdmin({
       leads: [
         makeLead({
@@ -167,8 +167,110 @@ describe("POST /api/outreach/backfill", () => {
         fields: expect.arrayContaining([
           "pecr_classification",
           "lead_quality_score",
+          "outreach_subject",
+          "outreach_message",
         ]),
-        skippedReasons: ["missing_or_invalid_contact_email"],
+        skippedReasons: [],
+      }),
+    );
+  });
+
+  it("persists generated outreach copy during apply even without contact email", async () => {
+    const logSpy = jest.spyOn(console, "log").mockImplementation(() => {});
+    const mockDb = makeAdmin({
+      leads: [
+        makeLead({
+          id: "lead_no_email_apply",
+          company_name: "BOILER MAN (YORKSHIRE)",
+          contact_email: null,
+          contact_phone: "0113 000 0000",
+          website: "https://boilermanyorkshire.example",
+          niche: "heating",
+        }),
+      ],
+    });
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn().mockResolvedValue(undefined),
+    }));
+
+    const { res, body } = await postBackfill({ apply: true });
+
+    expect(res.status).toBe(200);
+    expect(body.results[0]).toEqual(
+      expect.objectContaining({
+        id: "lead_no_email_apply",
+        applied: true,
+        fields: expect.arrayContaining([
+          "lead_quality_score",
+          "outreach_subject",
+          "outreach_message",
+        ]),
+      }),
+    );
+    expect(mockDb.updateCalls[0]).toEqual(
+      expect.objectContaining({
+        outreach_subject: "Quick idea for BOILER MAN (YORKSHIRE)",
+        outreach_message: expect.stringContaining("AI receptionist"),
+      }),
+    );
+    expect(mockDb.updateCalls[0].outreach_message).toContain(
+      "Unsubscribe: https://www.leadclaw.uk/api/unsubscribe",
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      "[outreach.backfill] outreach copy generated",
+      expect.objectContaining({
+        leadId: "lead_no_email_apply",
+        subjectGenerated: "Quick idea for BOILER MAN (YORKSHIRE)",
+        messageGenerated: true,
+      }),
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      "[outreach.backfill] lead update saved",
+      expect.objectContaining({
+        leadId: "lead_no_email_apply",
+        saveSucceeded: true,
+      }),
+    );
+
+    logSpy.mockRestore();
+  });
+
+  it("does not generate outreach copy when both website and phone are missing", async () => {
+    const mockDb = makeAdmin({
+      leads: [
+        makeLead({
+          id: "lead_no_presence",
+          company_name: "Unknown Local Business",
+          website: null,
+          contact_phone: null,
+          contact_email: null,
+        }),
+      ],
+    });
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn().mockResolvedValue(undefined),
+    }));
+
+    const { body } = await postBackfill();
+
+    expect(body.results[0]).toEqual(
+      expect.objectContaining({
+        id: "lead_no_presence",
+        fields: expect.arrayContaining([
+          "pecr_classification",
+          "lead_quality_score",
+        ]),
+        skippedReasons: ["missing_website_or_phone"],
       }),
     );
     expect(body.results[0].fields).not.toContain("outreach_subject");
