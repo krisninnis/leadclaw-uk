@@ -13,17 +13,6 @@ const FREE_EMAIL_DOMAINS = [
   "protonmail.com",
 ];
 
-const PLATFORM_EMAIL_DOMAINS = [
-  "wix.com",
-  "wixpress.com",
-  "squarespace.com",
-  "wordpress.com",
-  "shopify.com",
-  "mailchimp.com",
-  "sendgrid.net",
-  "amazonses.com",
-];
-
 const CORPORATE_NAME_PATTERN =
   /\b(ltd|limited|llp|plc|group|holdings|services ltd|contractors ltd)\b/i;
 
@@ -89,29 +78,6 @@ function emailDomain(email: string) {
   return email.split("@")[1] || "";
 }
 
-function rootDomain(host: string) {
-  const parts = host
-    .replace(/^www\./, "")
-    .split(".")
-    .filter(Boolean);
-
-  return parts.length >= 2 ? parts.slice(-2).join(".") : parts.join(".");
-}
-
-function websiteHost(raw: string | null) {
-  if (!raw) return "";
-
-  try {
-    return new URL(raw).hostname.toLowerCase();
-  } catch {
-    try {
-      return new URL(`https://${raw}`).hostname.toLowerCase();
-    } catch {
-      return "";
-    }
-  }
-}
-
 function isValidEmail(email: string) {
   return /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(email);
 }
@@ -121,23 +87,26 @@ function isFreeEmail(email: string) {
   return FREE_EMAIL_DOMAINS.includes(domain);
 }
 
-function isPlatformEmail(email: string) {
-  const domain = emailDomain(email);
-  return PLATFORM_EMAIL_DOMAINS.some((platform) => domain.includes(platform));
+function hasWebsite(raw: string | null) {
+  return Boolean(String(raw || "").trim());
 }
 
-function isBusinessEmail(email: string) {
-  return isValidEmail(email) && !isFreeEmail(email) && !isPlatformEmail(email);
+function hasHttpsWebsite(raw: string | null) {
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .startsWith("https://");
 }
 
-function domainMismatch(website: string | null, email: string) {
-  const host = websiteHost(website);
-  if (!host || !email) return false;
+function hasPhone(raw: string | null) {
+  return Boolean(String(raw || "").trim());
+}
 
-  const siteRoot = rootDomain(host);
-  const emailRoot = rootDomain(emailDomain(email));
-
-  return Boolean(siteRoot && emailRoot && siteRoot !== emailRoot);
+function leadQualityBand(score: number) {
+  if (score <= 30) return "Poor";
+  if (score <= 60) return "Medium";
+  if (score <= 80) return "Good";
+  return "Hot";
 }
 
 function nicheLine(niche?: string | null) {
@@ -249,65 +218,59 @@ export function scoreLeadQualityConservatively(
   classification: string | null,
   reason: string | null,
 ) {
+  void classification;
+  void reason;
+
   const email = normalizeEmail(lead.contact_email);
   const reasons: string[] = [];
   let score = 0;
 
-  if (classification === "corporate") {
+  if (hasWebsite(lead.website)) {
     score += 20;
-    reasons.push("+20 corporate classification");
+    reasons.push("+20 website present");
   }
 
-  if (email && isBusinessEmail(email)) {
-    score += 15;
-    reasons.push("+15 business email");
+  if (email && isValidEmail(email)) {
+    score += 25;
+    reasons.push("+25 valid email found");
   }
 
-  if (lead.has_contact_form && !email) {
+  if (hasPhone(lead.contact_phone)) {
     score += 15;
-    reasons.push("+15 contact-form-only site");
-  } else if (lead.has_contact_form && email) {
+    reasons.push("+15 phone present");
+  }
+
+  if (hasHttpsWebsite(lead.website)) {
     score += 10;
-    reasons.push("+10 contact form present");
+    reasons.push("+10 HTTPS website");
   }
 
-  if (lead.has_live_chat === false) {
-    score += 20;
-    reasons.push("+20 no live chat");
+  if (lead.has_contact_form === true) {
+    score += 10;
+    reasons.push("+10 contact page discovered");
+  }
+
+  const rating = Number(lead.google_rating);
+  if (Number.isFinite(rating) && rating >= 4.5) {
+    score += 10;
+    reasons.push("+10 Google rating >= 4.5");
   }
 
   const reviewCount = Number(lead.review_count);
-  if (Number.isFinite(reviewCount) && reviewCount >= 20 && reviewCount <= 500) {
-    score += 15;
-    reasons.push("+15 review count 20-500");
-  }
-
-  if (lead.website) {
+  if (Number.isFinite(reviewCount) && reviewCount >= 20) {
     score += 10;
-    reasons.push("+10 website present");
-  } else {
-    score -= 15;
-    reasons.push("-15 no website");
+    reasons.push("+10 review count >= 20");
   }
 
-  if (email && isFreeEmail(email)) {
-    score -= 10;
-    reasons.push("-10 free email provider");
-  }
-
-  if (email && domainMismatch(lead.website, email)) {
-    score -= 30;
-    reasons.push("-30 domain mismatch");
-  }
-
-  if (String(reason || "").toLowerCase().includes("dissolved")) {
-    score -= 20;
-    reasons.push("-20 dissolved company signal");
-  }
+  const finalScore = Math.max(0, Math.min(100, score));
+  const band = leadQualityBand(finalScore);
 
   return {
-    score: Math.max(0, Math.min(100, score)),
-    reason: reasons.join("; ") || "No strong quality signals found",
+    score: finalScore,
+    reason:
+      reasons.length > 0
+        ? `${band} lead quality (${finalScore}): ${reasons.join("; ")}`
+        : `${band} lead quality (${finalScore}): No scoring signals found`,
   };
 }
 
