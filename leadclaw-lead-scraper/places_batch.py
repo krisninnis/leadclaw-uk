@@ -49,6 +49,29 @@ def parse_args() -> argparse.Namespace:
         default=1.0,
         help="Politeness delay between Google Places/detail requests.",
     )
+    parser.add_argument(
+        "--discover-emails",
+        action="store_true",
+        help="Opt in to safe public website email discovery after a valid website is found.",
+    )
+    parser.add_argument(
+        "--email-discovery-max-pages",
+        type=int,
+        default=3,
+        help="Maximum same-domain pages checked per website when --discover-emails is enabled.",
+    )
+    parser.add_argument(
+        "--email-discovery-timeout",
+        type=float,
+        default=5.0,
+        help="Timeout in seconds per website email discovery request.",
+    )
+    parser.add_argument(
+        "--email-discovery-delay-seconds",
+        type=float,
+        default=0.5,
+        help="Politeness delay between website email discovery page requests.",
+    )
     return parser.parse_args()
 
 
@@ -63,6 +86,10 @@ def main() -> int:
             niches=args.niches,
             locations=args.locations,
             delay_seconds=args.delay_seconds,
+            discover_emails=args.discover_emails,
+            email_discovery_max_pages=args.email_discovery_max_pages,
+            email_discovery_timeout_seconds=args.email_discovery_timeout,
+            email_discovery_delay_seconds=args.email_discovery_delay_seconds,
         )
     except ValueError as exc:
         log_event("scraper_config_invalid", error=str(exc))
@@ -76,6 +103,10 @@ def main() -> int:
         niches=config.niches,
         locations=config.locations,
         delay_seconds=config.delay_seconds,
+        email_discovery_enabled=config.email_discovery.enabled,
+        email_discovery_max_pages=config.email_discovery.max_pages,
+        email_discovery_timeout_seconds=config.email_discovery.timeout_seconds,
+        email_discovery_delay_seconds=config.email_discovery.delay_seconds,
         google_key_configured=bool(config.google_places_api_key),
         import_url=config.import_url if not config.dry_run else None,
     )

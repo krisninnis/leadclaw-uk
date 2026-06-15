@@ -1,8 +1,21 @@
+import json
 import unittest
+from unittest.mock import patch
 
+from email_discovery import (
+    EmailDiscoveryConfig,
+    EmailDiscoveryResult,
+    PageFetchResult,
+    choose_best_email,
+    discover_public_email,
+    extract_email_candidates,
+    merge_email_discovery_into_lead,
+)
 from scraper_core import (
+    GOOGLE_HTTP_STATUS_KEY,
     build_config,
     dedupe_leads,
+    discover_leads,
     import_leads,
     lead_from_place,
     select_niches,
@@ -45,6 +58,7 @@ class ScraperCoreTests(unittest.TestCase):
 
         self.assertTrue(config.dry_run)
         self.assertEqual(config.niches, ["beauty", "dental"])
+        self.assertFalse(config.email_discovery.enabled)
 
     def test_dedupes_before_import(self):
         leads = [
@@ -94,6 +108,314 @@ class ScraperCoreTests(unittest.TestCase):
         self.assertEqual(lead["source"], "google-places")
         self.assertEqual(lead["contact_email"], "")
         self.assertEqual(lead["company_name"], "Calm Clinic")
+
+    def test_logs_google_zero_results_status_without_api_key(self):
+        config = build_config(
+            dry_run=True,
+            limit=5,
+            niche_mode="custom",
+            niches=["plumber"],
+            locations=["Leeds"],
+            delay_seconds=0,
+            env={"GOOGLE_PLACES_API_KEY": "test-google-key"},
+        )
+
+        with (
+            patch("scraper_core.queries_for", return_value=["plumber"]),
+            patch(
+                "scraper_core.google_text_search",
+                return_value={
+                    "status": "ZERO_RESULTS",
+                    "results": [],
+                    GOOGLE_HTTP_STATUS_KEY: 200,
+                },
+            ),
+            patch("scraper_core.log_event") as log_event,
+        ):
+            leads, skipped = discover_leads(config)
+
+        self.assertEqual(leads, [])
+        self.assertEqual(skipped, [])
+
+        response_event = next(
+            call.kwargs
+            for call in log_event.call_args_list
+            if call.args[0] == "google_places_search_response"
+        )
+        summary_event = next(
+            call.kwargs
+            for call in log_event.call_args_list
+            if call.args[0] == "google_places_search_filter_summary"
+        )
+
+        self.assertEqual(response_event["http_status"], 200)
+        self.assertEqual(response_event["google_status"], "ZERO_RESULTS")
+        self.assertEqual(response_event["result_count_before_filtering"], 0)
+        self.assertEqual(summary_event["result_count_after_filtering"], 0)
+        self.assertEqual(summary_event["skip_reason"], "google_status_not_ok")
+        self.assertNotIn("test-google-key", str(log_event.call_args_list))
+
+    def test_logs_google_denied_error_message(self):
+        config = build_config(
+            dry_run=True,
+            limit=5,
+            niche_mode="custom",
+            niches=["beauty"],
+            locations=["London"],
+            delay_seconds=0,
+            env={"GOOGLE_PLACES_API_KEY": "test-google-key"},
+        )
+
+        with (
+            patch("scraper_core.queries_for", return_value=["beauty salon"]),
+            patch(
+                "scraper_core.google_text_search",
+                return_value={
+                    "status": "REQUEST_DENIED",
+                    "error_message": "API project is not authorised",
+                    "results": [],
+                    GOOGLE_HTTP_STATUS_KEY: 200,
+                },
+            ),
+            patch("scraper_core.log_event") as log_event,
+        ):
+            discover_leads(config)
+
+        response_event = next(
+            call.kwargs
+            for call in log_event.call_args_list
+            if call.args[0] == "google_places_search_response"
+        )
+
+        self.assertEqual(response_event["google_status"], "REQUEST_DENIED")
+        self.assertEqual(response_event["error_message"], "API project is not authorised")
+        self.assertNotIn("test-google-key", str(log_event.call_args_list))
+
+    def test_logs_result_counts_after_filtering(self):
+        config = build_config(
+            dry_run=True,
+            limit=5,
+            niche_mode="custom",
+            niches=["plumber"],
+            locations=["Leeds"],
+            delay_seconds=0,
+            env={"GOOGLE_PLACES_API_KEY": "test-google-key"},
+        )
+
+        with (
+            patch("scraper_core.queries_for", return_value=["plumber"]),
+            patch(
+                "scraper_core.google_text_search",
+                return_value={
+                    "status": "OK",
+                    "results": [
+                        {"name": "Missing Place Id"},
+                        {"name": "Platform Only", "place_id": "place_1"},
+                    ],
+                    GOOGLE_HTTP_STATUS_KEY: 200,
+                },
+            ),
+            patch(
+                "scraper_core.google_place_details",
+                return_value={
+                    "status": "OK",
+                    "result": {
+                        "name": "Platform Only",
+                        "website": "https://www.instagram.com/platformonly",
+                    },
+                    GOOGLE_HTTP_STATUS_KEY: 200,
+                },
+            ),
+            patch("scraper_core.log_event") as log_event,
+        ):
+            leads, skipped = discover_leads(config)
+
+        self.assertEqual(leads, [])
+        self.assertEqual(len(skipped), 2)
+
+        search_summary = next(
+            call.kwargs
+            for call in log_event.call_args_list
+            if call.args[0] == "google_places_search_filter_summary"
+        )
+        details_response = next(
+            call.kwargs
+            for call in log_event.call_args_list
+            if call.args[0] == "google_place_details_response"
+        )
+        details_summary = next(
+            call.kwargs
+            for call in log_event.call_args_list
+            if call.args[0] == "google_place_details_filter_summary"
+        )
+
+        self.assertEqual(search_summary["result_count_before_filtering"], 2)
+        self.assertEqual(search_summary["result_count_after_filtering"], 0)
+        self.assertEqual(search_summary["skipped_count"], 2)
+        self.assertEqual(details_response["http_status"], 200)
+        self.assertEqual(details_response["google_status"], "OK")
+        self.assertEqual(details_response["result_count_before_filtering"], 1)
+        self.assertEqual(details_summary["result_count_after_filtering"], 0)
+        self.assertEqual(details_summary["skipped_reason"], "platform_only_website")
+
+    def test_email_discovery_prefers_role_email_over_personal_email(self):
+        candidates = extract_email_candidates(
+            "Email kris@example.com or info@example.com",
+            source_url="https://example.com/contact",
+            website_host="example.com",
+        )
+        best = choose_best_email(candidates)
+
+        lead = merge_email_discovery_into_lead(
+            {"notes": "{}"},
+            EmailDiscoveryResult(
+                contact_email=best.email if best else "",
+                confidence=best.confidence if best else None,
+                source_url="https://example.com/contact",
+                candidates_count=len(candidates),
+                pages_checked=1,
+                status="found",
+            ),
+        )
+
+        self.assertIsNotNone(best)
+        self.assertEqual(best.email, "info@example.com")
+        self.assertEqual(json.loads(lead["notes"])["email_collection"], "website_public_contact_page")
+
+    def test_email_discovery_ignores_noreply_privacy_and_file_artifacts(self):
+        candidates = extract_email_candidates(
+            "noreply@example.com privacy@example.com dpo@example.com logo@2x.png hello@example.com",
+            source_url="https://example.com/contact",
+            website_host="example.com",
+        )
+
+        self.assertEqual([candidate.email for candidate in candidates], ["hello@example.com"])
+
+    def test_email_discovery_contact_page_and_same_domain_only(self):
+        config = EmailDiscoveryConfig(enabled=True, max_pages=3, delay_seconds=0, timeout_seconds=1)
+
+        def fake_fetch(url, **kwargs):
+            if url.endswith("/"):
+                return PageFetchResult(url, 200, "No email here")
+            if url.endswith("/contact"):
+                return PageFetchResult(
+                    url,
+                    200,
+                    "Contact us at hello@example.com or kris@example.com",
+                )
+            return PageFetchResult("https://evil.example/contact-us", 302, "", "redirected_off_domain")
+
+        with (
+            patch("email_discovery.fetch_robots_rules", return_value=None),
+            patch("email_discovery.fetch_website_page", side_effect=fake_fetch),
+            patch("email_discovery.time.sleep"),
+        ):
+            result = discover_public_email(
+                "https://example.com?utm_source=test",
+                company_name="Example Ltd",
+                config=config,
+            )
+
+        self.assertEqual(result.contact_email, "hello@example.com")
+        self.assertEqual(result.confidence, "high")
+        self.assertEqual(result.source_url, "https://example.com/contact")
+
+    def test_email_discovery_no_email_found_case(self):
+        config = EmailDiscoveryConfig(enabled=True, max_pages=1, delay_seconds=0, timeout_seconds=1)
+
+        with (
+            patch("email_discovery.fetch_robots_rules", return_value=None),
+            patch(
+                "email_discovery.fetch_website_page",
+                return_value=PageFetchResult("https://example.com/", 200, "Call us today"),
+            ),
+        ):
+            result = discover_public_email("https://example.com", config=config)
+
+        self.assertEqual(result.contact_email, "")
+        self.assertEqual(result.status, "not_found")
+        self.assertEqual(result.reason, "no_safe_email_found")
+
+    def test_email_discovery_metadata_added_to_notes(self):
+        lead = {
+            "company_name": "Example Ltd",
+            "contact_email": "",
+            "notes": json.dumps({"source": "google-places-textsearch"}),
+        }
+        result = EmailDiscoveryResult(
+            contact_email="info@example.com",
+            confidence="high",
+            source_url="https://example.com/contact",
+            candidates_count=2,
+            pages_checked=2,
+            status="found",
+        )
+
+        updated = merge_email_discovery_into_lead(lead, result)
+        notes = json.loads(updated["notes"])
+
+        self.assertEqual(updated["contact_email"], "info@example.com")
+        self.assertEqual(notes["email_collection"], "website_public_contact_page")
+        self.assertEqual(notes["email_confidence"], "high")
+        self.assertEqual(notes["email_source_url"], "https://example.com/contact")
+        self.assertEqual(notes["email_candidates_count"], 2)
+
+    def test_discover_leads_adds_email_only_when_enabled_without_logging_key(self):
+        config = build_config(
+            dry_run=True,
+            limit=1,
+            niche_mode="custom",
+            niches=["plumber"],
+            locations=["Leeds"],
+            delay_seconds=0,
+            discover_emails=True,
+            email_discovery_delay_seconds=0,
+            env={"GOOGLE_PLACES_API_KEY": "test-google-key"},
+        )
+
+        with (
+            patch("scraper_core.queries_for", return_value=["plumber"]),
+            patch(
+                "scraper_core.google_text_search",
+                return_value={
+                    "status": "OK",
+                    "results": [{"name": "Example Plumbing", "place_id": "place_1"}],
+                    GOOGLE_HTTP_STATUS_KEY: 200,
+                },
+            ),
+            patch(
+                "scraper_core.google_place_details",
+                return_value={
+                    "status": "OK",
+                    "result": {
+                        "name": "Example Plumbing",
+                        "website": "https://example.com",
+                    },
+                    GOOGLE_HTTP_STATUS_KEY: 200,
+                },
+            ),
+            patch(
+                "scraper_core.discover_public_email",
+                return_value=EmailDiscoveryResult(
+                    contact_email="info@example.com",
+                    confidence="high",
+                    source_url="https://example.com/contact",
+                    candidates_count=1,
+                    pages_checked=2,
+                    status="found",
+                ),
+            ),
+            patch("scraper_core.log_event") as log_event,
+        ):
+            leads, skipped = discover_leads(config)
+
+        self.assertEqual(skipped, [])
+        self.assertEqual(leads[0]["contact_email"], "info@example.com")
+        self.assertEqual(
+            json.loads(leads[0]["notes"])["email_collection"],
+            "website_public_contact_page",
+        )
+        self.assertNotIn("test-google-key", str(log_event.call_args_list))
 
 
 if __name__ == "__main__":

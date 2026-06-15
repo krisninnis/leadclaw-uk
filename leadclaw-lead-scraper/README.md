@@ -24,7 +24,10 @@ separate repository/submodule later.
 - Broader local-service scraping requires explicit `--niche-mode local-service`
   or explicit `--niches`.
 - No outreach emails are sent by this scraper.
-- No website email harvesting is performed by this scraper.
+- Website email discovery is disabled by default and only runs with
+  `--discover-emails`.
+- Email discovery only checks a tiny fixed set of same-domain public pages and
+  only collects visible business contact emails.
 - No Supabase service-role key is required by this scraper.
 - Live import uses the app endpoint and `LEAD_IMPORT_TOKEN`.
 - Leads with missing company names, invalid websites, or platform-only websites
@@ -80,6 +83,29 @@ $env:GOOGLE_PLACES_API_KEY="..."
 python .\leadclaw-lead-scraper\places_batch.py --dry-run --limit 5 --niche-mode custom --niches plumber electrician --locations Leeds
 ```
 
+Clinic dry-run without website email discovery:
+
+```powershell
+$env:GOOGLE_PLACES_API_KEY="..."
+py .\leadclaw-lead-scraper\places_batch.py --dry-run --limit 5 --niche-mode clinic --locations Nottingham
+```
+
+Clinic dry-run with opt-in website email discovery:
+
+```powershell
+$env:GOOGLE_PLACES_API_KEY="..."
+py .\leadclaw-lead-scraper\places_batch.py --dry-run --limit 5 --niche-mode clinic --locations Nottingham --discover-emails
+```
+
+Email discovery defaults:
+
+- disabled unless `--discover-emails` is passed
+- maximum pages per domain: `3`
+- timeout per website request: `5` seconds
+- delay between website page requests: `0.5` seconds
+- pages checked, in order: homepage, `/contact`, `/contact-us`, then other
+  safe public pages if the max is increased
+
 ## Live import command
 
 Start tiny and review the imported leads before backfilling enrichment:
@@ -89,6 +115,15 @@ $env:GOOGLE_PLACES_API_KEY="..."
 $env:LEAD_IMPORT_TOKEN="..."
 $env:LEADCLAW_IMPORT_URL="https://www.leadclaw.uk/api/leads/import"
 python .\leadclaw-lead-scraper\places_batch.py --live --limit 5 --niche-mode clinic --locations London
+```
+
+Tiny live import with opt-in website email discovery:
+
+```powershell
+$env:GOOGLE_PLACES_API_KEY="..."
+$env:LEAD_IMPORT_TOKEN="..."
+$env:LEADCLAW_IMPORT_URL="https://www.leadclaw.uk/api/leads/import"
+py .\leadclaw-lead-scraper\places_batch.py --live --limit 5 --niche-mode clinic --locations Nottingham --discover-emails
 ```
 
 ## Run app-side enrichment after import
@@ -121,6 +156,7 @@ Use the manual `Lead Scraper` workflow. Defaults:
 - `limit=5`
 - `niche_mode=clinic`
 - `locations=London`
+- `discover_emails=false`
 
 Required secrets for discovery:
 

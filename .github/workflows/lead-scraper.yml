@@ -32,6 +32,14 @@ on:
         description: "Space-separated locations"
         required: true
         default: "London"
+      discover_emails:
+        description: "Opt in to safe public website email discovery"
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   run-scraper:
@@ -66,6 +74,10 @@ jobs:
 
           if [ -n "${{ inputs.niches }}" ]; then
             ARGS+=("--niches" ${{ inputs.niches }})
+          fi
+
+          if [ "${{ inputs.discover_emails }}" = "true" ]; then
+            ARGS+=("--discover-emails")
           fi
 
           if [ "${{ inputs.dry_run }}" = "true" ]; then
