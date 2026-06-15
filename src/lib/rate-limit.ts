@@ -30,6 +30,29 @@ export const runnerRateLimit = new Ratelimit({
   prefix: "leadclaw:runner",
 });
 
+// Website audit runs — 6 per minute per user (each run does several fetches).
+export const auditRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(6, "1 m"),
+  analytics: true,
+  prefix: "leadclaw:audit",
+});
+
+// Fail-open rate-limit wrapper: if Upstash is unreachable/unconfigured we
+// allow the request rather than hard-failing the feature.
+export async function checkRateLimit(
+  limiter: Ratelimit,
+  key: string,
+): Promise<boolean> {
+  try {
+    const { success } = await limiter.limit(key);
+    return success;
+  } catch (err) {
+    console.error("[rate-limit] limiter unavailable, failing open", err);
+    return true;
+  }
+}
+
 // Shared helper for extracting the client IP from request headers
 export function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");

@@ -12,6 +12,7 @@ import {
   BarChart2,
   User,
   Wrench,
+  Search,
 } from "lucide-react";
 
 type PortalLink = {
@@ -23,6 +24,7 @@ type PortalLink = {
 const iconMap: Record<string, React.ReactNode> = {
   dashboard: <LayoutDashboard size={18} />,
   leads: <Flame size={18} />,
+  audit: <Search size={18} />,
   install: <Puzzle size={18} />,
   support: <MessageCircle size={18} />,
   billing: <CreditCard size={18} />,

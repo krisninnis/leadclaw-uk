@@ -78,6 +78,7 @@ export default async function PortalLayout({
   const fullPortalLinks: PortalLink[] = [
     { href: "/portal", label: "Dashboard", icon: "🏠" },
     { href: "/portal/leads", label: "Leads", icon: "📥" },
+    { href: "/portal/audit", label: "Audit", icon: "🔍" },
     { href: "/portal/install", label: "Install", icon: "🧩" },
     { href: "/portal/support", label: "Support", icon: "💬" },
     { href: "/portal/billing", label: "Billing", icon: "💳" },
