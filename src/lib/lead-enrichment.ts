@@ -27,11 +27,16 @@ const SOCIAL_PROFILE_HOSTS = [
 ];
 
 const BOOKING_PLATFORM_HOSTS = [
+  "bookings.gettimely.com",
+  "gettimely.com",
   "book.app",
   "fresha.com",
   "treatwell.co.uk",
   "calendly.com",
   "booksy.com",
+  "phorest.com",
+  "square.site",
+  "heygoldie.com",
   "setmore.com",
   "acuityscheduling.com",
   "simplybook.me",
@@ -42,8 +47,11 @@ const DIRECTORY_LISTING_HOSTS = [
   "yell.com",
   "cylex-uk.co.uk",
   "find-open.co.uk",
+  "nicelocal.co.uk",
   "thomsonlocal.com",
   "192.com",
+  "locaji.co.uk",
+  "newukmapinfo.top",
   "checkatrade.com",
   "mybuilder.com",
   "ratedpeople.com",

@@ -107,7 +107,8 @@ Email discovery defaults:
 - delay between website page requests: `0.5` seconds
 - pages checked by default, in order: homepage, `/contact`, `/contact-us`
 - additional safe paths available when the max is deliberately increased:
-  `/about`, `/about-us`, `/team`, `/get-in-touch`
+  `/contact.html`, `/contacts`, `/contacts/`, `/about`, `/about-us`,
+  `/about.html`, `/about-us.html`, `/team`, `/get-in-touch`
 - extraction sources: `mailto:` links, JSON-LD email fields, contact links,
   footer content, then visible page text
 - preferred emails: `info@`, `hello@`, `contact@`, `enquiries@`, `office@`,

@@ -165,17 +165,31 @@ describe("lead quality scoring", () => {
     expect(classifyWebsiteQuality("https://clinic.com")).toBe("business_website");
     expect(classifyWebsiteQuality("https://facebook.com/example")).toBe("social_profile");
     expect(classifyWebsiteQuality("https://www.instagram.com/example")).toBe("social_profile");
+    expect(classifyWebsiteQuality("https://tiktok.com/@example")).toBe("social_profile");
+    expect(classifyWebsiteQuality("https://linkedin.com/company/example")).toBe("social_profile");
+    expect(classifyWebsiteQuality("https://bookings.gettimely.com/makemeup/bb/book")).toBe("booking_platform");
+    expect(classifyWebsiteQuality("https://gettimely.com/example")).toBe("booking_platform");
     expect(classifyWebsiteQuality("https://fresha.com/book/example")).toBe("booking_platform");
+    expect(classifyWebsiteQuality("https://treatwell.co.uk/place/example")).toBe("booking_platform");
     expect(classifyWebsiteQuality("https://book.app/example")).toBe("booking_platform");
+    expect(classifyWebsiteQuality("https://booksy.com/en-gb/example")).toBe("booking_platform");
+    expect(classifyWebsiteQuality("https://phorest.com/salon/example")).toBe("booking_platform");
+    expect(classifyWebsiteQuality("https://square.site/book/example")).toBe("booking_platform");
+    expect(classifyWebsiteQuality("https://heygoldie.com/widget/example")).toBe("booking_platform");
     expect(classifyWebsiteQuality("https://www.yell.com/biz/example")).toBe("directory_listing");
     expect(classifyWebsiteQuality("https://cylex-uk.co.uk/company/example")).toBe("directory_listing");
+    expect(classifyWebsiteQuality("https://find-open.co.uk/example")).toBe("directory_listing");
+    expect(classifyWebsiteQuality("https://nicelocal.co.uk/example")).toBe("directory_listing");
+    expect(classifyWebsiteQuality("https://192.com/business/example")).toBe("directory_listing");
+    expect(classifyWebsiteQuality("https://locaji.co.uk/example")).toBe("directory_listing");
+    expect(classifyWebsiteQuality("https://newukmapinfo.top/example")).toBe("directory_listing");
     expect(classifyWebsiteQuality("not a url")).toBe("unknown");
   });
 
   it("scores booking, social and directory website quality without removing other signals", () => {
     const booking = scoreLeadQualityConservatively(
       makeLead({
-        website: "https://treatwell.co.uk/place/example",
+        website: "https://bookings.gettimely.com/makemeup/bb/book",
         contact_phone: "0113 000 0000",
       }),
       null,

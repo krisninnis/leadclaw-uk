@@ -16,8 +16,13 @@ SAFE_DISCOVERY_PATHS = (
     "/",
     "/contact",
     "/contact-us",
+    "/contact.html",
+    "/contacts",
+    "/contacts/",
     "/about",
     "/about-us",
+    "/about.html",
+    "/about-us.html",
     "/team",
     "/get-in-touch",
 )
@@ -73,11 +78,16 @@ SOCIAL_PROFILE_HOSTS = (
     "tiktok.com",
 )
 BOOKING_PLATFORM_HOSTS = (
+    "bookings.gettimely.com",
+    "gettimely.com",
     "book.app",
     "fresha.com",
     "treatwell.co.uk",
     "calendly.com",
     "booksy.com",
+    "phorest.com",
+    "square.site",
+    "heygoldie.com",
     "setmore.com",
     "acuityscheduling.com",
     "simplybook.me",
@@ -87,8 +97,11 @@ DIRECTORY_LISTING_HOSTS = (
     "yell.com",
     "cylex-uk.co.uk",
     "find-open.co.uk",
+    "nicelocal.co.uk",
     "thomsonlocal.com",
     "192.com",
+    "locaji.co.uk",
+    "newukmapinfo.top",
     "checkatrade.com",
     "mybuilder.com",
     "ratedpeople.com",
@@ -219,6 +232,9 @@ def classify_website_quality(raw: str | None) -> str:
         return "directory_listing"
 
     return "business_website"
+
+
+classifyWebsiteQuality = classify_website_quality
 
 
 def normalise_website_url(raw: str | None) -> str:
@@ -672,9 +688,9 @@ def discover_public_email(
             company_name=company_name,
             website=base_url,
             website_quality=website_quality,
-            reason="non_business_website",
+            reason="website_quality_not_business",
         )
-        return EmailDiscoveryResult("", None, None, 0, 0, "skipped", f"non_business_website:{website_quality}")
+        return EmailDiscoveryResult("", None, None, 0, 0, "skipped", f"website_quality_not_business:{website_quality}")
 
     parsed_base = urlparse(base_url)
     base_host = parsed_base.netloc
