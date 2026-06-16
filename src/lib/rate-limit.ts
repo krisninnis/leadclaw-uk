@@ -38,6 +38,15 @@ export const auditRateLimit = new Ratelimit({
   prefix: "leadclaw:audit",
 });
 
+// AI visibility scans — 10 per minute per user. Cheap (no crawl; derived from
+// the existing audit), so a slightly higher allowance than audit runs.
+export const visibilityRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, "1 m"),
+  analytics: true,
+  prefix: "leadclaw:visibility",
+});
+
 // Fail-open rate-limit wrapper: if Upstash is unreachable/unconfigured we
 // allow the request rather than hard-failing the feature.
 export async function checkRateLimit(

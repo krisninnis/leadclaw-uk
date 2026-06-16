@@ -79,6 +79,7 @@ export default async function PortalLayout({
     { href: "/portal", label: "Dashboard", icon: "🏠" },
     { href: "/portal/leads", label: "Leads", icon: "📥" },
     { href: "/portal/audit", label: "Audit", icon: "🔍" },
+    { href: "/portal/visibility", label: "AI Visibility", icon: "✨" },
     { href: "/portal/install", label: "Install", icon: "🧩" },
     { href: "/portal/support", label: "Support", icon: "💬" },
     { href: "/portal/billing", label: "Billing", icon: "💳" },
