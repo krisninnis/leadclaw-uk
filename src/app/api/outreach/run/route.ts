@@ -548,7 +548,7 @@ function staticOutreachSkipReasons(
     reasons.push(`status_${lead.status || "missing"}`);
   }
 
-  if (lead.pecr_classification !== "corporate") {
+  if (lead.pecr_classification !== "likely_corporate") {
     reasons.push(`classification_${lead.pecr_classification || "missing"}`);
   }
 
@@ -596,9 +596,9 @@ function buildOutreachFilterCounts(
   counts.push({ filter: "status_queued", count: remaining.length });
 
   remaining = remaining.filter(
-    (lead) => lead.pecr_classification === "corporate",
+    (lead) => lead.pecr_classification === "likely_corporate",
   );
-  counts.push({ filter: "pecr_classification_corporate", count: remaining.length });
+  counts.push({ filter: "pecr_classification_likely_corporate", count: remaining.length });
 
   remaining = remaining.filter((lead) => Boolean(normalizeEmail(lead.contact_email)));
   counts.push({ filter: "contact_email_present", count: remaining.length });
@@ -806,7 +806,7 @@ export async function POST(req: Request) {
     .from("leads")
     .select(OUTREACH_LEAD_SELECT)
     .eq("status", "queued")
-    .eq("pecr_classification", "corporate")
+    .eq("pecr_classification", "likely_corporate")
     .not("contact_email", "is", null)
     .not("outreach_subject", "is", null)
     .not("outreach_message", "is", null)
@@ -866,7 +866,7 @@ export async function POST(req: Request) {
 
     if (
       lead.status !== "queued" ||
-      lead.pecr_classification !== "corporate" ||
+      lead.pecr_classification !== "likely_corporate" ||
       !Number.isFinite(leadQualityScore) ||
       leadQualityScore < minLeadQualityScore ||
       lead.last_contacted_at ||
@@ -1066,7 +1066,7 @@ export async function POST(req: Request) {
       })
       .eq("id", lead.id)
       .eq("status", "queued")
-      .eq("pecr_classification", "corporate")
+      .eq("pecr_classification", "likely_corporate")
       .gte("lead_quality_score", minLeadQualityScore);
 
     if (perEmailDelayMs > 0) {

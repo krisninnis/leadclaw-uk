@@ -13,9 +13,6 @@ const FREE_EMAIL_DOMAINS = [
   "protonmail.com",
 ];
 
-const CORPORATE_NAME_PATTERN =
-  /\b(ltd|limited|llp|plc|group|holdings|services ltd|contractors ltd)\b/i;
-
 const SOCIAL_PROFILE_HOSTS = [
   "facebook.com",
   "instagram.com",
@@ -263,41 +260,161 @@ function nicheDescription(niche?: string | null) {
   return normalized ? "service business" : "";
 }
 
-export function classifyPecrConservatively(lead: LeadEnrichmentRow) {
+// Strong, legal-entity-level corporate markers (Ltd / Limited / LLP / PLC).
+const CORPORATE_SUFFIX_PATTERN = /\b(ltd|limited|llp|plc)\b/i;
+
+// VAT reference, e.g. "VAT", "VAT No", or a GB VAT number "GB123456789".
+const VAT_REFERENCE_PATTERN = /\bvat\b|\bgb\s?\d{9}\b/i;
+
+// UK mobile number: 07xxxxxxxxx or +447xxxxxxxxx (ignoring spaces).
+const UK_MOBILE_PATTERN = /^(?:\+?44|0)7\d{9}$/;
+
+// Personal-name branding, e.g. "John Smith", "Dave Jones Plumbing".
+const PERSONAL_NAME_PATTERN = /^[A-Z][a-z]+(?:'s)?\s+[A-Z][a-z]+/;
+
+function isUkMobile(raw: string | null) {
+  const digits = String(raw || "").replace(/[\s()-]/g, "");
+  return UK_MOBILE_PATTERN.test(digits);
+}
+
+function looksLikePersonalName(companyName: string) {
+  if (!companyName) return false;
+  if (CORPORATE_SUFFIX_PATTERN.test(companyName)) return false;
+  return PERSONAL_NAME_PATTERN.test(companyName.trim());
+}
+
+function hasVatReference(companyName: string) {
+  return VAT_REFERENCE_PATTERN.test(companyName);
+}
+
+export type PecrClassification =
+  | "likely_corporate"
+  | "likely_sole_trader"
+  | "manual_review";
+
+export type PecrClassificationResult = {
+  classification: PecrClassification;
+  reason: string;
+};
+
+/**
+ * Confidence-based PECR classifier.
+ *
+ * Weighs corporate signals against sole-trader signals and only commits to a
+ * confident classification when one side clearly dominates. Anything ambiguous,
+ * conflicting, or under-evidenced falls back to manual_review.
+ *
+ * Signals (corporate): Ltd/Limited/LLP/PLC in the name, a registered company
+ * number, a VAT reference, a business-domain email, a company website, and a
+ * discovered contact page.
+ *
+ * Signals (sole trader): a free email domain (Gmail/Outlook/Hotmail/Yahoo/etc.),
+ * personal-name branding, a mobile-only phone number, and an overall absence of
+ * any company details.
+ */
+export function classifyPecrConservatively(
+  lead: LeadEnrichmentRow,
+): PecrClassificationResult {
   const companyName = String(lead.company_name || "").trim();
   const email = normalizeEmail(lead.contact_email);
+  const validEmail = email && isValidEmail(email) ? email : "";
+  const websiteQuality = classifyWebsiteQuality(lead.website);
+  const hasBusinessWebsite = websiteQuality === "business_website";
 
-  if (lead.company_number) {
+  const hasCorporateSuffix = CORPORATE_SUFFIX_PATTERN.test(companyName);
+  const hasCompanyNumber = Boolean(String(lead.company_number || "").trim());
+  const hasVat = hasVatReference(companyName);
+  const hasBusinessEmail = Boolean(validEmail) && !isFreeEmail(validEmail);
+
+  const hasAnyCompanyDetail =
+    hasCorporateSuffix || hasCompanyNumber || hasVat || hasBusinessWebsite;
+
+  // --- Corporate signals -------------------------------------------------
+  const corporateSignals: string[] = [];
+  let corporateScore = 0;
+
+  if (hasCompanyNumber) {
+    corporateScore += 3;
+    corporateSignals.push(`registered company number (${lead.company_number})`);
+  }
+  if (hasCorporateSuffix) {
+    corporateScore += 3;
+    corporateSignals.push("Ltd/LLP/PLC company name");
+  }
+  if (hasVat) {
+    corporateScore += 3;
+    corporateSignals.push("VAT reference");
+  }
+  if (hasBusinessEmail) {
+    corporateScore += 2;
+    corporateSignals.push("business-domain email");
+  }
+  if (hasBusinessWebsite) {
+    corporateScore += 1;
+    corporateSignals.push("company website");
+  }
+  if (lead.has_contact_form === true) {
+    corporateScore += 1;
+    corporateSignals.push("contact page present");
+  }
+
+  // --- Sole-trader signals ----------------------------------------------
+  const soleSignals: string[] = [];
+  let soleScore = 0;
+
+  if (validEmail && isFreeEmail(validEmail)) {
+    soleScore += 2;
+    soleSignals.push("free/personal email domain");
+  }
+  if (looksLikePersonalName(companyName)) {
+    soleScore += 1;
+    soleSignals.push("personal-name branding");
+  }
+  if (isUkMobile(lead.contact_phone)) {
+    soleScore += 1;
+    soleSignals.push("mobile phone only");
+  }
+  if (!hasAnyCompanyDetail && (companyName || validEmail || lead.contact_phone)) {
+    soleScore += 1;
+    soleSignals.push("no registered company details");
+  }
+
+  // --- Decision ----------------------------------------------------------
+  // Confident corporate: strong corporate evidence that clearly outweighs any
+  // sole-trader signals (avoids mislabelling mixed-signal leads).
+  if (corporateScore >= 3 && soleScore <= corporateScore - 2) {
     return {
-      classification: "corporate",
-      reason: `Corporate company number present (${lead.company_number}).`,
+      classification: "likely_corporate",
+      reason: `Likely corporate: ${corporateSignals.join(" + ")}.`,
     };
   }
 
-  if (CORPORATE_NAME_PATTERN.test(companyName)) {
+  // Confident sole trader: sole-trader evidence with no corporate signals at all.
+  if (soleScore >= 2 && corporateScore === 0) {
     return {
-      classification: "corporate",
-      reason: "Corporate marker present in business name; backfill did not verify Companies House.",
+      classification: "likely_sole_trader",
+      reason: `Likely sole trader: ${soleSignals.join(" + ")}.`,
     };
   }
 
-  if (!email) {
+  // Everything else is ambiguous, conflicting, or under-evidenced.
+  if (corporateScore === 0 && soleScore === 0) {
     return {
-      classification: "unknown",
-      reason: "No contact email available; conservative backfill cannot assess recipient type.",
+      classification: "manual_review",
+      reason: "Insufficient confidence: no corporate or sole-trader signals found.",
     };
   }
 
-  if (isFreeEmail(email)) {
-    return {
-      classification: "unknown",
-      reason: "Free email domain; conservative backfill avoids corporate classification.",
-    };
-  }
+  const mixedSignals = [
+    corporateSignals.length
+      ? `corporate (${corporateSignals.join(", ")})`
+      : "",
+    soleSignals.length ? `sole trader (${soleSignals.join(", ")})` : "",
+  ].filter(Boolean);
 
   return {
-    classification: "unknown",
-    reason: "No strong corporate marker; conservative backfill keeps classification unknown.",
+    classification: "manual_review",
+    reason: `Insufficient confidence: mixed or weak signals — ${mixedSignals.join("; ")}.`,
   };
 }
 
