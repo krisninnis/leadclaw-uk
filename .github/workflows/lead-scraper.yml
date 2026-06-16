@@ -40,6 +40,10 @@ on:
         options:
           - "false"
           - "true"
+      email_discovery_max_pages:
+        description: "Maximum safe pages to check during email discovery"
+        required: true
+        default: "7"
 
 jobs:
   run-scraper:
@@ -78,6 +82,7 @@ jobs:
 
           if [ "${{ inputs.discover_emails }}" = "true" ]; then
             ARGS+=("--discover-emails")
+            ARGS+=("--email-discovery-max-pages" "${{ inputs.email_discovery_max_pages }}")
           fi
 
           if [ "${{ inputs.dry_run }}" = "true" ]; then
