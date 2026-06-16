@@ -18,23 +18,27 @@ SAFE_DISCOVERY_PATHS = (
     "/contact-us",
     "/about",
     "/about-us",
-    "/book",
-    "/booking",
+    "/team",
+    "/get-in-touch",
 )
-ROLE_EMAIL_LOCAL_PARTS = (
+PREFERRED_ROLE_EMAIL_LOCAL_PARTS = (
     "info",
     "hello",
     "contact",
     "enquiries",
-    "enquiry",
+    "office",
     "reception",
-    "bookings",
-    "booking",
+)
+ACCEPTED_ROLE_EMAIL_LOCAL_PARTS = (
+    "firstname",
     "team",
     "admin",
-    "office",
+    "bookings",
+    "booking",
+    "enquiry",
     "sales",
 )
+ROLE_EMAIL_LOCAL_PARTS = PREFERRED_ROLE_EMAIL_LOCAL_PARTS + ACCEPTED_ROLE_EMAIL_LOCAL_PARTS
 IGNORED_EMAIL_LOCAL_PARTS = {
     "noreply",
     "no-reply",
@@ -42,6 +46,11 @@ IGNORED_EMAIL_LOCAL_PARTS = {
     "do-not-reply",
     "privacy",
     "dpo",
+    "abuse",
+    "security",
+    "webmaster",
+    "postmaster",
+    "mailer-daemon",
 }
 IGNORED_EMAIL_LOCAL_PREFIXES = (
     "noreply",
@@ -50,8 +59,42 @@ IGNORED_EMAIL_LOCAL_PREFIXES = (
     "do-not-reply",
     "privacy",
     "dpo",
+    "abuse",
     "support-only",
     "support_only",
+)
+SOCIAL_PROFILE_HOSTS = (
+    "facebook.com",
+    "instagram.com",
+    "linkedin.com",
+    "x.com",
+    "twitter.com",
+    "youtube.com",
+    "tiktok.com",
+)
+BOOKING_PLATFORM_HOSTS = (
+    "book.app",
+    "fresha.com",
+    "treatwell.co.uk",
+    "calendly.com",
+    "booksy.com",
+    "setmore.com",
+    "acuityscheduling.com",
+    "simplybook.me",
+    "vagaro.com",
+)
+DIRECTORY_LISTING_HOSTS = (
+    "yell.com",
+    "cylex-uk.co.uk",
+    "find-open.co.uk",
+    "thomsonlocal.com",
+    "192.com",
+    "checkatrade.com",
+    "mybuilder.com",
+    "ratedpeople.com",
+    "trustatrader.com",
+    "bark.com",
+    "houzz.co.uk",
 )
 FREE_EMAIL_DOMAINS = {
     "gmail.com",
@@ -70,6 +113,16 @@ FREE_EMAIL_DOMAINS = {
 FILE_LIKE_TLDS = {"png", "jpg", "jpeg", "gif", "webp", "svg", "ico", "avif", "pdf"}
 EMAIL_RE = re.compile(r"[A-Z0-9._%+\-]+@(?:[A-Z0-9\-]+\.)+[A-Z]{2,63}", re.IGNORECASE)
 EMAIL_FULL_RE = re.compile(r"^[A-Z0-9._%+\-]+@(?:[A-Z0-9\-]+\.)+[A-Z]{2,63}$", re.IGNORECASE)
+MAILTO_RE = re.compile(r"""href\s*=\s*["']mailto:([^"'?#\s>]+)""", re.IGNORECASE)
+JSON_LD_RE = re.compile(
+    r"""<script[^>]+type\s*=\s*["']application/ld\+json["'][^>]*>(.*?)</script>""",
+    re.IGNORECASE | re.DOTALL,
+)
+FOOTER_RE = re.compile(r"""<footer\b[^>]*>(.*?)</footer>""", re.IGNORECASE | re.DOTALL)
+CONTACT_LINK_RE = re.compile(
+    r"""<a\b[^>]*(?:href|class|aria-label|title)\s*=\s*["'][^"']*(?:contact|get-in-touch|enquir|email)[^"']*["'][^>]*>.*?</a>""",
+    re.IGNORECASE | re.DOTALL,
+)
 
 
 @dataclass(frozen=True)
@@ -89,6 +142,8 @@ class EmailCandidate:
     source_url: str
     role_priority: int
     sequence: int
+    source_priority: int = 99
+    source_kind: str = "body"
 
 
 @dataclass(frozen=True)
@@ -131,6 +186,39 @@ def normalise_host(host: str | None) -> str:
 
 def same_domain(base_host: str, candidate_host: str | None) -> bool:
     return normalise_host(base_host) == normalise_host(candidate_host)
+
+
+def host_matches(host: str, known_hosts: tuple[str, ...]) -> bool:
+    normalised = normalise_host(host)
+    return any(normalised == known or normalised.endswith(f".{known}") for known in known_hosts)
+
+
+def classify_website_quality(raw: str | None) -> str:
+    value = (raw or "").strip()
+    if not value:
+        return "unknown"
+
+    parsed = urlparse(value)
+    if not parsed.scheme:
+        parsed = urlparse(f"https://{value}")
+
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return "unknown"
+
+    host = normalise_host(parsed.netloc)
+    if not host or "." not in host:
+        return "unknown"
+
+    if host_matches(host, SOCIAL_PROFILE_HOSTS):
+        return "social_profile"
+
+    if host_matches(host, BOOKING_PLATFORM_HOSTS):
+        return "booking_platform"
+
+    if host_matches(host, DIRECTORY_LISTING_HOSTS) or "directory" in host:
+        return "directory_listing"
+
+    return "business_website"
 
 
 def normalise_website_url(raw: str | None) -> str:
@@ -294,8 +382,15 @@ def is_valid_public_email(email: str) -> bool:
     return True
 
 
+def role_match_index(local: str, roles: tuple[str, ...]) -> int | None:
+    for index, role in enumerate(roles):
+        if local == role or local.startswith(f"{role}.") or local.startswith(f"{role}-"):
+            return index
+    return None
+
+
 def is_role_email(local: str) -> bool:
-    return any(local == role or local.startswith(f"{role}.") or local.startswith(f"{role}-") for role in ROLE_EMAIL_LOCAL_PARTS)
+    return role_match_index(local, ROLE_EMAIL_LOCAL_PARTS) is not None
 
 
 def is_personal_looking(local: str) -> bool:
@@ -313,49 +408,215 @@ def is_personal_looking(local: str) -> bool:
 
 def classify_email_confidence(email: str, website_host: str) -> tuple[str, int]:
     local, domain = email.rsplit("@", 1)
-    role_index = next(
-        (
-            index
-            for index, role in enumerate(ROLE_EMAIL_LOCAL_PARTS)
-            if local == role or local.startswith(f"{role}.") or local.startswith(f"{role}-")
-        ),
-        len(ROLE_EMAIL_LOCAL_PARTS),
-    )
+    preferred_index = role_match_index(local, PREFERRED_ROLE_EMAIL_LOCAL_PARTS)
+    if preferred_index is not None:
+        return "high", preferred_index
 
-    if is_role_email(local):
-        return "high", role_index
+    accepted_index = role_match_index(local, ACCEPTED_ROLE_EMAIL_LOCAL_PARTS)
+    if accepted_index is not None:
+        return "medium", len(PREFERRED_ROLE_EMAIL_LOCAL_PARTS) + accepted_index
 
     if domain in FREE_EMAIL_DOMAINS or is_personal_looking(local):
-        return "low", role_index
+        return "low", len(ROLE_EMAIL_LOCAL_PARTS)
 
     if same_domain(website_host, domain):
-        return "medium", role_index
+        return "medium", len(ROLE_EMAIL_LOCAL_PARTS)
 
-    return "low", role_index
+    return "low", len(ROLE_EMAIL_LOCAL_PARTS)
+
+
+def candidate_from_email(
+    email: str,
+    *,
+    source_url: str,
+    website_host: str,
+    source_priority: int,
+    source_kind: str,
+    sequence: int,
+) -> EmailCandidate | None:
+    normalised = normalise_email(email)
+    if not is_valid_public_email(normalised):
+        return None
+
+    confidence, role_priority = classify_email_confidence(normalised, website_host)
+    return EmailCandidate(
+        email=normalised,
+        confidence=confidence,
+        source_url=source_url,
+        role_priority=role_priority,
+        sequence=sequence,
+        source_priority=source_priority,
+        source_kind=source_kind,
+    )
+
+
+def emails_from_json_ld_value(value: Any) -> list[str]:
+    found: list[str] = []
+
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if str(key).lower() == "email":
+                if isinstance(nested, str):
+                    found.extend(EMAIL_RE.findall(nested))
+                elif isinstance(nested, list):
+                    found.extend(email for item in nested if isinstance(item, str) for email in EMAIL_RE.findall(item))
+            else:
+                found.extend(emails_from_json_ld_value(nested))
+    elif isinstance(value, list):
+        for item in value:
+            found.extend(emails_from_json_ld_value(item))
+    elif isinstance(value, str):
+        found.extend(EMAIL_RE.findall(value))
+
+    return found
+
+
+def extract_json_ld_emails(body: str) -> list[str]:
+    found: list[str] = []
+
+    for raw_script in JSON_LD_RE.findall(body or ""):
+        cleaned = html.unescape(raw_script).strip()
+        if not cleaned:
+            continue
+
+        try:
+            payload = json.loads(cleaned)
+        except ValueError:
+            continue
+
+        found.extend(emails_from_json_ld_value(payload))
+
+    return found
+
+
+def extract_footer_blocks(body: str) -> list[str]:
+    return FOOTER_RE.findall(body or "")
+
+
+def extract_contact_link_blocks(body: str) -> list[str]:
+    return CONTACT_LINK_RE.findall(body or "")
+
+
+def collect_candidates_from_text(
+    text: str,
+    *,
+    source_url: str,
+    website_host: str,
+    source_priority: int,
+    source_kind: str,
+    sequence_start: int,
+) -> list[EmailCandidate]:
+    candidates: list[EmailCandidate] = []
+
+    for offset, match in enumerate(EMAIL_RE.findall(text or "")):
+        candidate = candidate_from_email(
+            match,
+            source_url=source_url,
+            website_host=website_host,
+            source_priority=source_priority,
+            source_kind=source_kind,
+            sequence=sequence_start + offset,
+        )
+        if candidate:
+            candidates.append(candidate)
+
+    return candidates
+
+
+def dedupe_candidates(candidates: list[EmailCandidate]) -> list[EmailCandidate]:
+    best_by_email: dict[str, EmailCandidate] = {}
+    confidence_weight = {"high": 3, "medium": 2, "low": 1}
+
+    for candidate in candidates:
+        existing = best_by_email.get(candidate.email)
+        if not existing:
+            best_by_email[candidate.email] = candidate
+            continue
+
+        candidate_key = (
+            -confidence_weight.get(candidate.confidence, 0),
+            candidate.role_priority,
+            candidate.source_priority,
+            candidate.sequence,
+        )
+        existing_key = (
+            -confidence_weight.get(existing.confidence, 0),
+            existing.role_priority,
+            existing.source_priority,
+            existing.sequence,
+        )
+        if candidate_key < existing_key:
+            best_by_email[candidate.email] = candidate
+
+    return list(best_by_email.values())
 
 
 def extract_email_candidates(body: str, *, source_url: str, website_host: str) -> list[EmailCandidate]:
     candidates: list[EmailCandidate] = []
-    seen: set[str] = set()
+    sequence = 0
 
-    for sequence, match in enumerate(EMAIL_RE.findall(body or "")):
-        email = normalise_email(match)
-        if email in seen or not is_valid_public_email(email):
-            continue
-
-        seen.add(email)
-        confidence, role_priority = classify_email_confidence(email, website_host)
-        candidates.append(
-            EmailCandidate(
-                email=email,
-                confidence=confidence,
-                source_url=source_url,
-                role_priority=role_priority,
-                sequence=sequence,
-            )
+    for match in MAILTO_RE.findall(body or ""):
+        candidate = candidate_from_email(
+            match,
+            source_url=source_url,
+            website_host=website_host,
+            source_priority=0,
+            source_kind="mailto",
+            sequence=sequence,
         )
+        sequence += 1
+        if candidate:
+            candidates.append(candidate)
 
-    return candidates
+    for match in extract_json_ld_emails(body):
+        candidate = candidate_from_email(
+            match,
+            source_url=source_url,
+            website_host=website_host,
+            source_priority=1,
+            source_kind="structured_data",
+            sequence=sequence,
+        )
+        sequence += 1
+        if candidate:
+            candidates.append(candidate)
+
+    for block in extract_contact_link_blocks(body):
+        block_candidates = collect_candidates_from_text(
+            block,
+            source_url=source_url,
+            website_host=website_host,
+            source_priority=2,
+            source_kind="contact_link",
+            sequence_start=sequence,
+        )
+        sequence += len(block_candidates)
+        candidates.extend(block_candidates)
+
+    for footer in extract_footer_blocks(body):
+        footer_candidates = collect_candidates_from_text(
+            footer,
+            source_url=source_url,
+            website_host=website_host,
+            source_priority=3,
+            source_kind="footer",
+            sequence_start=sequence,
+        )
+        sequence += len(footer_candidates)
+        candidates.extend(footer_candidates)
+
+    candidates.extend(
+        collect_candidates_from_text(
+            body or "",
+            source_url=source_url,
+            website_host=website_host,
+            source_priority=4,
+            source_kind="body",
+            sequence_start=sequence,
+        )
+    )
+
+    return dedupe_candidates(candidates)
 
 
 def choose_best_email(candidates: list[EmailCandidate]) -> EmailCandidate | None:
@@ -368,6 +629,7 @@ def choose_best_email(candidates: list[EmailCandidate]) -> EmailCandidate | None
         key=lambda candidate: (
             -confidence_weight.get(candidate.confidence, 0),
             candidate.role_priority,
+            candidate.source_priority,
             candidate.sequence,
         ),
     )[0]
@@ -378,6 +640,7 @@ def log_email_found(log: Callable[..., None], candidate: EmailCandidate, candida
     log(
         "email_discovery_email_found",
         source_url=candidate.source_url,
+        source_kind=candidate.source_kind,
         email_domain=email_domain,
         email_confidence=candidate.confidence,
         email_candidates_count=candidates_count,
@@ -402,6 +665,17 @@ def discover_public_email(
         log("email_discovery_skipped", company_name=company_name, reason="missing_or_invalid_website")
         return EmailDiscoveryResult("", None, None, 0, 0, "skipped", "missing_or_invalid_website")
 
+    website_quality = classify_website_quality(base_url)
+    if website_quality != "business_website":
+        log(
+            "email_discovery_skipped",
+            company_name=company_name,
+            website=base_url,
+            website_quality=website_quality,
+            reason="non_business_website",
+        )
+        return EmailDiscoveryResult("", None, None, 0, 0, "skipped", f"non_business_website:{website_quality}")
+
     parsed_base = urlparse(base_url)
     base_host = parsed_base.netloc
     page_urls = public_page_urls(base_url, config.max_pages)
@@ -413,6 +687,7 @@ def discover_public_email(
         "email_discovery_started",
         company_name=company_name,
         website=base_url,
+        website_quality=website_quality,
         max_pages=config.max_pages,
         timeout_seconds=config.timeout_seconds,
     )
@@ -467,8 +742,7 @@ def discover_public_email(
             email_candidates_count=len(page_candidates),
         )
 
-    unique_candidates = {candidate.email: candidate for candidate in candidates}
-    candidate_list = list(unique_candidates.values())
+    candidate_list = dedupe_candidates(candidates)
     best = choose_best_email(candidate_list)
 
     if best:

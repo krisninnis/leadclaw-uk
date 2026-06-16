@@ -7,9 +7,11 @@ from email_discovery import (
     EmailDiscoveryResult,
     PageFetchResult,
     choose_best_email,
+    classify_website_quality,
     discover_public_email,
     extract_email_candidates,
     merge_email_discovery_into_lead,
+    public_page_urls,
 )
 from scraper_core import (
     GOOGLE_HTTP_STATUS_KEY,
@@ -284,12 +286,87 @@ class ScraperCoreTests(unittest.TestCase):
 
     def test_email_discovery_ignores_noreply_privacy_and_file_artifacts(self):
         candidates = extract_email_candidates(
-            "noreply@example.com privacy@example.com dpo@example.com logo@2x.png hello@example.com",
+            "noreply@example.com privacy@example.com dpo@example.com abuse@example.com logo@2x.png hello@example.com",
             source_url="https://example.com/contact",
             website_host="example.com",
         )
 
         self.assertEqual([candidate.email for candidate in candidates], ["hello@example.com"])
+
+    def test_email_discovery_safe_pages_include_v2_paths_without_changing_default(self):
+        urls = public_page_urls("https://example.com/start?utm=test", 7)
+
+        self.assertEqual(
+            urls,
+            [
+                "https://example.com/",
+                "https://example.com/contact",
+                "https://example.com/contact-us",
+                "https://example.com/about",
+                "https://example.com/about-us",
+                "https://example.com/team",
+                "https://example.com/get-in-touch",
+            ],
+        )
+        self.assertEqual(
+            public_page_urls("https://example.com", 3),
+            [
+                "https://example.com/",
+                "https://example.com/contact",
+                "https://example.com/contact-us",
+            ],
+        )
+
+    def test_email_discovery_prioritises_mailto_over_footer_for_same_role(self):
+        candidates = extract_email_candidates(
+            """
+            <a href="mailto:hello@example.com">Email us</a>
+            <footer>Reach us at hello.footer@example.com</footer>
+            """,
+            source_url="https://example.com/contact",
+            website_host="example.com",
+        )
+        best = choose_best_email(candidates)
+
+        self.assertIsNotNone(best)
+        self.assertEqual(best.email, "hello@example.com")
+        self.assertEqual(best.source_kind, "mailto")
+
+    def test_email_discovery_extracts_footer_and_structured_data_emails(self):
+        candidates = extract_email_candidates(
+            """
+            <script type="application/ld+json">
+            {
+              "@type": "LocalBusiness",
+              "contactPoint": {"email": "contact@example.com"}
+            }
+            </script>
+            <footer>Footer email reception@example.com</footer>
+            """,
+            source_url="https://example.com/contact",
+            website_host="example.com",
+        )
+
+        by_email = {candidate.email: candidate for candidate in candidates}
+        self.assertEqual(by_email["contact@example.com"].source_kind, "structured_data")
+        self.assertEqual(by_email["reception@example.com"].source_kind, "footer")
+
+    def test_classifies_website_quality(self):
+        cases = {
+            "https://example.co.uk": "business_website",
+            "https://clinic.com": "business_website",
+            "https://facebook.com/example": "social_profile",
+            "https://www.instagram.com/example": "social_profile",
+            "https://fresha.com/book/example": "booking_platform",
+            "https://book.app/example": "booking_platform",
+            "https://www.yell.com/biz/example": "directory_listing",
+            "https://cylex-uk.co.uk/company/example": "directory_listing",
+            "not a url": "unknown",
+        }
+
+        for url, expected in cases.items():
+            with self.subTest(url=url):
+                self.assertEqual(classify_website_quality(url), expected)
 
     def test_email_discovery_contact_page_and_same_domain_only(self):
         config = EmailDiscoveryConfig(enabled=True, max_pages=3, delay_seconds=0, timeout_seconds=1)
@@ -319,6 +396,26 @@ class ScraperCoreTests(unittest.TestCase):
         self.assertEqual(result.contact_email, "hello@example.com")
         self.assertEqual(result.confidence, "high")
         self.assertEqual(result.source_url, "https://example.com/contact")
+
+    def test_email_discovery_skips_non_business_websites_without_fetching(self):
+        config = EmailDiscoveryConfig(enabled=True, max_pages=3, delay_seconds=0, timeout_seconds=1)
+
+        with (
+            patch("email_discovery.fetch_robots_rules") as fetch_robots,
+            patch("email_discovery.fetch_website_page") as fetch_page,
+            patch("email_discovery.noop_log") as _noop_log,
+        ):
+            result = discover_public_email(
+                "https://treatwell.co.uk/place/example",
+                company_name="Example Clinic",
+                config=config,
+            )
+
+        self.assertEqual(result.contact_email, "")
+        self.assertEqual(result.status, "skipped")
+        self.assertEqual(result.reason, "non_business_website:booking_platform")
+        fetch_robots.assert_not_called()
+        fetch_page.assert_not_called()
 
     def test_email_discovery_no_email_found_case(self):
         config = EmailDiscoveryConfig(enabled=True, max_pages=1, delay_seconds=0, timeout_seconds=1)

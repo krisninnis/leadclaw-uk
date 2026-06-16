@@ -16,6 +16,49 @@ const FREE_EMAIL_DOMAINS = [
 const CORPORATE_NAME_PATTERN =
   /\b(ltd|limited|llp|plc|group|holdings|services ltd|contractors ltd)\b/i;
 
+const SOCIAL_PROFILE_HOSTS = [
+  "facebook.com",
+  "instagram.com",
+  "linkedin.com",
+  "x.com",
+  "twitter.com",
+  "youtube.com",
+  "tiktok.com",
+];
+
+const BOOKING_PLATFORM_HOSTS = [
+  "book.app",
+  "fresha.com",
+  "treatwell.co.uk",
+  "calendly.com",
+  "booksy.com",
+  "setmore.com",
+  "acuityscheduling.com",
+  "simplybook.me",
+  "vagaro.com",
+];
+
+const DIRECTORY_LISTING_HOSTS = [
+  "yell.com",
+  "cylex-uk.co.uk",
+  "find-open.co.uk",
+  "thomsonlocal.com",
+  "192.com",
+  "checkatrade.com",
+  "mybuilder.com",
+  "ratedpeople.com",
+  "trustatrader.com",
+  "bark.com",
+  "houzz.co.uk",
+];
+
+export type WebsiteQuality =
+  | "business_website"
+  | "social_profile"
+  | "booking_platform"
+  | "directory_listing"
+  | "unknown";
+
 export type LeadEnrichmentRow = {
   id: string;
   company_name: string | null;
@@ -87,10 +130,6 @@ function isFreeEmail(email: string) {
   return FREE_EMAIL_DOMAINS.includes(domain);
 }
 
-function hasWebsite(raw: string | null) {
-  return Boolean(String(raw || "").trim());
-}
-
 function hasHttpsWebsite(raw: string | null) {
   return String(raw || "")
     .trim()
@@ -100,6 +139,47 @@ function hasHttpsWebsite(raw: string | null) {
 
 function hasPhone(raw: string | null) {
   return Boolean(String(raw || "").trim());
+}
+
+function normalizeHost(raw: string) {
+  return raw.trim().toLowerCase().replace(/^www\./, "");
+}
+
+function hostMatches(host: string, knownHosts: string[]) {
+  const normalized = normalizeHost(host);
+  return knownHosts.some(
+    (knownHost) =>
+      normalized === knownHost || normalized.endsWith(`.${knownHost}`),
+  );
+}
+
+export function classifyWebsiteQuality(raw: string | null | undefined): WebsiteQuality {
+  const value = String(raw || "").trim();
+  if (!value) return "unknown";
+
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    try {
+      parsed = new URL(`https://${value}`);
+    } catch {
+      return "unknown";
+    }
+  }
+
+  if (!["http:", "https:"].includes(parsed.protocol)) return "unknown";
+
+  const host = normalizeHost(parsed.hostname);
+  if (!host || !host.includes(".")) return "unknown";
+
+  if (hostMatches(host, SOCIAL_PROFILE_HOSTS)) return "social_profile";
+  if (hostMatches(host, BOOKING_PLATFORM_HOSTS)) return "booking_platform";
+  if (hostMatches(host, DIRECTORY_LISTING_HOSTS) || host.includes("directory")) {
+    return "directory_listing";
+  }
+
+  return "business_website";
 }
 
 function leadQualityBand(score: number) {
@@ -224,10 +304,21 @@ export function scoreLeadQualityConservatively(
   const email = normalizeEmail(lead.contact_email);
   const reasons: string[] = [];
   let score = 0;
+  const websiteQuality = classifyWebsiteQuality(lead.website);
 
-  if (hasWebsite(lead.website)) {
+  if (websiteQuality === "business_website") {
     score += 20;
-    reasons.push("+20 website present");
+    reasons.push("+20 business website");
+  } else if (websiteQuality === "booking_platform") {
+    score += 10;
+    reasons.push("+10 booking platform website");
+  } else if (websiteQuality === "social_profile") {
+    score += 5;
+    reasons.push("+5 social profile");
+  } else if (websiteQuality === "directory_listing") {
+    reasons.push("+0 directory listing");
+  } else if (lead.website) {
+    reasons.push("+0 unknown website quality");
   }
 
   if (email && isValidEmail(email)) {

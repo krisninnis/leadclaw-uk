@@ -269,7 +269,7 @@ describe("POST /api/outreach/rescore", () => {
         makeLead({
           lead_quality_score: 100,
           lead_quality_reason:
-            "Hot lead quality (100): +20 website present; +25 valid email found; +15 phone present; +10 HTTPS website; +10 contact page discovered; +10 Google rating >= 4.5; +10 review count >= 20",
+            "Hot lead quality (100): +20 business website; +25 valid email found; +15 phone present; +10 HTTPS website; +10 contact page discovered; +10 Google rating >= 4.5; +10 review count >= 20",
         }),
       ],
     });

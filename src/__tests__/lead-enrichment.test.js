@@ -1,5 +1,6 @@
 const {
   buildLeadEnrichmentPatch,
+  classifyWebsiteQuality,
   scoreLeadQualityConservatively,
 } = require("@/lib/lead-enrichment");
 
@@ -48,7 +49,7 @@ describe("lead quality scoring", () => {
 
     expect(result.score).toBe(100);
     expect(result.reason).toContain("Hot lead quality (100)");
-    expect(result.reason).toContain("+20 website present");
+    expect(result.reason).toContain("+20 business website");
     expect(result.reason).toContain("+25 valid email found");
     expect(result.reason).toContain("+15 phone present");
     expect(result.reason).toContain("+10 HTTPS website");
@@ -157,5 +158,52 @@ describe("lead quality scoring", () => {
     expect(patch.lead_quality_score).toBe(100);
     expect(patch.lead_quality_reason).toContain("Hot lead quality (100)");
     expect(patch.outreach_subject).toBe("Quick idea for Example Services Ltd");
+  });
+
+  it("classifies website quality for business, social, booking, directory and unknown URLs", () => {
+    expect(classifyWebsiteQuality("https://example.co.uk")).toBe("business_website");
+    expect(classifyWebsiteQuality("https://clinic.com")).toBe("business_website");
+    expect(classifyWebsiteQuality("https://facebook.com/example")).toBe("social_profile");
+    expect(classifyWebsiteQuality("https://www.instagram.com/example")).toBe("social_profile");
+    expect(classifyWebsiteQuality("https://fresha.com/book/example")).toBe("booking_platform");
+    expect(classifyWebsiteQuality("https://book.app/example")).toBe("booking_platform");
+    expect(classifyWebsiteQuality("https://www.yell.com/biz/example")).toBe("directory_listing");
+    expect(classifyWebsiteQuality("https://cylex-uk.co.uk/company/example")).toBe("directory_listing");
+    expect(classifyWebsiteQuality("not a url")).toBe("unknown");
+  });
+
+  it("scores booking, social and directory website quality without removing other signals", () => {
+    const booking = scoreLeadQualityConservatively(
+      makeLead({
+        website: "https://treatwell.co.uk/place/example",
+        contact_phone: "0113 000 0000",
+      }),
+      null,
+      null,
+    );
+    const social = scoreLeadQualityConservatively(
+      makeLead({
+        website: "https://facebook.com/example",
+        contact_phone: "0113 000 0000",
+      }),
+      null,
+      null,
+    );
+    const directory = scoreLeadQualityConservatively(
+      makeLead({
+        website: "https://yell.com/biz/example",
+        contact_phone: "0113 000 0000",
+      }),
+      null,
+      null,
+    );
+
+    expect(booking.score).toBe(35);
+    expect(booking.reason).toContain("+10 booking platform website");
+    expect(booking.reason).toContain("+10 HTTPS website");
+    expect(social.score).toBe(30);
+    expect(social.reason).toContain("+5 social profile");
+    expect(directory.score).toBe(25);
+    expect(directory.reason).toContain("+0 directory listing");
   });
 });

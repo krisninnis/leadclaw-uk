@@ -28,6 +28,8 @@ separate repository/submodule later.
   `--discover-emails`.
 - Email discovery only checks a tiny fixed set of same-domain public pages and
   only collects visible business contact emails.
+- Email discovery skips social profiles, booking platforms, and directory
+  listings before making website page requests.
 - No Supabase service-role key is required by this scraper.
 - Live import uses the app endpoint and `LEAD_IMPORT_TOKEN`.
 - Leads with missing company names, invalid websites, or platform-only websites
@@ -103,8 +105,15 @@ Email discovery defaults:
 - maximum pages per domain: `3`
 - timeout per website request: `5` seconds
 - delay between website page requests: `0.5` seconds
-- pages checked, in order: homepage, `/contact`, `/contact-us`, then other
-  safe public pages if the max is increased
+- pages checked by default, in order: homepage, `/contact`, `/contact-us`
+- additional safe paths available when the max is deliberately increased:
+  `/about`, `/about-us`, `/team`, `/get-in-touch`
+- extraction sources: `mailto:` links, JSON-LD email fields, contact links,
+  footer content, then visible page text
+- preferred emails: `info@`, `hello@`, `contact@`, `enquiries@`, `office@`,
+  `reception@`
+- accepted fallback emails include `team@`, `admin@`, and firstname-style
+  addresses when no stronger role address is visible
 
 ## Live import command
 
