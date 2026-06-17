@@ -37,8 +37,11 @@ type RunResponse = {
   ok: boolean;
   runId?: string;
   status?: string;
+  executionMode?: string;
+  externalUrl?: string;
   exitCode?: number | null;
   summary?: LeadFinderRunListItem["summary"];
+  message?: string;
   error?: string;
 };
 
@@ -71,6 +74,7 @@ function statusClass(status: string | null | undefined) {
   if (status === "completed") return "bg-emerald-100 text-emerald-700";
   if (status === "failed") return "bg-rose-100 text-rose-700";
   if (status === "running") return "bg-sky-100 text-sky-700";
+  if (status === "queued") return "bg-amber-100 text-amber-700";
   return "bg-slate-100 text-slate-700";
 }
 
@@ -146,11 +150,16 @@ export default function LeadFinderClient({
             id: body.runId || "current-run",
             status: body.status || "completed",
             dry_run: form.dry_run,
+            execution_mode: body.executionMode || null,
+            external_url: body.externalUrl || null,
             summary: body.summary || null,
             exit_code: body.exitCode ?? null,
             error: null,
             started_at: new Date().toISOString(),
-            completed_at: new Date().toISOString(),
+            completed_at:
+              body.status === "queued" ? null : new Date().toISOString(),
+            queued_at:
+              body.status === "queued" ? new Date().toISOString() : null,
             created_at: new Date().toISOString(),
           },
           ...current.slice(0, 9),
@@ -164,6 +173,11 @@ export default function LeadFinderClient({
   }
 
   const latestSummary = latestResult?.summary;
+  const latestWorkflowUrl =
+    latestResult?.externalUrl ||
+    (typeof latestSummary?.external_url === "string"
+      ? latestSummary.external_url
+      : null);
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
@@ -440,6 +454,27 @@ export default function LeadFinderClient({
               {latestSummary.errors.join("; ")}
             </div>
           ) : null}
+
+          {latestResult?.status === "queued" ? (
+            <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+              <p className="font-medium">Run started in GitHub Actions.</p>
+              <p className="mt-1">
+                {latestResult.message ||
+                  latestSummary?.message ||
+                  "The scraper workflow has been queued."}
+              </p>
+              {latestWorkflowUrl ? (
+                <a
+                  className="mt-3 inline-flex text-sm font-medium text-amber-900 underline"
+                  href={latestWorkflowUrl}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  Open GitHub Actions
+                </a>
+              ) : null}
+            </div>
+          ) : null}
         </section>
 
         <section className="rounded-[24px] border bg-white p-6 shadow-sm">
@@ -453,11 +488,16 @@ export default function LeadFinderClient({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-sm font-medium text-foreground">
-                        {formatDate(run.completed_at || run.created_at)}
+                        {formatDate(
+                          run.completed_at || run.queued_at || run.created_at,
+                        )}
                       </p>
                       <p className="mt-1 text-xs text-muted">
-                        {run.dry_run ? "Dry run" : "Live import"} · exit{" "}
-                        {run.exit_code ?? "-"}
+                        {run.dry_run ? "Dry run" : "Live import"} ·{" "}
+                        {run.execution_mode === "github_actions"
+                          ? "GitHub Actions"
+                          : "Local"}{" "}
+                        · exit {run.exit_code ?? "-"}
                       </p>
                     </div>
                     <span
@@ -476,6 +516,16 @@ export default function LeadFinderClient({
                   </div>
                   {run.error ? (
                     <p className="mt-3 text-xs text-rose-700">{run.error}</p>
+                  ) : null}
+                  {run.external_url ? (
+                    <a
+                      className="mt-3 inline-flex text-xs font-medium text-brand underline"
+                      href={run.external_url}
+                      rel="noreferrer"
+                      target="_blank"
+                    >
+                      Open workflow
+                    </a>
                   ) : null}
                 </div>
               ))

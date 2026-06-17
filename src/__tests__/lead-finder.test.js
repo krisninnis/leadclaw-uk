@@ -1,8 +1,10 @@
 const {
   buildLeadFinderArgs,
+  buildGitHubWorkflowDispatchPayload,
   defaultLeadFinderConfig,
   parseLeadFinderConfig,
   parseLeadFinderStdout,
+  resolveLeadFinderExecutionMode,
 } = require("@/lib/lead-finder");
 
 describe("Lead Finder helpers", () => {
@@ -68,6 +70,44 @@ describe("Lead Finder helpers", () => {
     );
     expect(args).not.toContain("--live");
     expect(args).not.toContain("--send-outreach");
+  });
+
+  it("maps Lead Finder config to GitHub workflow dispatch inputs", () => {
+    const payload = buildGitHubWorkflowDispatchPayload({
+      ...defaultLeadFinderConfig(),
+      niche_mode: "custom",
+      niches: ["plumber", "heating"],
+      locations: ["Coventry", "Birmingham"],
+      limit: 25,
+      discover_emails: true,
+      email_discovery_max_pages: 7,
+      dry_run: false,
+    });
+
+    expect(payload).toEqual({
+      ref: "main",
+      inputs: {
+        dry_run: "false",
+        limit: "25",
+        niche_mode: "custom",
+        niches: "plumber heating",
+        locations: "Coventry Birmingham",
+        discover_emails: "true",
+        email_discovery_max_pages: "7",
+      },
+    });
+  });
+
+  it("uses GitHub Actions in production unless overridden", () => {
+    expect(resolveLeadFinderExecutionMode({ NODE_ENV: "production" })).toBe(
+      "github_actions",
+    );
+    expect(
+      resolveLeadFinderExecutionMode({
+        NODE_ENV: "production",
+        LEAD_FINDER_EXECUTION_MODE: "local",
+      }),
+    ).toBe("local");
   });
 
   it("parses JSON-line scraper output into an admin summary", () => {

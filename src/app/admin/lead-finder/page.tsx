@@ -32,11 +32,14 @@ export type LeadFinderRunListItem = {
   id: string;
   status: string | null;
   dry_run: boolean | null;
+  execution_mode: string | null;
+  external_url: string | null;
   summary: Partial<LeadFinderRunSummary> | null;
   exit_code: number | null;
   error: string | null;
   started_at: string | null;
   completed_at: string | null;
+  queued_at: string | null;
   created_at: string | null;
 };
 
@@ -109,7 +112,7 @@ export default async function LeadFinderPage() {
     const { data: runRows } = await (admin as unknown as SupabaseUntypedClient)
       .from("lead_finder_runs")
       .select(
-        "id,status,dry_run,summary,exit_code,error,started_at,completed_at,created_at",
+        "id,status,dry_run,execution_mode,external_url,summary,exit_code,error,started_at,completed_at,queued_at,created_at",
       )
       .order("created_at", { ascending: false })
       .limit(10);

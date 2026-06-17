@@ -30,6 +30,9 @@ export type LeadFinderRunSummary = {
   skipped: number | null;
   emails_found: number;
   errors: string[];
+  message?: string;
+  execution_mode?: string;
+  external_url?: string;
 };
 
 export type LeadFinderProcessResult = {
@@ -41,6 +44,20 @@ export type LeadFinderProcessResult = {
   stderr: string;
   summary: LeadFinderRunSummary;
 };
+
+export type LeadFinderExecutionMode = "local" | "github_actions";
+
+export type LeadFinderWorkflowDispatchResult = {
+  ok: true;
+  executionMode: "github_actions";
+  externalUrl: string;
+  message: string;
+};
+
+const GITHUB_WORKFLOW_OWNER = "krisninnis";
+const GITHUB_WORKFLOW_REPO = "leadclaw-uk";
+const GITHUB_WORKFLOW_ID = "lead-scraper.yml";
+const GITHUB_WORKFLOW_REF = "main";
 
 const rawConfigSchema = z.object({
   name: z.string().trim().min(1).max(120).optional(),
@@ -155,6 +172,82 @@ export function buildLeadFinderArgs(config: LeadFinderConfigInput) {
   args.push(config.dry_run ? "--dry-run" : "--live");
 
   return args;
+}
+
+export function resolveLeadFinderExecutionMode(
+  env: NodeJS.ProcessEnv = process.env,
+): LeadFinderExecutionMode {
+  const configured = env.LEAD_FINDER_EXECUTION_MODE?.trim().toLowerCase();
+
+  if (configured === "local" || configured === "github_actions") {
+    return configured;
+  }
+
+  return env.NODE_ENV === "production" ? "github_actions" : "local";
+}
+
+export function githubActionsWorkflowUrl() {
+  return `https://github.com/${GITHUB_WORKFLOW_OWNER}/${GITHUB_WORKFLOW_REPO}/actions/workflows/${GITHUB_WORKFLOW_ID}`;
+}
+
+export function buildGitHubWorkflowDispatchPayload(
+  config: LeadFinderConfigInput,
+) {
+  return {
+    ref: GITHUB_WORKFLOW_REF,
+    inputs: {
+      dry_run: String(config.dry_run),
+      limit: String(config.limit),
+      niche_mode: config.niche_mode,
+      niches: config.niches.join(" "),
+      locations: config.locations.join(" "),
+      discover_emails: String(config.discover_emails),
+      email_discovery_max_pages: String(config.email_discovery_max_pages),
+    },
+  };
+}
+
+export function isGitHubDispatchConfigured(
+  env: NodeJS.ProcessEnv = process.env,
+) {
+  return Boolean(env.GITHUB_ACTIONS_DISPATCH_TOKEN?.trim());
+}
+
+export async function dispatchLeadFinderWorkflow(
+  config: LeadFinderConfigInput,
+): Promise<LeadFinderWorkflowDispatchResult> {
+  const token = process.env.GITHUB_ACTIONS_DISPATCH_TOKEN?.trim();
+  if (!token) {
+    throw new Error("GitHub Actions dispatch token is not configured.");
+  }
+
+  const url = `https://api.github.com/repos/${GITHUB_WORKFLOW_OWNER}/${GITHUB_WORKFLOW_REPO}/actions/workflows/${GITHUB_WORKFLOW_ID}/dispatches`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Accept: "application/vnd.github+json",
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+    body: JSON.stringify(buildGitHubWorkflowDispatchPayload(config)),
+  });
+
+  if (response.status !== 204) {
+    const body = await response.text().catch(() => "");
+    throw new Error(
+      `GitHub Actions dispatch failed with status ${response.status}${
+        body ? `: ${body.slice(0, 300)}` : ""
+      }`,
+    );
+  }
+
+  return {
+    ok: true,
+    executionMode: "github_actions",
+    externalUrl: githubActionsWorkflowUrl(),
+    message: "GitHub Actions workflow dispatched.",
+  };
 }
 
 function asNumber(value: unknown) {

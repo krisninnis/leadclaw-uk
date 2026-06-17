@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 import { requireAdmin } from "@/lib/api-auth";
 import {
+  dispatchLeadFinderWorkflow,
+  githubActionsWorkflowUrl,
+  isGitHubDispatchConfigured,
   parseLeadFinderConfig,
+  resolveLeadFinderExecutionMode,
   runLeadFinderScraper,
 } from "@/lib/lead-finder";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -41,6 +45,137 @@ export async function POST(req: Request) {
     );
   }
 
+  const executionMode = resolveLeadFinderExecutionMode();
+
+  if (executionMode === "github_actions") {
+    if (!isGitHubDispatchConfigured()) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "GitHub Actions dispatch token is not configured.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const queuedAt = new Date().toISOString();
+    const externalUrl = githubActionsWorkflowUrl();
+    const queuedSummary = {
+      dry_run: config.dry_run,
+      execution_mode: executionMode,
+      message: "GitHub Actions workflow dispatch requested.",
+      external_url: externalUrl,
+    };
+
+    const { data: insertedRun, error: insertError } = await (
+      admin as unknown as SupabaseUntypedClient
+    )
+      .from("lead_finder_runs")
+      .insert({
+        status: "queued",
+        trigger_source: "manual",
+        dry_run: config.dry_run,
+        execution_mode: executionMode,
+        external_url: externalUrl,
+        queued_at: queuedAt,
+        config_snapshot: config,
+        summary: queuedSummary,
+        started_at: queuedAt,
+        created_by: authed.user.id,
+      })
+      .select("id")
+      .single();
+
+    if (insertError) {
+      return NextResponse.json(
+        { ok: false, error: insertError.message },
+        { status: 500 },
+      );
+    }
+
+    const run = insertedRun as RunRow | null;
+    if (!run?.id) {
+      return NextResponse.json(
+        { ok: false, error: "run_insert_failed" },
+        { status: 500 },
+      );
+    }
+
+    try {
+      const dispatchResult = await dispatchLeadFinderWorkflow(config);
+      const summary = {
+        ...queuedSummary,
+        message: dispatchResult.message,
+      };
+
+      const { error: updateError } = await (
+        admin as unknown as SupabaseUntypedClient
+      )
+        .from("lead_finder_runs")
+        .update({
+          status: "queued",
+          summary,
+          external_url: dispatchResult.externalUrl,
+          error: null,
+        })
+        .eq("id", run.id);
+
+      if (updateError) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: updateError.message,
+            runId: run.id,
+            summary,
+          },
+          { status: 500 },
+        );
+      }
+
+      return NextResponse.json({
+        ok: true,
+        runId: run.id,
+        status: "queued",
+        executionMode,
+        externalUrl: dispatchResult.externalUrl,
+        summary,
+        message: "Run started in GitHub Actions.",
+      });
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error ? error.message : "GitHub Actions dispatch failed.";
+      const completedAt = new Date().toISOString();
+      const summary = {
+        ...queuedSummary,
+        message,
+        errors: [message],
+      };
+
+      await (admin as unknown as SupabaseUntypedClient)
+        .from("lead_finder_runs")
+        .update({
+          status: "failed",
+          summary,
+          error: message,
+          completed_at: completedAt,
+        })
+        .eq("id", run.id);
+
+      return NextResponse.json(
+        {
+          ok: false,
+          error: message,
+          runId: run.id,
+          status: "failed",
+          executionMode,
+          externalUrl,
+          summary,
+        },
+        { status: 500 },
+      );
+    }
+  }
+
   const startedAt = new Date().toISOString();
   const { data: insertedRun, error: insertError } = await (
     admin as unknown as SupabaseUntypedClient
@@ -50,6 +185,7 @@ export async function POST(req: Request) {
       status: "running",
       trigger_source: "manual",
       dry_run: config.dry_run,
+      execution_mode: executionMode,
       config_snapshot: config,
       summary: {},
       started_at: startedAt,
@@ -79,6 +215,7 @@ export async function POST(req: Request) {
   const summary = {
     ...result.summary,
     dry_run: config.dry_run,
+    execution_mode: executionMode,
     command: result.command,
     args: result.args,
   };
@@ -115,6 +252,7 @@ export async function POST(req: Request) {
       ok: result.ok,
       runId: run.id,
       status,
+      executionMode,
       summary,
       exitCode: result.exitCode,
     },
