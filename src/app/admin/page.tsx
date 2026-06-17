@@ -396,6 +396,9 @@ export default async function AdminPage() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
+              <Link href="/admin/sales" className="button-primary">
+                Sales Workspace
+              </Link>
               <Link href="/admin/lead-finder" className="button-secondary">
                 Lead Finder
               </Link>
