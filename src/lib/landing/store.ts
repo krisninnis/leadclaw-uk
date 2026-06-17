@@ -307,7 +307,7 @@ export async function listActiveTemplates(): Promise<LandingTemplate[]> {
 
   const { data, error } = await db
     .from(TEMPLATES_TABLE)
-    .select("id,key,name,description,default_content,schema_types,status")
+    .select("id,key,name,default_content,status")
     .eq("status", "active")
     .order("name", { ascending: true })
     .limit(50);
