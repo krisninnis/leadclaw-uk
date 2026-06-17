@@ -2,12 +2,25 @@ import { MetadataRoute } from "next";
 import { aiReceptionistPages } from "@/lib/ai-receptionist-pages";
 import { seoArticlePages } from "@/lib/seo-article-pages";
 import { seoPages } from "@/lib/seo-pages";
+import { listPublishedForSitemap } from "@/lib/landing/store";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = "https://www.leadclaw.uk";
   const lastModified = new Date();
 
+  // ClawLabsLocal — published, non-noindex /lp pages. Build-safe: returns []
+  // when the DB is unavailable so the sitemap never fails to generate.
+  const landingPages: MetadataRoute.Sitemap = (
+    await listPublishedForSitemap()
+  ).map((page) => ({
+    url: `${baseUrl}${page.canonical_path || `/lp/${page.slug}`}`,
+    lastModified: page.updated_at ? new Date(page.updated_at) : lastModified,
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  }));
+
   return [
+    ...landingPages,
     // Core marketing pages - highest priority
     {
       url: `${baseUrl}/`,

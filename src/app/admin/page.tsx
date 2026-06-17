@@ -1,5 +1,6 @@
 import { readFile } from "fs/promises";
 import path from "path";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
@@ -395,15 +396,15 @@ export default async function AdminPage() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <a href="/admin/lead-finder" className="button-secondary">
+              <Link href="/admin/lead-finder" className="button-secondary">
                 Lead Finder
-              </a>
-              <a href="/admin/landing-pages" className="button-secondary">
+              </Link>
+              <Link href="/admin/landing-pages" className="button-secondary">
                 Landing pages
-              </a>
-              <a href="/admin/outreach" className="button-secondary">
+              </Link>
+              <Link href="/admin/outreach" className="button-secondary">
                 Outreach dashboard
-              </a>
+              </Link>
               <LogoutButton />
             </div>
           </div>

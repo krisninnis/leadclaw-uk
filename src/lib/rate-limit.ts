@@ -47,6 +47,23 @@ export const visibilityRateLimit = new Ratelimit({
   prefix: "leadclaw:visibility",
 });
 
+// Landing page builder — admin CRUD. 30 per minute (form-driven, several
+// saves per editing session).
+export const landingAdminRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(30, "1 m"),
+  analytics: true,
+  prefix: "leadclaw:landing-admin",
+});
+
+// Landing page first-party events (views/CTA clicks) — coarse public limiter.
+export const landingEventRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(60, "1 m"),
+  analytics: true,
+  prefix: "leadclaw:landing-event",
+});
+
 // Fail-open rate-limit wrapper: if Upstash is unreachable/unconfigured we
 // allow the request rather than hard-failing the feature.
 export async function checkRateLimit(
