@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { isLeadEligibleForOutreach } from "@/lib/outreach-eligibility";
 import { buildOutreachDraft } from "@/lib/outreach-drafts";
 import { listOutreachTemplates } from "@/lib/outreach-templates";
+import { ACTIONED_QUEUE_STATUSES } from "@/lib/outreach-queue";
 
 export const runtime = "nodejs";
 
@@ -14,7 +15,6 @@ const MAX_LIMIT = 100;
 // `outreach_status`, `unsubscribed_at` and `do_not_contact` are not part of the
 // current leads schema, so they are intentionally omitted to avoid query errors.
 // The eligibility helper treats them as optional/undefined.
-// TODO: include those columns here once they are added to the leads table.
 const LEAD_SELECT =
   "id,company_name,contact_email,contact_phone,website,city,niche,lead_quality_score,pecr_classification,status,created_at";
 
@@ -30,6 +30,11 @@ type QueueLeadRow = {
   pecr_classification: string | null;
   status: string | null;
   created_at: string | null;
+};
+
+type QueueStatusRow = {
+  lead_id: string;
+  status: string;
 };
 
 function parseLimit(value: string | null): number {
@@ -80,6 +85,30 @@ export async function GET(req: NextRequest) {
 
   const rows = (data as QueueLeadRow[] | null) || [];
 
+  // Exclude leads already actioned in the queue (skipped / called /
+  // do_not_contact). By default these are hidden; when includeIneligible=true
+  // they are annotated with their queue status instead.
+  const actionedStatusByLeadId = new Map<string, string>();
+  {
+    const { data: queueData, error: queueError } = await (
+      admin as unknown as SupabaseUntypedClient
+    )
+      .from("outreach_queue")
+      .select("lead_id,status")
+      .in("status", ACTIONED_QUEUE_STATUSES);
+
+    if (queueError) {
+      console.error(
+        "[outreach.queue] failed to load queue statuses",
+        queueError,
+      );
+    } else {
+      for (const row of (queueData as QueueStatusRow[] | null) || []) {
+        if (row?.lead_id) actionedStatusByLeadId.set(row.lead_id, row.status);
+      }
+    }
+  }
+
   // TODO: load suppressed emails in bulk once a suppression source is wired up.
   const suppressedEmails: string[] = [];
 
@@ -101,10 +130,14 @@ export async function GET(req: NextRequest) {
   for (const lead of rows) {
     totalChecked += 1;
 
-    const eligibility = isLeadEligibleForOutreach(lead, suppressedEmails);
-    if (eligibility.eligible) totalEligible += 1;
+    const queueStatus = actionedStatusByLeadId.get(lead.id) ?? null;
 
-    if (!eligibility.eligible && !includeIneligible) continue;
+    const eligibility = isLeadEligibleForOutreach(lead, suppressedEmails);
+    const eligible = eligibility.eligible && !queueStatus;
+    if (eligible) totalEligible += 1;
+
+    // Hide actioned and ineligible leads by default.
+    if (!eligible && !includeIneligible) continue;
 
     let draftSubject: string | null = null;
     let draftBody: string | null = null;
@@ -130,8 +163,11 @@ export async function GET(req: NextRequest) {
     };
 
     if (includeIneligible) {
-      entry.eligible = eligibility.eligible;
-      entry.eligibility_reasons = eligibility.reasons;
+      entry.eligible = eligible;
+      entry.queue_status = queueStatus;
+      entry.eligibility_reasons = queueStatus
+        ? [...eligibility.reasons, `queue_${queueStatus}`]
+        : eligibility.reasons;
     }
 
     leads.push(entry);

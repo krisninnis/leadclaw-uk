@@ -40,20 +40,37 @@ function adminForbidden() {
   });
 }
 
-// A chainable Supabase query builder mock that resolves to { data, error }.
-function mockLeads(leads: unknown[], error: { message: string } | null = null) {
-  const result = { data: leads, error, count: null };
+// Build a chainable Supabase query builder mock that resolves to { data, error }.
+function makeBuilder(result: unknown) {
   const builder: Record<string, unknown> = {};
-  for (const method of ["select", "order", "limit", "gte"]) {
+  for (const method of ["select", "order", "limit", "gte", "in"]) {
     builder[method] = jest.fn(() => builder);
   }
   builder.then = (resolve: (v: unknown) => unknown) => resolve(result);
+  return builder;
+}
+
+// Table-aware admin mock: `leads` returns the given leads, `outreach_queue`
+// returns the given actioned queue rows (default: none).
+function mockLeads(
+  leads: unknown[],
+  queueRows: Array<{ lead_id: string; status: string }> = [],
+  error: { message: string } | null = null,
+) {
+  const leadsBuilder = makeBuilder({ data: leads, error, count: null });
+  const queueBuilder = makeBuilder({
+    data: queueRows,
+    error: null,
+    count: null,
+  });
 
   mockedCreateAdminClient.mockReturnValue({
-    from: jest.fn(() => builder),
+    from: jest.fn((table: string) =>
+      table === "outreach_queue" ? queueBuilder : leadsBuilder,
+    ),
   } as unknown as ReturnType<typeof createAdminClient>);
 
-  return builder;
+  return leadsBuilder;
 }
 
 function makeLead(overrides: Record<string, unknown> = {}) {
@@ -194,5 +211,40 @@ describe("GET /api/admin/outreach/queue", () => {
     expect(body.leads).toHaveLength(1);
     expect(body.leads[0].draft_subject).toBeNull();
     expect(body.leads[0].draft_body).toBeNull();
+  });
+
+  it("hides leads already actioned in the queue by default", async () => {
+    adminOk();
+    mockLeads(
+      [
+        makeLead({ id: "lead_1" }),
+        makeLead({ id: "lead_2", contact_email: "two@brightplumbing.co.uk" }),
+      ],
+      [{ lead_id: "lead_2", status: "skipped" }],
+    );
+
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(body.totalChecked).toBe(2);
+    expect(body.totalEligible).toBe(1);
+    expect(body.leads).toHaveLength(1);
+    expect(body.leads[0].id).toBe("lead_1");
+  });
+
+  it("annotates actioned leads with queue_status when includeIneligible=true", async () => {
+    adminOk();
+    mockLeads(
+      [makeLead({ id: "lead_2" })],
+      [{ lead_id: "lead_2", status: "do_not_contact" }],
+    );
+
+    const res = await GET(makeRequest("?includeIneligible=true"));
+    const body = await res.json();
+
+    expect(body.leads).toHaveLength(1);
+    expect(body.leads[0].queue_status).toBe("do_not_contact");
+    expect(body.leads[0].eligible).toBe(false);
+    expect(body.leads[0].eligibility_reasons).toContain("queue_do_not_contact");
   });
 });

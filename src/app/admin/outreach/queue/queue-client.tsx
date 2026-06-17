@@ -26,7 +26,31 @@ export type QueueResponse = {
   error?: string;
 };
 
+type QueueAction = "skip" | "mark-called" | "do-not-contact";
+
 const EMAIL_QUALITY_OPTIONS = ["high", "medium", "low", "invalid"];
+
+const ACTIONS: Record<
+  QueueAction,
+  { endpoint: string; confirm: string; done: string }
+> = {
+  skip: {
+    endpoint: "/api/admin/outreach/queue/skip",
+    confirm: "Skip this lead? It will be removed from the outreach queue.",
+    done: "Lead skipped.",
+  },
+  "mark-called": {
+    endpoint: "/api/admin/outreach/queue/mark-called",
+    confirm: "Mark this lead as called?",
+    done: "Lead marked as called.",
+  },
+  "do-not-contact": {
+    endpoint: "/api/admin/outreach/queue/do-not-contact",
+    confirm:
+      "Add this lead to Do Not Contact? Their email will be suppressed from all outreach.",
+    done: "Lead added to Do Not Contact and suppressed.",
+  },
+};
 
 function emailQualityClass(quality: string | null | undefined) {
   if (quality === "high") return "bg-emerald-100 text-emerald-700";
@@ -44,6 +68,11 @@ export default function QueueClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [actionMessage, setActionMessage] = useState<{
+    type: "success" | "error";
+    text: string;
+  } | null>(null);
 
   // Client-side filters (no API filter work for this step).
   const [minScore, setMinScore] = useState("");
@@ -113,6 +142,54 @@ export default function QueueClient() {
     });
   }, [leads, minScore, cityFilter, nicheFilter, emailQualityFilter]);
 
+  async function runAction(lead: QueueLead, action: QueueAction) {
+    const config = ACTIONS[action];
+    if (!window.confirm(config.confirm)) return;
+
+    const payload: { lead_id: string; email?: string } = { lead_id: lead.id };
+
+    if (action === "do-not-contact") {
+      let email = lead.contact_email || "";
+      if (!email) {
+        const entered = window.prompt(
+          "This lead has no email on record. Enter an email to suppress:",
+          "",
+        );
+        if (!entered) return;
+        email = entered.trim();
+      }
+      payload.email = email;
+    }
+
+    setBusyId(lead.id);
+    setActionMessage(null);
+    try {
+      const res = await fetch(config.endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const body = (await res.json()) as { ok: boolean; error?: string };
+
+      if (!res.ok || !body.ok) {
+        setActionMessage({
+          type: "error",
+          text: `Action failed: ${body.error || res.status}`,
+        });
+        return;
+      }
+
+      // Remove the actioned lead from the list (no page reload needed).
+      setLeads((prev) => prev.filter((l) => l.id !== lead.id));
+      if (expandedId === lead.id) setExpandedId(null);
+      setActionMessage({ type: "success", text: config.done });
+    } catch {
+      setActionMessage({ type: "error", text: "Action failed: network error" });
+    } finally {
+      setBusyId(null);
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div
@@ -121,6 +198,19 @@ export default function QueueClient() {
       >
         Preview only. This page does not send outreach emails.
       </div>
+
+      {actionMessage && (
+        <div
+          role="status"
+          className={`rounded-xl border px-5 py-3 text-sm ${
+            actionMessage.type === "success"
+              ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+              : "border-rose-300 bg-rose-50 text-rose-900"
+          }`}
+        >
+          {actionMessage.text}
+        </div>
+      )}
 
       {templateMissing && (
         <div className="rounded-xl border border-rose-300 bg-rose-50 px-5 py-4 text-sm text-rose-900">
@@ -202,8 +292,7 @@ export default function QueueClient() {
       ) : (
         <div className="card-premium overflow-hidden">
           <div className="border-b px-5 py-4 text-sm text-muted">
-            Showing {filteredLeads.length} of {leads.length} eligible leads
-            {" "}
+            Showing {filteredLeads.length} of {leads.length} eligible leads{" "}
             (checked {totalChecked}, eligible {totalEligible}).
           </div>
 
@@ -221,7 +310,7 @@ export default function QueueClient() {
                   <th className="px-4 py-3">PECR</th>
                   <th className="px-4 py-3">Email quality</th>
                   <th className="px-4 py-3">Draft subject</th>
-                  <th className="px-4 py-3">Draft</th>
+                  <th className="px-4 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -246,9 +335,11 @@ export default function QueueClient() {
                         lead={lead}
                         expanded={expanded}
                         hasDraft={hasDraft}
+                        busy={busyId === lead.id}
                         onToggle={() =>
                           setExpandedId(expanded ? null : lead.id)
                         }
+                        onAction={runAction}
                       />
                     );
                   })
@@ -266,12 +357,16 @@ function FragmentRow({
   lead,
   expanded,
   hasDraft,
+  busy,
   onToggle,
+  onAction,
 }: {
   lead: QueueLead;
   expanded: boolean;
   hasDraft: boolean;
+  busy: boolean;
   onToggle: () => void;
+  onAction: (lead: QueueLead, action: QueueAction) => void;
 }) {
   return (
     <>
@@ -314,15 +409,41 @@ function FragmentRow({
         </td>
         <td className="px-4 py-3 text-slate-700">{lead.draft_subject || "-"}</td>
         <td className="px-4 py-3">
-          <button
-            type="button"
-            onClick={onToggle}
-            disabled={!hasDraft}
-            className="button-secondary disabled:cursor-not-allowed disabled:opacity-50"
-            aria-expanded={expanded}
-          >
-            {expanded ? "Hide draft" : "Preview draft"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={onToggle}
+              disabled={!hasDraft}
+              className="button-secondary disabled:cursor-not-allowed disabled:opacity-50"
+              aria-expanded={expanded}
+            >
+              {expanded ? "Hide draft" : "Preview draft"}
+            </button>
+            <button
+              type="button"
+              onClick={() => onAction(lead, "skip")}
+              disabled={busy}
+              className="button-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Skip
+            </button>
+            <button
+              type="button"
+              onClick={() => onAction(lead, "mark-called")}
+              disabled={busy}
+              className="button-secondary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Mark Called
+            </button>
+            <button
+              type="button"
+              onClick={() => onAction(lead, "do-not-contact")}
+              disabled={busy}
+              className="rounded-lg border border-rose-300 px-3 py-1.5 text-sm font-medium text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Do Not Contact
+            </button>
+          </div>
         </td>
       </tr>
       {expanded && (
