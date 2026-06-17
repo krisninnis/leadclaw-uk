@@ -4,10 +4,14 @@ import { NextResponse } from "next/server";
 jest.mock("@/lib/api-auth", () => ({ requireAdmin: jest.fn() }));
 jest.mock("@/lib/supabase/admin", () => ({ createAdminClient: jest.fn() }));
 jest.mock("@/lib/email", () => ({ suppressEmail: jest.fn() }));
+jest.mock("@/lib/outreach-activity", () => ({
+  recordOutreachActivity: jest.fn(),
+}));
 
 import { requireAdmin } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { suppressEmail } from "@/lib/email";
+import { recordOutreachActivity } from "@/lib/outreach-activity";
 import { POST as skipPOST } from "@/app/api/admin/outreach/queue/skip/route";
 import { POST as calledPOST } from "@/app/api/admin/outreach/queue/mark-called/route";
 import { POST as dncPOST } from "@/app/api/admin/outreach/queue/do-not-contact/route";
@@ -15,6 +19,7 @@ import { POST as dncPOST } from "@/app/api/admin/outreach/queue/do-not-contact/r
 const mockedRequireAdmin = jest.mocked(requireAdmin);
 const mockedCreateAdminClient = jest.mocked(createAdminClient);
 const mockedSuppressEmail = jest.mocked(suppressEmail);
+const mockedRecordActivity = jest.mocked(recordOutreachActivity);
 
 function adminOk() {
   mockedRequireAdmin.mockResolvedValue({
@@ -40,7 +45,10 @@ type AdminMock = {
 
 // Build an admin client mock handling both `leads` and `outreach_queue`.
 function makeAdmin(
-  leadRow: Record<string, unknown> | null = { id: "lead_1", contact_email: "owner@acme.co.uk" },
+  leadRow: Record<string, unknown> | null = {
+    id: "lead_1",
+    contact_email: "owner@acme.co.uk",
+  },
 ): AdminMock {
   const upsert = jest.fn(() => ({
     select: () => ({
@@ -82,6 +90,7 @@ describe("outreach queue action routes", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedSuppressEmail.mockResolvedValue({ data: {}, error: null });
+    mockedRecordActivity.mockResolvedValue({ ok: true });
   });
 
   describe("auth + validation", () => {
@@ -104,14 +113,14 @@ describe("outreach queue action routes", () => {
   });
 
   describe("skip", () => {
-    it("creates/updates the queue row with status skipped", async () => {
+    it("creates/updates the queue row and records skipped activity", async () => {
       adminOk();
       const { upsert } = makeAdmin();
       const res = await skipPOST(jsonReq(SKIP_URL, { lead_id: "lead_1" }));
       const body = await res.json();
 
       expect(res.status).toBe(200);
-      expect(body).toEqual({ ok: true, status: "skipped" });
+      expect(body).toEqual({ ok: true, status: "skipped", activity_logged: true });
       expect(upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           lead_id: "lead_1",
@@ -120,18 +129,25 @@ describe("outreach queue action routes", () => {
         }),
         { onConflict: "lead_id" },
       );
+      expect(mockedRecordActivity).toHaveBeenCalledWith(
+        expect.objectContaining({
+          leadId: "lead_1",
+          action: "skipped",
+          userId: "admin-1",
+        }),
+      );
     });
   });
 
   describe("mark-called", () => {
-    it("creates/updates the queue row with status called", async () => {
+    it("creates/updates the queue row and records called activity", async () => {
       adminOk();
       const { upsert } = makeAdmin();
       const res = await calledPOST(jsonReq(CALLED_URL, { lead_id: "lead_1" }));
       const body = await res.json();
 
       expect(res.status).toBe(200);
-      expect(body).toEqual({ ok: true, status: "called" });
+      expect(body).toEqual({ ok: true, status: "called", activity_logged: true });
       expect(upsert).toHaveBeenCalledWith(
         expect.objectContaining({
           lead_id: "lead_1",
@@ -140,11 +156,14 @@ describe("outreach queue action routes", () => {
         }),
         { onConflict: "lead_id" },
       );
+      expect(mockedRecordActivity).toHaveBeenCalledWith(
+        expect.objectContaining({ leadId: "lead_1", action: "called" }),
+      );
     });
   });
 
   describe("do-not-contact", () => {
-    it("creates queue row, stamps do_not_contact_at, and suppresses the email", async () => {
+    it("suppresses the email and records do_not_contact activity with metadata", async () => {
       adminOk();
       const { upsert } = makeAdmin({
         id: "lead_1",
@@ -154,7 +173,11 @@ describe("outreach queue action routes", () => {
       const body = await res.json();
 
       expect(res.status).toBe(200);
-      expect(body).toEqual({ ok: true, status: "do_not_contact" });
+      expect(body).toEqual({
+        ok: true,
+        status: "do_not_contact",
+        activity_logged: true,
+      });
       expect(mockedSuppressEmail).toHaveBeenCalledWith(
         "owner@acme.co.uk",
         "do_not_contact",
@@ -166,6 +189,16 @@ describe("outreach queue action routes", () => {
           do_not_contact_at: expect.any(String),
         }),
         { onConflict: "lead_id" },
+      );
+      expect(mockedRecordActivity).toHaveBeenCalledWith(
+        expect.objectContaining({
+          leadId: "lead_1",
+          action: "do_not_contact",
+          metadata: {
+            email: "owner@acme.co.uk",
+            suppression_reason: "do_not_contact",
+          },
+        }),
       );
     });
 
@@ -192,6 +225,23 @@ describe("outreach queue action routes", () => {
       expect(res.status).toBe(400);
       expect(body.error).toBe("email_required");
       expect(mockedSuppressEmail).not.toHaveBeenCalled();
+      expect(mockedRecordActivity).not.toHaveBeenCalled();
+    });
+
+    it("still returns ok with activity_logged=false when logging fails", async () => {
+      adminOk();
+      makeAdmin({ id: "lead_1", contact_email: "owner@acme.co.uk" });
+      mockedRecordActivity.mockResolvedValue({ ok: false, error: "boom" });
+
+      const res = await dncPOST(jsonReq(DNC_URL, { lead_id: "lead_1" }));
+      const body = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(body).toEqual({
+        ok: true,
+        status: "do_not_contact",
+        activity_logged: false,
+      });
     });
   });
 });

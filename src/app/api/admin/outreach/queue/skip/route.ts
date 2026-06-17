@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { setOutreachQueueStatus } from "@/lib/outreach-queue";
+import { recordOutreachActivity } from "@/lib/outreach-activity";
 
 export const runtime = "nodejs";
 
@@ -68,5 +69,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, status: "skipped" });
+  // Audit trail (best-effort): record the action after the queue update.
+  const activity = await recordOutreachActivity({
+    leadId,
+    action: "skipped",
+    userId: authed.user.id,
+  });
+
+  return NextResponse.json({
+    ok: true,
+    status: "skipped",
+    activity_logged: activity.ok,
+  });
 }

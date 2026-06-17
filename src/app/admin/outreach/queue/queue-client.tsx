@@ -26,6 +26,22 @@ export type QueueResponse = {
   error?: string;
 };
 
+export type QueueActivity = {
+  id: string;
+  lead_id: string;
+  action: string;
+  user_id: string | null;
+  notes: string | null;
+  metadata: Record<string, unknown> | null;
+  created_at: string;
+};
+
+type ActivityResponse = {
+  ok: boolean;
+  activities?: QueueActivity[];
+  error?: string;
+};
+
 type QueueAction = "skip" | "mark-called" | "do-not-contact";
 
 const EMAIL_QUALITY_OPTIONS = ["high", "medium", "low", "invalid"];
@@ -60,6 +76,18 @@ function emailQualityClass(quality: string | null | undefined) {
   return "bg-slate-100 text-slate-700";
 }
 
+function formatDate(value: string | null | undefined) {
+  if (!value) return "-";
+  try {
+    return new Intl.DateTimeFormat("en-GB", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(value));
+  } catch {
+    return value;
+  }
+}
+
 export default function QueueClient() {
   const [leads, setLeads] = useState<QueueLead[]>([]);
   const [totalChecked, setTotalChecked] = useState(0);
@@ -74,11 +102,44 @@ export default function QueueClient() {
     text: string;
   } | null>(null);
 
+  // Activity (audit trail).
+  const [activities, setActivities] = useState<QueueActivity[]>([]);
+  const [leadActivity, setLeadActivity] = useState<
+    Record<string, QueueActivity[]>
+  >({});
+
   // Client-side filters (no API filter work for this step).
   const [minScore, setMinScore] = useState("");
   const [cityFilter, setCityFilter] = useState("");
   const [nicheFilter, setNicheFilter] = useState("");
   const [emailQualityFilter, setEmailQualityFilter] = useState("");
+
+  async function loadActivities() {
+    try {
+      const res = await fetch("/api/admin/outreach/activity?limit=20");
+      const body = (await res.json()) as ActivityResponse;
+      if (res.ok && body.ok) setActivities(body.activities || []);
+    } catch {
+      // Activity is supplementary; ignore load errors here.
+    }
+  }
+
+  async function loadLeadActivity(leadId: string) {
+    try {
+      const res = await fetch(
+        `/api/admin/outreach/activity?lead_id=${encodeURIComponent(leadId)}&limit=50`,
+      );
+      const body = (await res.json()) as ActivityResponse;
+      if (res.ok && body.ok) {
+        setLeadActivity((prev) => ({
+          ...prev,
+          [leadId]: body.activities || [],
+        }));
+      }
+    } catch {
+      // ignore
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -109,6 +170,7 @@ export default function QueueClient() {
     }
 
     load();
+    loadActivities();
     return () => {
       cancelled = true;
     };
@@ -141,6 +203,14 @@ export default function QueueClient() {
       return true;
     });
   }, [leads, minScore, cityFilter, nicheFilter, emailQualityFilter]);
+
+  function toggleExpanded(lead: QueueLead) {
+    const next = expandedId === lead.id ? null : lead.id;
+    setExpandedId(next);
+    if (next && !leadActivity[lead.id]) {
+      loadLeadActivity(lead.id);
+    }
+  }
 
   async function runAction(lead: QueueLead, action: QueueAction) {
     const config = ACTIONS[action];
@@ -183,6 +253,8 @@ export default function QueueClient() {
       setLeads((prev) => prev.filter((l) => l.id !== lead.id));
       if (expandedId === lead.id) setExpandedId(null);
       setActionMessage({ type: "success", text: config.done });
+      // Refresh the activity trail so the new action shows up.
+      loadActivities();
     } catch {
       setActionMessage({ type: "error", text: "Action failed: network error" });
     } finally {
@@ -336,9 +408,8 @@ export default function QueueClient() {
                         expanded={expanded}
                         hasDraft={hasDraft}
                         busy={busyId === lead.id}
-                        onToggle={() =>
-                          setExpandedId(expanded ? null : lead.id)
-                        }
+                        activity={leadActivity[lead.id]}
+                        onToggle={() => toggleExpanded(lead)}
                         onAction={runAction}
                       />
                     );
@@ -349,7 +420,66 @@ export default function QueueClient() {
           </div>
         </div>
       )}
+
+      <div className="card-premium p-5">
+        <h2 className="text-lg font-semibold text-foreground">
+          Recent activity
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Latest queue actions across all leads (audit trail).
+        </p>
+        <div className="mt-4">
+          <ActivityList
+            activities={activities}
+            emptyText="No outreach activity recorded yet."
+          />
+        </div>
+      </div>
     </div>
+  );
+}
+
+function actionLabel(action: string) {
+  if (action === "skipped") return "Skipped";
+  if (action === "called") return "Marked called";
+  if (action === "do_not_contact") return "Do Not Contact";
+  if (action === "previewed") return "Previewed";
+  if (action === "email_sent") return "Email sent";
+  if (action === "email_failed") return "Email failed";
+  if (action === "replied") return "Replied";
+  if (action === "note") return "Note";
+  return action;
+}
+
+function ActivityList({
+  activities,
+  emptyText,
+}: {
+  activities: QueueActivity[] | undefined;
+  emptyText: string;
+}) {
+  if (!activities) {
+    return <div className="text-sm text-muted">Loading activity&hellip;</div>;
+  }
+  if (activities.length === 0) {
+    return <div className="text-sm text-muted">{emptyText}</div>;
+  }
+  return (
+    <ul className="divide-y divide-slate-100">
+      {activities.map((activity) => (
+        <li
+          key={activity.id}
+          className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
+        >
+          <span className="font-medium text-slate-800">
+            {actionLabel(activity.action)}
+          </span>
+          <span className="text-slate-500">
+            {formatDate(activity.created_at)}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -358,6 +488,7 @@ function FragmentRow({
   expanded,
   hasDraft,
   busy,
+  activity,
   onToggle,
   onAction,
 }: {
@@ -365,6 +496,7 @@ function FragmentRow({
   expanded: boolean;
   hasDraft: boolean;
   busy: boolean;
+  activity: QueueActivity[] | undefined;
   onToggle: () => void;
   onAction: (lead: QueueLead, action: QueueAction) => void;
 }) {
@@ -449,7 +581,7 @@ function FragmentRow({
       {expanded && (
         <tr className="border-t bg-slate-50">
           <td colSpan={11} className="px-4 py-4">
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
                 <div className="text-xs font-semibold uppercase text-slate-500">
                   Subject
@@ -465,6 +597,17 @@ function FragmentRow({
                 <pre className="whitespace-pre-wrap break-words font-sans text-sm text-slate-800">
                   {lead.draft_body || "(no body)"}
                 </pre>
+              </div>
+              <div>
+                <div className="text-xs font-semibold uppercase text-slate-500">
+                  Activity for this lead
+                </div>
+                <div className="mt-1">
+                  <ActivityList
+                    activities={activity}
+                    emptyText="No activity recorded for this lead yet."
+                  />
+                </div>
               </div>
             </div>
           </td>

@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { setOutreachQueueStatus } from "@/lib/outreach-queue";
+import { recordOutreachActivity } from "@/lib/outreach-activity";
 import { suppressEmail } from "@/lib/email";
 
 export const runtime = "nodejs";
+
+const SUPPRESSION_REASON = "do_not_contact";
 
 type LeadRow = { id: string; contact_email: string | null };
 
@@ -70,10 +73,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Reuse the existing email_suppressions mechanism (upsert by email).
-  const { error: suppressError } = await suppressEmail(
-    email,
-    "do_not_contact",
-  );
+  const { error: suppressError } = await suppressEmail(email, SUPPRESSION_REASON);
   if (suppressError) {
     return NextResponse.json(
       { ok: false, error: "suppression_failed" },
@@ -94,5 +94,17 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return NextResponse.json({ ok: true, status: "do_not_contact" });
+  // Audit trail (best-effort): record the action after the queue update.
+  const activity = await recordOutreachActivity({
+    leadId,
+    action: "do_not_contact",
+    userId: authed.user.id,
+    metadata: { email, suppression_reason: SUPPRESSION_REASON },
+  });
+
+  return NextResponse.json({
+    ok: true,
+    status: "do_not_contact",
+    activity_logged: activity.ok,
+  });
 }
