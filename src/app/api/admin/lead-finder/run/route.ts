@@ -1,0 +1,123 @@
+import { NextResponse } from "next/server";
+import { ZodError } from "zod";
+import { requireAdmin } from "@/lib/api-auth";
+import {
+  parseLeadFinderConfig,
+  runLeadFinderScraper,
+} from "@/lib/lead-finder";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
+
+type RunRow = {
+  id: string;
+};
+
+export async function POST(req: Request) {
+  const authed = await requireAdmin();
+  if (!authed.ok) return authed.response;
+
+  let config;
+  try {
+    const body = await req.json().catch(() => ({}));
+    config = parseLeadFinderConfig(body);
+  } catch (error: unknown) {
+    const message =
+      error instanceof ZodError
+        ? error.issues[0]?.message || "invalid_config"
+        : error instanceof Error
+          ? error.message
+          : "invalid_config";
+
+    return NextResponse.json({ ok: false, error: message }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+  if (!admin) {
+    return NextResponse.json(
+      { ok: false, error: "supabase_not_configured" },
+      { status: 400 },
+    );
+  }
+
+  const startedAt = new Date().toISOString();
+  const { data: insertedRun, error: insertError } = await (
+    admin as unknown as SupabaseUntypedClient
+  )
+    .from("lead_finder_runs")
+    .insert({
+      status: "running",
+      trigger_source: "manual",
+      dry_run: config.dry_run,
+      config_snapshot: config,
+      summary: {},
+      started_at: startedAt,
+      created_by: authed.user.id,
+    })
+    .select("id")
+    .single();
+
+  if (insertError) {
+    return NextResponse.json(
+      { ok: false, error: insertError.message },
+      { status: 500 },
+    );
+  }
+
+  const run = insertedRun as RunRow | null;
+  if (!run?.id) {
+    return NextResponse.json(
+      { ok: false, error: "run_insert_failed" },
+      { status: 500 },
+    );
+  }
+
+  const result = await runLeadFinderScraper(config);
+  const completedAt = new Date().toISOString();
+  const status = result.ok ? "completed" : "failed";
+  const summary = {
+    ...result.summary,
+    dry_run: config.dry_run,
+    command: result.command,
+    args: result.args,
+  };
+
+  const { error: updateError } = await (
+    admin as unknown as SupabaseUntypedClient
+  )
+    .from("lead_finder_runs")
+    .update({
+      status,
+      summary,
+      stdout: result.stdout,
+      stderr: result.stderr,
+      exit_code: result.exitCode,
+      error: result.ok ? null : result.summary.errors.join("; "),
+      completed_at: completedAt,
+    })
+    .eq("id", run.id);
+
+  if (updateError) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: updateError.message,
+        runId: run.id,
+        summary,
+      },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json(
+    {
+      ok: result.ok,
+      runId: run.id,
+      status,
+      summary,
+      exitCode: result.exitCode,
+    },
+    { status: result.ok ? 200 : 500 },
+  );
+}

@@ -395,6 +395,12 @@ export default async function AdminPage() {
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
+              <a href="/admin/lead-finder" className="button-secondary">
+                Lead Finder
+              </a>
+              <a href="/admin/landing-pages" className="button-secondary">
+                Landing pages
+              </a>
               <a href="/admin/outreach" className="button-secondary">
                 Outreach dashboard
               </a>
