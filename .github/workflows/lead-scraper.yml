@@ -46,6 +46,10 @@ on:
         description: "Maximum safe pages to check during email discovery"
         required: true
         default: "7"
+      lead_finder_run_id:
+        description: "Optional Lead Finder run id for admin callback"
+        required: false
+        default: ""
 
 jobs:
   run-scraper:
@@ -64,6 +68,8 @@ jobs:
           python -m unittest discover -s leadclaw-lead-scraper -p "test_*.py"
 
       - name: Run scraper
+        id: run_scraper
+        continue-on-error: true
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
           LEAD_IMPORT_TOKEN: ${{ secrets.LEAD_IMPORT_TOKEN }}
@@ -79,6 +85,7 @@ jobs:
             NICHES=""
             DISCOVER_EMAILS="true"
             EMAIL_DISCOVERY_MAX_PAGES="7"
+            LEAD_FINDER_RUN_ID=""
           else
             DRY_RUN="${{ inputs.dry_run }}"
             LIMIT="${{ inputs.limit }}"
@@ -87,6 +94,7 @@ jobs:
             NICHES="${{ inputs.niches }}"
             DISCOVER_EMAILS="${{ inputs.discover_emails }}"
             EMAIL_DISCOVERY_MAX_PAGES="${{ inputs.email_discovery_max_pages }}"
+            LEAD_FINDER_RUN_ID="${{ inputs.lead_finder_run_id }}"
           fi
 
           ARGS=(
@@ -112,4 +120,110 @@ jobs:
             ARGS+=("--live")
           fi
 
-          python leadclaw-lead-scraper/places_batch.py "${ARGS[@]}"
+          set +e
+          python leadclaw-lead-scraper/places_batch.py "${ARGS[@]}" > scraper.stdout 2> scraper.stderr
+          EXIT_CODE=$?
+          set -e
+
+          cat scraper.stdout
+          if [ -s scraper.stderr ]; then
+            cat scraper.stderr >&2
+          fi
+
+          echo "exit_code=${EXIT_CODE}" >> "$GITHUB_OUTPUT"
+          echo "dry_run=${DRY_RUN}" >> "$GITHUB_OUTPUT"
+          echo "lead_finder_run_id=${LEAD_FINDER_RUN_ID}" >> "$GITHUB_OUTPUT"
+
+          exit "${EXIT_CODE}"
+
+      - name: Callback Lead Finder
+        if: ${{ always() && steps.run_scraper.outputs.lead_finder_run_id != '' }}
+        env:
+          LEAD_FINDER_RUN_ID: ${{ steps.run_scraper.outputs.lead_finder_run_id }}
+          LEAD_FINDER_CALLBACK_TOKEN: ${{ secrets.LEAD_FINDER_CALLBACK_TOKEN }}
+          LEADCLAW_BASE_URL: https://www.leadclaw.uk
+          WORKFLOW_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EXIT_CODE: ${{ steps.run_scraper.outputs.exit_code }}
+          DRY_RUN: ${{ steps.run_scraper.outputs.dry_run }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${LEAD_FINDER_CALLBACK_TOKEN:?Missing LEAD_FINDER_CALLBACK_TOKEN secret}"
+
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          def read_text(path):
+              try:
+                  with open(path, "r", encoding="utf-8", errors="replace") as handle:
+                      return handle.read()
+              except FileNotFoundError:
+                  return ""
+
+          stdout = read_text("scraper.stdout")
+          stderr = read_text("scraper.stderr")
+          exit_code = int(os.environ.get("EXIT_CODE") or "1")
+          summary = {
+              "discovered": None,
+              "skipped": None,
+              "dry_run": os.environ.get("DRY_RUN") == "true",
+              "would_import": None,
+              "imported": None,
+              "emails_found": 0,
+              "workflow_url": os.environ["WORKFLOW_URL"],
+          }
+
+          for line in stdout.splitlines():
+              line = line.strip()
+              if not (line.startswith("{") and line.endswith("}")):
+                  continue
+              try:
+                  event = json.loads(line)
+              except json.JSONDecodeError:
+                  continue
+
+              if event.get("event") == "email_discovery_email_found":
+                  summary["emails_found"] += 1
+              elif event.get("event") == "scraper_discovery_complete":
+                  summary["discovered"] = event.get("discovered")
+                  summary["skipped"] = event.get("skipped")
+              elif event.get("event") == "scraper_import_complete":
+                  summary["discovered"] = event.get("discovered", summary["discovered"])
+                  discovery_skipped = event.get("skipped") or 0
+                  result = event.get("result") or {}
+                  summary["would_import"] = result.get("would_import") or result.get("wouldImport")
+                  summary["imported"] = (
+                      result.get("inserted")
+                      or result.get("imported")
+                      or result.get("insertedCount")
+                  )
+                  import_skipped = result.get("skipped") or result.get("skippedCount") or 0
+                  summary["skipped"] = discovery_skipped + import_skipped
+
+          payload = {
+              "lead_finder_run_id": os.environ["LEAD_FINDER_RUN_ID"],
+              "status": "completed" if exit_code == 0 else "failed",
+              "summary": summary,
+              "stdout": stdout[-12000:],
+              "stderr": stderr[-12000:],
+              "exit_code": exit_code,
+          }
+
+          request = urllib.request.Request(
+              f"{os.environ['LEADCLAW_BASE_URL'].rstrip('/')}/api/admin/lead-finder/callback",
+              data=json.dumps(payload).encode("utf-8"),
+              headers={
+                  "Authorization": f"Bearer {os.environ['LEAD_FINDER_CALLBACK_TOKEN']}",
+                  "Content-Type": "application/json",
+              },
+              method="POST",
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              print(response.read().decode("utf-8"))
+          PY
+
+      - name: Fail workflow if scraper failed
+        if: ${{ steps.run_scraper.outcome == 'failure' }}
+        run: exit 1

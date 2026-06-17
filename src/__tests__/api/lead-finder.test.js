@@ -6,6 +6,17 @@ function makeRequest(url, body = {}) {
   });
 }
 
+function makeCallbackRequest(body = {}, token = "callback-token") {
+  return new Request("http://localhost:3000/api/admin/lead-finder/callback", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+}
+
 function mockAdminForConfig() {
   const upsert = jest.fn(() => ({
     select: jest.fn(() => ({
@@ -70,12 +81,14 @@ describe("Lead Finder admin API", () => {
     jest.resetModules();
     process.env.LEAD_FINDER_EXECUTION_MODE = "local";
     delete process.env.GITHUB_ACTIONS_DISPATCH_TOKEN;
+    delete process.env.LEAD_FINDER_CALLBACK_TOKEN;
     global.fetch = originalFetch;
   });
 
   afterEach(() => {
     delete process.env.LEAD_FINDER_EXECUTION_MODE;
     delete process.env.GITHUB_ACTIONS_DISPATCH_TOKEN;
+    delete process.env.LEAD_FINDER_CALLBACK_TOKEN;
     global.fetch = originalFetch;
   });
 
@@ -352,6 +365,7 @@ describe("Lead Finder admin API", () => {
         body: JSON.stringify({
           ref: "main",
           inputs: {
+            lead_finder_run_id: "run_1",
             dry_run: "false",
             limit: "25",
             niche_mode: "custom",
@@ -361,6 +375,120 @@ describe("Lead Finder admin API", () => {
             email_discovery_max_pages: "7",
           },
         }),
+      }),
+    );
+  });
+
+  it("rejects Lead Finder callbacks with missing or invalid token", async () => {
+    process.env.LEAD_FINDER_CALLBACK_TOKEN = "callback-token";
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn(),
+    }));
+
+    const { POST } = require("@/app/api/admin/lead-finder/callback/route");
+    const missing = await POST(
+      makeCallbackRequest({ lead_finder_run_id: "run_1", status: "completed" }, ""),
+    );
+    const invalid = await POST(
+      makeCallbackRequest(
+        { lead_finder_run_id: "run_1", status: "completed" },
+        "wrong-token",
+      ),
+    );
+
+    expect(missing.status).toBe(401);
+    expect(invalid.status).toBe(401);
+  });
+
+  it("updates a Lead Finder run from a successful callback", async () => {
+    process.env.LEAD_FINDER_CALLBACK_TOKEN = "callback-token";
+    const mockDb = mockAdminForRun();
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    const { POST } = require("@/app/api/admin/lead-finder/callback/route");
+    const res = await POST(
+      makeCallbackRequest({
+        lead_finder_run_id: "run_1",
+        status: "completed",
+        summary: {
+          discovered: 5,
+          skipped: 1,
+          dry_run: true,
+          would_import: 4,
+          imported: null,
+          emails_found: 2,
+          workflow_url:
+            "https://github.com/krisninnis/leadclaw-uk/actions/runs/123",
+        },
+        stdout: '{"event":"scraper_discovery_complete"}\n',
+        stderr: "",
+        exit_code: 0,
+      }),
+    );
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({
+      ok: true,
+      runId: "run_1",
+      status: "completed",
+    });
+    expect(mockDb.updatePayloads[0]).toEqual(
+      expect.objectContaining({
+        status: "completed",
+        stdout: '{"event":"scraper_discovery_complete"}\n',
+        stderr: "",
+        exit_code: 0,
+        error: null,
+        completed_at: expect.any(String),
+        summary: expect.objectContaining({
+          discovered: 5,
+          would_import: 4,
+          emails_found: 2,
+          callback_received_at: expect.any(String),
+        }),
+      }),
+    );
+  });
+
+  it("updates a Lead Finder run from a failed callback", async () => {
+    process.env.LEAD_FINDER_CALLBACK_TOKEN = "callback-token";
+    const mockDb = mockAdminForRun();
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    const { POST } = require("@/app/api/admin/lead-finder/callback/route");
+    const res = await POST(
+      makeCallbackRequest({
+        lead_finder_run_id: "run_1",
+        status: "failed",
+        summary: {
+          discovered: null,
+          skipped: null,
+          dry_run: false,
+          workflow_url:
+            "https://github.com/krisninnis/leadclaw-uk/actions/runs/123",
+        },
+        stdout: "",
+        stderr: "Missing GOOGLE_PLACES_API_KEY secret",
+        exit_code: 1,
+      }),
+    );
+
+    expect(res.status).toBe(200);
+    expect(mockDb.updatePayloads[0]).toEqual(
+      expect.objectContaining({
+        status: "failed",
+        stderr: "Missing GOOGLE_PLACES_API_KEY secret",
+        exit_code: 1,
+        error: "Missing GOOGLE_PLACES_API_KEY secret",
+        completed_at: expect.any(String),
       }),
     );
   });

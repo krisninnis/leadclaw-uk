@@ -82,11 +82,12 @@ describe("Lead Finder helpers", () => {
       discover_emails: true,
       email_discovery_max_pages: 7,
       dry_run: false,
-    });
+    }, "run_123");
 
     expect(payload).toEqual({
       ref: "main",
       inputs: {
+        lead_finder_run_id: "run_123",
         dry_run: "false",
         limit: "25",
         niche_mode: "custom",

@@ -102,10 +102,11 @@ export async function POST(req: Request) {
     }
 
     try {
-      const dispatchResult = await dispatchLeadFinderWorkflow(config);
+      const dispatchResult = await dispatchLeadFinderWorkflow(config, run.id);
       const summary = {
         ...queuedSummary,
         message: dispatchResult.message,
+        lead_finder_run_id: run.id,
       };
 
       const { error: updateError } = await (

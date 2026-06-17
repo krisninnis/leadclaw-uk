@@ -192,10 +192,12 @@ export function githubActionsWorkflowUrl() {
 
 export function buildGitHubWorkflowDispatchPayload(
   config: LeadFinderConfigInput,
+  leadFinderRunId = "",
 ) {
   return {
     ref: GITHUB_WORKFLOW_REF,
     inputs: {
+      lead_finder_run_id: leadFinderRunId,
       dry_run: String(config.dry_run),
       limit: String(config.limit),
       niche_mode: config.niche_mode,
@@ -215,6 +217,7 @@ export function isGitHubDispatchConfigured(
 
 export async function dispatchLeadFinderWorkflow(
   config: LeadFinderConfigInput,
+  leadFinderRunId = "",
 ): Promise<LeadFinderWorkflowDispatchResult> {
   const token = process.env.GITHUB_ACTIONS_DISPATCH_TOKEN?.trim();
   if (!token) {
@@ -230,7 +233,9 @@ export async function dispatchLeadFinderWorkflow(
       "Content-Type": "application/json",
       "X-GitHub-Api-Version": "2022-11-28",
     },
-    body: JSON.stringify(buildGitHubWorkflowDispatchPayload(config)),
+    body: JSON.stringify(
+      buildGitHubWorkflowDispatchPayload(config, leadFinderRunId),
+    ),
   });
 
   if (response.status !== 204) {
