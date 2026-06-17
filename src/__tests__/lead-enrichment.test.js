@@ -157,7 +157,15 @@ describe("lead quality scoring", () => {
 
     expect(patch.lead_quality_score).toBe(100);
     expect(patch.lead_quality_reason).toContain("Hot lead quality (100)");
-    expect(patch.outreach_subject).toBe("Quick idea for Example Services Ltd");
+    expect(patch.outreach_subject).toBe(
+      "Quick observation about Example Services Ltd",
+    );
+    expect(patch.outreach_message).toContain(
+      "I was looking at Example Services Ltd and noticed a few areas that may be costing you enquiries and bookings.",
+    );
+    expect(patch.outreach_message).toContain(
+      "I put together a quick audit for your clinic",
+    );
   });
 
   it("classifies website quality for business, social, booking, directory and unknown URLs", () => {

@@ -113,13 +113,6 @@ export type LeadEnrichmentBuildOptions = {
 export const LEAD_ENRICHMENT_SELECT =
   "id,company_name,website,contact_email,contact_phone,city,niche,source,status,score,lead_score,google_rating,review_count,has_live_chat,has_contact_form,pecr_classification,pecr_reason,company_number,lead_quality_score,lead_quality_reason,outreach_subject,outreach_message";
 
-function normalizeNiche(value?: string | null) {
-  return String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/[-\s]+/g, "_");
-}
-
 function normalizeEmail(raw: unknown) {
   return String(raw || "")
     .trim()
@@ -200,70 +193,31 @@ function leadQualityBand(score: number) {
   return "Hot";
 }
 
-function nicheLine(niche?: string | null) {
-  const normalized = normalizeNiche(niche);
+function defaultOutreachBody(company: string, contactEmail?: string | null) {
+  return `Hi,
 
-  if (["plumber", "plumbers", "plumbing"].includes(normalized)) {
-    return "For plumbing businesses, emergency callouts, leak enquiries, and quote requests often arrive when you are already on a job, driving, or out of hours.";
-  }
+I was looking at ${company} and noticed a few areas that may be costing you enquiries and bookings.
 
-  if (["heating", "heating_engineer", "heating_engineers"].includes(normalized)) {
-    return "For plumbing and heating businesses, emergency callouts and boiler enquiries often happen when you are already on a job, driving, or out of hours.";
-  }
+Many clinics lose potential patients because enquiries arrive outside opening hours, calls go unanswered, or website visitors leave before making contact.
 
-  if (["electrician", "electricians", "electrical"].includes(normalized)) {
-    return "For electrical contractors, quote requests and urgent callouts can arrive while you are on-site and unable to respond straight away.";
-  }
+We've built a system that answers enquiries instantly, captures lead details, and helps clinics convert more of the traffic they're already paying for.
 
-  if (["roofer", "roofers", "roofing"].includes(normalized)) {
-    return "For roofing businesses, storm damage enquiries, repair requests, and quote forms can arrive fast, especially when you are already out on a job.";
-  }
+I put together a quick audit for your clinic and would be happy to share the findings if useful.
 
-  if (["estate_agent", "estate_agents", "estate-agents", "property"].includes(normalized)) {
-    return "For estate agents, valuation requests and viewing enquiries can be lost if nobody follows up quickly.";
-  }
+Would you be open to a brief look?
 
-  if (
-    [
-      "beauty",
-      "aesthetic",
-      "aesthetics",
-      "aesthetic_clinic",
-      "aesthetic_clinics",
-      "beauty_clinic",
-      "beauty_clinics",
-    ].includes(normalized)
-  ) {
-    return "For clinics, treatment enquiries and consultation requests often arrive while reception is busy or outside opening hours.";
-  }
+Thanks,
 
-  return "For UK service businesses, missed calls, quote requests, and after-hours enquiries can turn into lost work if nobody replies quickly.";
-}
+Kris
+LeadClaw
 
-function nicheDescription(niche?: string | null) {
-  const normalized = normalizeNiche(niche);
-
-  if (["plumber", "plumbers", "plumbing"].includes(normalized)) return "plumbing business";
-  if (["heating", "heating_engineer", "heating_engineers"].includes(normalized)) return "plumbing and heating business";
-  if (["electrician", "electricians", "electrical"].includes(normalized)) return "electrical contractor";
-  if (["roofer", "roofers", "roofing"].includes(normalized)) return "roofing business";
-  if (["estate_agent", "estate_agents", "estate-agents", "property"].includes(normalized)) return "estate agency";
-
-  if (
-    [
-      "beauty",
-      "aesthetic",
-      "aesthetics",
-      "aesthetic_clinic",
-      "aesthetic_clinics",
-      "beauty_clinic",
-      "beauty_clinics",
-    ].includes(normalized)
-  ) {
-    return "clinic";
-  }
-
-  return normalized ? "service business" : "";
+---
+Lead Claw Ltd (Company No. 13546017)
+206 Whitechapel Road, London, E1 1AA
+We found your business on Google Maps.
+Privacy policy: ${PRODUCTION_APP_URL}/legal/privacy
+Data rights: privacy@leadclaw.uk
+Unsubscribe: ${contactEmail ? `${PRODUCTION_APP_URL}/api/unsubscribe?email=${encodeURIComponent(contactEmail)}` : `${PRODUCTION_APP_URL}/api/unsubscribe`}`;
 }
 
 // Strong, legal-entity-level corporate markers (Ltd / Limited / LLP / PLC).
@@ -497,50 +451,14 @@ export function scoreLeadQualityConservatively(
 }
 
 export function buildOutreachSubject(companyName: string) {
-  return `Quick idea for ${companyName}`;
+  return `Quick observation about ${companyName}`;
 }
 
 export function buildOutreachMessage(lead: LeadEnrichmentRow) {
   const company = String(lead.company_name || "").trim();
   const normalizedEmail = normalizeEmail(lead.contact_email);
   const email = isValidEmail(normalizedEmail) ? normalizedEmail : "";
-  const city = String(lead.city || "").trim();
-  const industry = nicheDescription(lead.niche);
-  const locationText = city ? ` in ${city}` : "";
-  const industryText = industry ? ` as a ${industry}` : "";
-  const demoUrl = `${PRODUCTION_APP_URL}/demo?source=outreach&lead=${encodeURIComponent(lead.id)}`;
-  const unsubscribeUrl = email
-    ? `${PRODUCTION_APP_URL}/api/unsubscribe?email=${encodeURIComponent(email)}`
-    : `${PRODUCTION_APP_URL}/api/unsubscribe`;
-
-  return `Hi ${company} team,
-
-A quick idea for ${company}${locationText}${industryText}.
-
-For many service businesses, missed calls, quote requests, and after-hours enquiries are easy to lose when nobody replies quickly. Often the next thing a customer does is try another local business.
-
-${nicheLine(lead.niche)}
-
-LeadClaw is an AI receptionist for UK service businesses. It can answer common website enquiries, capture quote requests, collect callback details, and help turn visitors into booked jobs. It works 24/7 when the business is busy, on-site, or closed.
-
-I put together a personalised demo for ${company}:
-${demoUrl}
-
-If it looks useful, you can try LeadClaw without a long setup and see whether it helps ${company} respond faster.
-
-LeadClaw is built by Claw Labs, a UK software and automation company.
-
-Best,
-Kris Ninnis
-Founder, LeadClaw
-
----
-Lead Claw Ltd (Company No. 13546017)
-206 Whitechapel Road, London, E1 1AA
-We found your business on Google Maps.
-Privacy policy: ${PRODUCTION_APP_URL}/legal/privacy
-Data rights: privacy@leadclaw.uk
-Unsubscribe: ${unsubscribeUrl}`;
+  return defaultOutreachBody(company, email);
 }
 
 export function buildLeadEnrichmentPatch(

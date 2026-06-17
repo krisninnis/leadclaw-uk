@@ -214,9 +214,14 @@ describe("POST /api/outreach/backfill", () => {
     );
     expect(mockDb.updateCalls[0]).toEqual(
       expect.objectContaining({
-        outreach_subject: "Quick idea for BOILER MAN (YORKSHIRE)",
-        outreach_message: expect.stringContaining("AI receptionist"),
+        outreach_subject: "Quick observation about BOILER MAN (YORKSHIRE)",
+        outreach_message: expect.stringContaining(
+          "I was looking at BOILER MAN (YORKSHIRE) and noticed a few areas that may be costing you enquiries and bookings.",
+        ),
       }),
+    );
+    expect(mockDb.updateCalls[0].outreach_message).toContain(
+      "I put together a quick audit for your clinic",
     );
     expect(mockDb.updateCalls[0].outreach_message).toContain(
       "Unsubscribe: https://www.leadclaw.uk/api/unsubscribe",
@@ -225,7 +230,7 @@ describe("POST /api/outreach/backfill", () => {
       "[outreach.backfill] outreach copy generated",
       expect.objectContaining({
         leadId: "lead_no_email_apply",
-        subjectGenerated: "Quick idea for BOILER MAN (YORKSHIRE)",
+        subjectGenerated: "Quick observation about BOILER MAN (YORKSHIRE)",
         messageGenerated: true,
       }),
     );

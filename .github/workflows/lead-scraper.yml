@@ -1,6 +1,8 @@
 name: Lead Scraper
 
 on:
+  schedule:
+    - cron: "0 8 * * *"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -69,23 +71,40 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            DRY_RUN="false"
+            LIMIT="25"
+            NICHE_MODE="clinic"
+            LOCATIONS="Coventry Birmingham Leicester Nottingham"
+            NICHES=""
+            DISCOVER_EMAILS="true"
+            EMAIL_DISCOVERY_MAX_PAGES="7"
+          else
+            DRY_RUN="${{ inputs.dry_run }}"
+            LIMIT="${{ inputs.limit }}"
+            NICHE_MODE="${{ inputs.niche_mode }}"
+            LOCATIONS="${{ inputs.locations }}"
+            NICHES="${{ inputs.niches }}"
+            DISCOVER_EMAILS="${{ inputs.discover_emails }}"
+            EMAIL_DISCOVERY_MAX_PAGES="${{ inputs.email_discovery_max_pages }}"
+          fi
 
           ARGS=(
-            "--limit" "${{ inputs.limit }}"
-            "--niche-mode" "${{ inputs.niche_mode }}"
-            "--locations" ${{ inputs.locations }}
+            "--limit" "${LIMIT}"
+            "--niche-mode" "${NICHE_MODE}"
+            "--locations" ${LOCATIONS}
           )
 
-          if [ -n "${{ inputs.niches }}" ]; then
-            ARGS+=("--niches" ${{ inputs.niches }})
+          if [ -n "${NICHES}" ]; then
+            ARGS+=("--niches" ${NICHES})
           fi
 
-          if [ "${{ inputs.discover_emails }}" = "true" ]; then
+          if [ "${DISCOVER_EMAILS}" = "true" ]; then
             ARGS+=("--discover-emails")
-            ARGS+=("--email-discovery-max-pages" "${{ inputs.email_discovery_max_pages }}")
+            ARGS+=("--email-discovery-max-pages" "${EMAIL_DISCOVERY_MAX_PAGES}")
           fi
 
-          if [ "${{ inputs.dry_run }}" = "true" ]; then
+          if [ "${DRY_RUN}" = "true" ]; then
             ARGS+=("--dry-run")
           else
             : "${GOOGLE_PLACES_API_KEY:?Missing GOOGLE_PLACES_API_KEY secret}"
