@@ -20,6 +20,11 @@ import type {
   LandingPageRow,
   LandingStatus,
 } from "@/lib/landing/types";
+import {
+  generateDraftFromTemplate,
+  getLandingTemplate,
+  summarizeTemplate,
+} from "@/lib/landing/templates";
 
 type EditorTemplate = {
   id: string;
@@ -207,22 +212,77 @@ export default function LandingPageEditor({ mode, initialPage, templates }: Prop
     set("slug", generateSlug(form.niche, form.city));
   }
 
-  function applyTemplate(templateId: string) {
-    set("template_id", templateId);
+  const selectedTemplate =
+    templates.find((t) => t.id === form.template_id) || null;
+  const templateDef = selectedTemplate
+    ? getLandingTemplate(selectedTemplate.key)
+    : undefined;
+  const templateSummary = templateDef ? summarizeTemplate(templateDef) : null;
+
+  // Selecting a template sets it and pre-fills the niche when empty. It does
+  // NOT overwrite content — use "Generate draft" for that.
+  function selectTemplate(templateId: string) {
     const tpl = templates.find((t) => t.id === templateId);
-    const dc = tpl?.default_content;
-    if (!dc) return;
-    // Only fill empty fields so we never clobber existing input.
+    const def = tpl ? getLandingTemplate(tpl.key) : undefined;
     setForm((current) => ({
       ...current,
-      h1: current.h1 || dc.h1 || "",
-      subheading: current.subheading || dc.subheading || "",
-      pains: current.pains.length ? current.pains : dc.pains || [],
-      benefits: current.benefits.length ? current.benefits : dc.benefits || [],
-      features: current.features.length ? current.features : dc.features || [],
-      useCases: current.useCases.length ? current.useCases : dc.useCases || [],
-      faq: current.faq.length ? current.faq : (dc.faq || []).map((f) => ({ ...f })),
+      template_id: templateId,
+      niche: current.niche || def?.nicheSlug || "",
     }));
+  }
+
+  // Deterministically expand the selected template into editable fields for the
+  // current city/region. No save, no publish — the admin reviews first.
+  function runGeneration(successMessage: string) {
+    if (!templateDef) {
+      setMessage("Choose a template first.");
+      return;
+    }
+    if (!form.city.trim()) {
+      setMessage("Enter a city before generating a draft.");
+      return;
+    }
+    const draft = generateDraftFromTemplate(templateDef, {
+      city: form.city,
+      region: form.region,
+      country: form.country,
+    });
+    setForm((current) => ({
+      ...current,
+      niche: draft.niche,
+      slug: draft.slug,
+      seo_title: draft.seo_title,
+      seo_description: draft.seo_description,
+      canonical_path: draft.canonical_path,
+      h1: draft.content.h1,
+      subheading: draft.content.subheading,
+      pains: draft.content.pains,
+      benefits: draft.content.benefits,
+      features: draft.content.features,
+      useCases: draft.content.useCases,
+      faq: draft.content.faq.map((item) => ({ ...item })),
+      relatedLinks: draft.content.relatedLinks.map((link) => ({ ...link })),
+      services: draft.services,
+    }));
+    setMessage(successMessage);
+  }
+
+  function generateDraft() {
+    runGeneration(
+      "Draft generated from the template — review and edit every field before publishing. Nothing has been saved.",
+    );
+  }
+
+  function resetToTemplate() {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        "Replace all content fields with the template defaults? Your current edits will be lost.",
+      )
+    ) {
+      return;
+    }
+    runGeneration("Reset to template defaults — review before publishing.");
   }
 
   // Save: POST on create (then route to the edit screen), PATCH on edit.
@@ -332,21 +392,63 @@ export default function LandingPageEditor({ mode, initialPage, templates }: Prop
         <section className="card-premium p-6 md:p-8">
           <h2 className="text-lg font-semibold text-foreground">Targeting</h2>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <label className="space-y-1.5 md:col-span-2">
-              <span className="text-sm font-medium text-foreground">Template</span>
-              <select
-                className="w-full rounded-xl border px-3 py-2 text-sm"
-                value={form.template_id}
-                onChange={(e) => applyTemplate(e.target.value)}
-              >
-                <option value="">No template</option>
-                {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="space-y-3 md:col-span-2">
+              <label className="block space-y-1.5">
+                <span className="text-sm font-medium text-foreground">
+                  Template
+                </span>
+                <select
+                  className="w-full rounded-xl border px-3 py-2 text-sm"
+                  value={form.template_id}
+                  onChange={(e) => selectTemplate(e.target.value)}
+                >
+                  <option value="">No template</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {templateDef && templateSummary ? (
+                <div className="rounded-xl border border-border bg-surface-2/50 p-3 text-xs text-muted">
+                  <p className="font-medium text-foreground">
+                    Template includes
+                  </p>
+                  <p className="mt-1 leading-5">
+                    {templateSummary.benefits} benefits · {templateSummary.pains}{" "}
+                    pain points · {templateSummary.features} features ·{" "}
+                    {templateSummary.useCases} use cases · {templateSummary.faqs}{" "}
+                    FAQs · {templateSummary.services} services
+                  </p>
+                </div>
+              ) : (
+                <p className="text-xs text-muted">
+                  Pick a template and enter a city, then Generate draft to
+                  pre-fill every field. You review and edit before publishing.
+                </p>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  className="button-primary"
+                  disabled={busy !== null || !templateDef}
+                  onClick={generateDraft}
+                >
+                  Generate draft
+                </button>
+                <button
+                  type="button"
+                  className="button-secondary"
+                  disabled={busy !== null || !templateDef}
+                  onClick={resetToTemplate}
+                >
+                  Reset to template
+                </button>
+              </div>
+            </div>
 
             <label className="space-y-1.5">
               <span className="text-sm font-medium text-foreground">Niche</span>
