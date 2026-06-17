@@ -105,7 +105,7 @@ export async function POST(req: Request) {
     .from("leads")
     .select(LEAD_ENRICHMENT_SELECT)
     .or(
-      "pecr_classification.is.null,lead_quality_score.is.null,outreach_subject.is.null,outreach_message.is.null",
+      "pecr_classification.is.null,pecr_classification.eq.corporate,pecr_classification.eq.unknown,lead_quality_score.is.null,outreach_subject.is.null,outreach_message.is.null",
     );
 
   if (ids.length > 0) {

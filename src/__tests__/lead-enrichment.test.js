@@ -43,7 +43,7 @@ describe("lead quality scoring", () => {
         google_rating: 4.8,
         review_count: 42,
       }),
-      "corporate",
+      "likely_corporate",
       "Existing PECR classification preserved.",
     );
 
@@ -166,6 +166,44 @@ describe("lead quality scoring", () => {
     expect(patch.outreach_message).toContain(
       "I put together a quick audit for your clinic",
     );
+  });
+
+  it.each(["corporate", "unknown"])(
+    "does not preserve old PECR value %s in enrichment patches",
+    (oldClassification) => {
+      const { patch } = buildLeadEnrichmentPatch(
+        makeLead({
+          pecr_classification: oldClassification,
+          pecr_reason: "Old PECR value",
+          website: "https://example-services.co.uk",
+          contact_email: "info@example-services.co.uk",
+          contact_phone: "0113 000 0000",
+        }),
+        "2026-06-17T09:00:00.000Z",
+      );
+
+      expect(["likely_corporate", "likely_sole_trader", "manual_review"]).toContain(
+        patch.pecr_classification,
+      );
+      expect(patch.pecr_classification).not.toBe("corporate");
+      expect(patch.pecr_classification).not.toBe("unknown");
+      expect(patch.pecr_classified_at).toBe("2026-06-17T09:00:00.000Z");
+    },
+  );
+
+  it("sets dissolved Companies House evidence to manual_review in enrichment patches", () => {
+    const { patch } = buildLeadEnrichmentPatch(
+      makeLead({
+        company_name: "Example Services Ltd",
+        company_number: "12345678",
+        contact_email: "info@example-services.co.uk",
+        pecr_classification: "corporate",
+        pecr_reason: "Company found but status is dissolved",
+      }),
+    );
+
+    expect(patch.pecr_classification).toBe("manual_review");
+    expect(patch.pecr_reason).toContain("Manual review required");
   });
 
   it("classifies website quality for business, social, booking, directory and unknown URLs", () => {

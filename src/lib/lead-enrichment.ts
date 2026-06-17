@@ -257,6 +257,24 @@ export type PecrClassificationResult = {
   reason: string;
 };
 
+const ALLOWED_PECR_CLASSIFICATIONS = [
+  "likely_corporate",
+  "likely_sole_trader",
+  "manual_review",
+] as const;
+
+function isAllowedPecrClassification(
+  value: string | null | undefined,
+): value is PecrClassification {
+  return ALLOWED_PECR_CLASSIFICATIONS.includes(value as PecrClassification);
+}
+
+function hasUnsafeCompanyStatusSignal(reason: string | null | undefined) {
+  return /\b(dissolved|liquidation|administration|insolvency|receivership)\b/i.test(
+    String(reason || ""),
+  );
+}
+
 /**
  * Confidence-based PECR classifier.
  *
@@ -276,6 +294,14 @@ export function classifyPecrConservatively(
   lead: LeadEnrichmentRow,
 ): PecrClassificationResult {
   const companyName = String(lead.company_name || "").trim();
+  if (hasUnsafeCompanyStatusSignal(lead.pecr_reason)) {
+    return {
+      classification: "manual_review",
+      reason:
+        "Manual review required: Companies House signal indicates dissolved, liquidation, or other unsafe company status.",
+    };
+  }
+
   const email = normalizeEmail(lead.contact_email);
   const validEmail = email && isValidEmail(email) ? email : "";
   const websiteQuality = classifyWebsiteQuality(lead.website);
@@ -477,14 +503,18 @@ export function buildLeadEnrichmentPatch(
     String(lead.website || "").trim() || String(lead.contact_phone || "").trim(),
   );
 
-  const pecr = lead.pecr_classification && !refreshPecr
+  const preservedClassification =
+    !refreshPecr && isAllowedPecrClassification(lead.pecr_classification)
+      ? lead.pecr_classification
+      : null;
+  const pecr = preservedClassification
     ? {
-        classification: lead.pecr_classification,
+        classification: preservedClassification,
         reason: lead.pecr_reason || "Existing PECR classification preserved.",
       }
     : classifyPecrConservatively(lead);
 
-  if (!lead.pecr_classification || refreshPecr) {
+  if (!preservedClassification) {
     patch.pecr_classification = pecr.classification;
     patch.pecr_reason = pecr.reason;
     patch.pecr_classified_at = now;

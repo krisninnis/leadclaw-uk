@@ -33,6 +33,18 @@ function leadFrom(overrides: Partial<LeadEnrichmentRow> = {}): LeadEnrichmentRow
   };
 }
 
+const allowedClassifications = [
+  "likely_corporate",
+  "likely_sole_trader",
+  "manual_review",
+];
+
+function expectAllowed(classification: string) {
+  expect(allowedClassifications).toContain(classification);
+  expect(classification).not.toBe("corporate");
+  expect(classification).not.toBe("unknown");
+}
+
 describe("classifyPecrConservatively", () => {
   it("classifies an Ltd company with business signals as likely_corporate", () => {
     const result = classifyPecrConservatively(
@@ -129,5 +141,89 @@ describe("classifyPecrConservatively", () => {
 
     expect(result.classification).toBe("likely_corporate");
     expect(result.reason).toContain("registered company number");
+  });
+
+  it("falls back to heuristic classification when Companies House key is missing", () => {
+    const result = classifyPecrConservatively(
+      leadFrom({
+        company_name: "Form Clinics",
+        website: "https://formclinics.co.uk",
+        contact_email: "hello@formclinics.co.uk",
+        pecr_reason: "No Companies House API key configured",
+      }),
+    );
+
+    expectAllowed(result.classification);
+    expect(result.classification).toBe("likely_corporate");
+    expect(result.classification).not.toBe("unknown");
+  });
+
+  it("sends dissolved company matches to manual_review", () => {
+    const result = classifyPecrConservatively(
+      leadFrom({
+        company_name: "Example Beauty Ltd",
+        company_number: "01234567",
+        contact_email: "info@examplebeauty.co.uk",
+        pecr_reason: "Company found but status is dissolved",
+      }),
+    );
+
+    expectAllowed(result.classification);
+    expect(result.classification).toBe("manual_review");
+  });
+
+  it("sends liquidation company matches to manual_review", () => {
+    const result = classifyPecrConservatively(
+      leadFrom({
+        company_name: "Example Salon Ltd",
+        company_number: "07654321",
+        contact_email: "info@examplesalon.co.uk",
+        pecr_reason: "Company found but status is liquidation",
+      }),
+    );
+
+    expectAllowed(result.classification);
+    expect(result.classification).toBe("manual_review");
+  });
+
+  it("classifies active Ltd company evidence as likely_corporate", () => {
+    const result = classifyPecrConservatively(
+      leadFrom({
+        company_name: "Active Clinic Ltd",
+        company_number: "12345678",
+        contact_email: "info@activeclinic.co.uk",
+        website: "https://activeclinic.co.uk",
+        pecr_reason: "Companies House active company match.",
+      }),
+    );
+
+    expectAllowed(result.classification);
+    expect(result.classification).toBe("likely_corporate");
+  });
+
+  it("classifies Gmail personal-name business as likely_sole_trader", () => {
+    const result = classifyPecrConservatively(
+      leadFrom({
+        company_name: "Sarah Jones Beauty",
+        contact_email: "sarahjonesbeauty@gmail.com",
+        contact_phone: "07700 900123",
+      }),
+    );
+
+    expectAllowed(result.classification);
+    expect(result.classification).toBe("likely_sole_trader");
+  });
+
+  it("keeps website and phone only leads inside allowed labels", () => {
+    const result = classifyPecrConservatively(
+      leadFrom({
+        company_name: "Antonacci Hair & Aesthetic",
+        website: "https://antonacci.example",
+        contact_phone: "0113 000 0000",
+      }),
+    );
+
+    expectAllowed(result.classification);
+    expect(result.classification).toBe("manual_review");
   });
 });
