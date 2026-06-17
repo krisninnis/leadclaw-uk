@@ -154,7 +154,12 @@ describe("POST /api/outreach/rescore", () => {
         id: "lead_1",
         previousScore: 10,
         nextScore: 100,
-        fields: ["lead_quality_score", "lead_quality_reason"],
+        fields: [
+          "lead_quality_score",
+          "lead_quality_reason",
+          "pecr_classification",
+          "pecr_reason",
+        ],
         applied: false,
       }),
     );
@@ -167,7 +172,7 @@ describe("POST /api/outreach/rescore", () => {
     );
   });
 
-  it("updates only score, reason, and updated_at when apply is true", async () => {
+  it("updates only score, reason, PECR fields, and updated_at when apply is true", async () => {
     const mockDb = makeAdmin({
       leads: [
         makeLead({
@@ -200,19 +205,22 @@ describe("POST /api/outreach/rescore", () => {
     expect(Object.keys(mockDb.updateCalls[0]).sort()).toEqual([
       "lead_quality_reason",
       "lead_quality_score",
+      "pecr_classification",
+      "pecr_reason",
       "updated_at",
     ]);
     expect(mockDb.updateCalls[0]).toEqual(
       expect.objectContaining({
         lead_quality_score: 100,
         lead_quality_reason: expect.stringContaining("Hot lead quality (100)"),
+        pecr_classification: "likely_corporate",
+        pecr_reason: expect.stringContaining("Likely corporate"),
         updated_at: expect.any(String),
       }),
     );
     expect(mockDb.updateCalls[0]).not.toHaveProperty("outreach_subject");
     expect(mockDb.updateCalls[0]).not.toHaveProperty("outreach_message");
     expect(mockDb.updateCalls[0]).not.toHaveProperty("status");
-    expect(mockDb.updateCalls[0]).not.toHaveProperty("pecr_classification");
     expect(mockDb.updateChains[0].eq).toHaveBeenCalledWith("id", "lead_1");
   });
 
@@ -263,13 +271,69 @@ describe("POST /api/outreach/rescore", () => {
     );
   });
 
-  it("skips unchanged scores", async () => {
+  it("updates when score is unchanged but PECR changes", async () => {
+    const unchangedQualityReason =
+      "Hot lead quality (100): +20 business website; +25 valid email found; +15 phone present; +10 HTTPS website; +10 contact page discovered; +10 Google rating >= 4.5; +10 review count >= 20";
     const mockDb = makeAdmin({
       leads: [
         makeLead({
           lead_quality_score: 100,
-          lead_quality_reason:
-            "Hot lead quality (100): +20 business website; +25 valid email found; +15 phone present; +10 HTTPS website; +10 contact page discovered; +10 Google rating >= 4.5; +10 review count >= 20",
+          lead_quality_reason: unchangedQualityReason,
+          pecr_classification: "corporate",
+          pecr_reason: "Existing PECR classification preserved.",
+        }),
+      ],
+    });
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn().mockResolvedValue(undefined),
+    }));
+
+    const { body } = await postRescore({ apply: true });
+
+    expect(body).toEqual(
+      expect.objectContaining({
+        updatedCount: 1,
+        skippedCount: 0,
+        failedCount: 0,
+      }),
+    );
+    expect(body.results[0]).toEqual(
+      expect.objectContaining({
+        fields: ["pecr_classification", "pecr_reason"],
+        applied: true,
+        previousScore: 100,
+        nextScore: 100,
+      }),
+    );
+    expect(mockDb.updateCalls[0]).toEqual(
+      expect.objectContaining({
+        lead_quality_score: 100,
+        lead_quality_reason: unchangedQualityReason,
+        pecr_classification: "likely_corporate",
+        pecr_reason: expect.stringContaining("Likely corporate"),
+      }),
+    );
+    expect(mockDb.updateCalls[0]).not.toHaveProperty("outreach_subject");
+    expect(mockDb.updateCalls[0]).not.toHaveProperty("outreach_message");
+  });
+
+  it("skips only when score, reason, and PECR fields are unchanged", async () => {
+    const qualityReason =
+      "Hot lead quality (100): +20 business website; +25 valid email found; +15 phone present; +10 HTTPS website; +10 contact page discovered; +10 Google rating >= 4.5; +10 review count >= 20";
+    const pecrReason =
+      "Likely corporate: registered company number (12345678) + Ltd/LLP/PLC company name + business-domain email + company website + contact page present.";
+    const mockDb = makeAdmin({
+      leads: [
+        makeLead({
+          lead_quality_score: 100,
+          lead_quality_reason: qualityReason,
+          pecr_classification: "likely_corporate",
+          pecr_reason: pecrReason,
         }),
       ],
     });
@@ -293,11 +357,40 @@ describe("POST /api/outreach/rescore", () => {
     );
     expect(body.results[0]).toEqual(
       expect.objectContaining({
-        skippedReason: "score_unchanged",
+        skippedReason: "unchanged",
         fields: [],
         applied: false,
       }),
     );
     expect(mockDb.update).not.toHaveBeenCalled();
+  });
+
+  it("persists PECR fields when apply is true", async () => {
+    const mockDb = makeAdmin({
+      leads: [
+        makeLead({
+          pecr_classification: "unknown",
+          pecr_reason: "Old classifier could not decide.",
+        }),
+      ],
+    });
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    jest.doMock("@/lib/ops", () => ({
+      logSystemEvent: jest.fn().mockResolvedValue(undefined),
+    }));
+
+    const { body } = await postRescore({ apply: true });
+
+    expect(body.updatedCount).toBe(1);
+    expect(mockDb.updateCalls[0]).toEqual(
+      expect.objectContaining({
+        pecr_classification: "likely_corporate",
+        pecr_reason: expect.stringContaining("Likely corporate"),
+      }),
+    );
   });
 });

@@ -104,6 +104,12 @@ export type LeadEnrichmentBuildResult = {
   skippedReasons: string[];
 };
 
+export type LeadEnrichmentBuildOptions = {
+  refreshPecr?: boolean;
+  refreshQuality?: boolean;
+  includeOutreach?: boolean;
+};
+
 export const LEAD_ENRICHMENT_SELECT =
   "id,company_name,website,contact_email,contact_phone,city,niche,source,status,score,lead_score,google_rating,review_count,has_live_chat,has_contact_form,pecr_classification,pecr_reason,company_number,lead_quality_score,lead_quality_reason,outreach_subject,outreach_message";
 
@@ -540,23 +546,27 @@ Unsubscribe: ${unsubscribeUrl}`;
 export function buildLeadEnrichmentPatch(
   lead: LeadEnrichmentRow,
   now = new Date().toISOString(),
+  options: LeadEnrichmentBuildOptions = {},
 ): LeadEnrichmentBuildResult {
   const patch: LeadEnrichmentPatch = {};
   const skippedReasons: string[] = [];
+  const refreshPecr = options.refreshPecr === true;
+  const refreshQuality = options.refreshQuality === true;
+  const includeOutreach = options.includeOutreach !== false;
   const companyName = String(lead.company_name || "").trim();
   const email = normalizeEmail(lead.contact_email);
   const hasWebsiteOrPhone = Boolean(
     String(lead.website || "").trim() || String(lead.contact_phone || "").trim(),
   );
 
-  const pecr = lead.pecr_classification
+  const pecr = lead.pecr_classification && !refreshPecr
     ? {
         classification: lead.pecr_classification,
         reason: lead.pecr_reason || "Existing PECR classification preserved.",
       }
     : classifyPecrConservatively(lead);
 
-  if (!lead.pecr_classification) {
+  if (!lead.pecr_classification || refreshPecr) {
     patch.pecr_classification = pecr.classification;
     patch.pecr_reason = pecr.reason;
     patch.pecr_classified_at = now;
@@ -568,7 +578,11 @@ export function buildLeadEnrichmentPatch(
     pecr.reason,
   );
 
-  if (lead.lead_quality_score === null || lead.lead_quality_score === undefined) {
+  if (
+    refreshQuality ||
+    lead.lead_quality_score === null ||
+    lead.lead_quality_score === undefined
+  ) {
     patch.lead_quality_score = quality.score;
     patch.lead_quality_reason = quality.reason;
   }
@@ -585,7 +599,7 @@ export function buildLeadEnrichmentPatch(
     skippedReasons.push("missing_website_or_phone");
   }
 
-  if (companyName && hasWebsiteOrPhone) {
+  if (includeOutreach && companyName && hasWebsiteOrPhone) {
     if (!lead.outreach_subject) {
       patch.outreach_subject = buildOutreachSubject(companyName);
     }

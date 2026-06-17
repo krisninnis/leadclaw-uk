@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
+  buildLeadEnrichmentPatch,
   LEAD_ENRICHMENT_SELECT,
-  scoreLeadQualityConservatively,
   type LeadEnrichmentRow,
 } from "@/lib/lead-enrichment";
 import { logSystemEvent } from "@/lib/ops";
@@ -28,6 +28,19 @@ type RescoreResult = {
   skippedReason?: string;
   error?: string;
 };
+
+type RescoreField =
+  | "lead_quality_score"
+  | "lead_quality_reason"
+  | "pecr_classification"
+  | "pecr_reason";
+
+const RESCORE_FIELDS: RescoreField[] = [
+  "lead_quality_score",
+  "lead_quality_reason",
+  "pecr_classification",
+  "pecr_reason",
+];
 
 function boundedInt(raw: unknown, fallback: number, min: number, max: number) {
   const parsed = Number(raw);
@@ -81,6 +94,22 @@ function logAuthFailure(req: Request) {
 
 function existingScore(value: number | null | undefined) {
   return value === null || value === undefined ? null : Number(value);
+}
+
+function normalizedString(value: unknown) {
+  return String(value || "").trim();
+}
+
+function fieldChanged(
+  lead: LeadEnrichmentRow,
+  field: RescoreField,
+  nextValue: unknown,
+) {
+  if (field === "lead_quality_score") {
+    return existingScore(lead.lead_quality_score) !== Number(nextValue);
+  }
+
+  return normalizedString(lead[field]) !== normalizedString(nextValue);
 }
 
 export async function POST(req: Request) {
@@ -141,17 +170,20 @@ export async function POST(req: Request) {
   let failedCount = 0;
 
   for (const lead of rows) {
-    const quality = scoreLeadQualityConservatively(
+    const { patch } = buildLeadEnrichmentPatch(
       lead,
-      lead.pecr_classification,
-      lead.pecr_reason,
+      new Date().toISOString(),
+      {
+        refreshPecr: true,
+        refreshQuality: true,
+        includeOutreach: false,
+      },
     );
     const previousScore = existingScore(lead.lead_quality_score);
-    const scoreChanged = previousScore !== quality.score;
-    const reasonChanged = String(lead.lead_quality_reason || "") !== quality.reason;
-    const fields = scoreChanged || reasonChanged
-      ? ["lead_quality_score", "lead_quality_reason"]
-      : [];
+    const nextScore = Number(patch.lead_quality_score ?? 0);
+    const fields = RESCORE_FIELDS.filter((field) =>
+      fieldChanged(lead, field, patch[field]),
+    );
 
     if (fields.length === 0) {
       skippedCount += 1;
@@ -159,10 +191,10 @@ export async function POST(req: Request) {
         id: lead.id,
         companyName: lead.company_name,
         previousScore,
-        nextScore: quality.score,
+        nextScore,
         fields,
         applied: false,
-        skippedReason: "score_unchanged",
+        skippedReason: "unchanged",
       });
       continue;
     }
@@ -173,7 +205,7 @@ export async function POST(req: Request) {
         id: lead.id,
         companyName: lead.company_name,
         previousScore,
-        nextScore: quality.score,
+        nextScore,
         fields,
         applied: false,
       });
@@ -185,8 +217,10 @@ export async function POST(req: Request) {
     )
       .from("leads")
       .update({
-        lead_quality_score: quality.score,
-        lead_quality_reason: quality.reason,
+        lead_quality_score: patch.lead_quality_score,
+        lead_quality_reason: patch.lead_quality_reason,
+        pecr_classification: patch.pecr_classification,
+        pecr_reason: patch.pecr_reason,
         updated_at: new Date().toISOString(),
       })
       .eq("id", lead.id);
@@ -196,7 +230,7 @@ export async function POST(req: Request) {
       console.warn("[outreach.rescore] lead update failed", {
         leadId: lead.id,
         previousScore,
-        nextScore: quality.score,
+        nextScore,
         error: updateError.message,
       });
 
@@ -204,7 +238,7 @@ export async function POST(req: Request) {
         id: lead.id,
         companyName: lead.company_name,
         previousScore,
-        nextScore: quality.score,
+        nextScore,
         fields,
         applied: false,
         error: updateError.message,
@@ -217,7 +251,7 @@ export async function POST(req: Request) {
       id: lead.id,
       companyName: lead.company_name,
       previousScore,
-      nextScore: quality.score,
+      nextScore,
       fields,
       applied: true,
     });
