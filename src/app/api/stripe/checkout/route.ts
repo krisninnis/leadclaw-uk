@@ -3,6 +3,7 @@ import { getStripe } from "@/lib/stripe";
 import { resolveCheckoutPlan } from "@/lib/checkout-plans";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 type SubscriptionRow = {
   id?: string;
@@ -116,8 +117,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+    const appUrl = getAppBaseUrl();
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",

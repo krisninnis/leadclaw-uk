@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
 import { logSystemEvent } from "@/lib/ops";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 type SubscriptionRow = {
   id?: string;
@@ -119,8 +120,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const redirectBase =
-      process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+    const redirectBase = getAppBaseUrl();
 
     const inviteResult = await admin.auth.admin.inviteUserByEmail(
       normalizedEmail,

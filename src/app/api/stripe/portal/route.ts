@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/api-auth";
 import { getStripe } from "@/lib/stripe";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAppBaseUrl } from "@/lib/app-url";
 
 type SubscriptionRow = {
   stripe_customer_id: string | null;
@@ -86,8 +87,7 @@ export async function POST() {
       );
     }
 
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000";
+    const appUrl = getAppBaseUrl();
 
     const session = await stripe.billingPortal.sessions.create({
       customer: customerId,
