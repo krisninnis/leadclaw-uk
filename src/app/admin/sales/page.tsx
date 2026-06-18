@@ -33,41 +33,60 @@ export default async function SalesWorkspacePage() {
   }
 
   return (
-    <div className="space-y-8">
-      <section className="page-hero">
-        <div className="card-premium p-6 md:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <div className="badge-soft">
-                <span className="h-2 w-2 rounded-full bg-brand" />
-                Admin-only
-              </div>
-
-              <h1 className="mt-4 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
-                Sales Workspace
-              </h1>
-
-              <p className="mt-4 max-w-3xl text-lg leading-8 text-muted">
-                One focused workspace for your sales motion: Lead Finder &rarr;
-                qualification &rarr; compliance-safe outreach review &rarr; human
-                actions &rarr; onboarding. Reviewing only &mdash; this workspace
-                never sends outreach.
-              </p>
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      {/* Admin-only header. Replaces the public marketing chrome, which is
+          hidden on this route via Nav/AppFooter/AppShell. */}
+      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-3 px-4 py-3 md:px-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-900 text-sm font-bold text-white">
+              LC
             </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <a href="/admin/lead-finder" className="button-secondary">
-                Lead Finder
-              </a>
-              <a href="/admin" className="button-secondary">
-                Back to admin
-              </a>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-tight text-foreground">
+                LeadClaw
+              </p>
+              <nav aria-label="Breadcrumb">
+                <ol className="flex items-center gap-1.5 text-xs text-muted">
+                  <li>
+                    <a href="/admin" className="hover:text-foreground">
+                      Admin
+                    </a>
+                  </li>
+                  <li aria-hidden="true">/</li>
+                  <li className="font-medium text-foreground">
+                    Sales Workspace
+                  </li>
+                </ol>
+              </nav>
             </div>
           </div>
-        </div>
-      </section>
 
-      <SalesWorkspaceClient />
+          <div className="flex flex-wrap items-center gap-2">
+            <a href="/admin/lead-finder" className="button-secondary">
+              Lead Finder
+            </a>
+            <a href="/admin" className="button-secondary">
+              Back to admin
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 md:px-8 md:py-8">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
+            Sales Workspace
+          </h1>
+          <p className="mt-2 max-w-3xl text-sm leading-7 text-muted">
+            Lead Finder &rarr; qualification &rarr; compliance-safe outreach
+            review &rarr; human actions. Reviewing only &mdash; this workspace
+            never sends outreach.
+          </p>
+        </div>
+
+        <SalesWorkspaceClient />
+      </main>
     </div>
   );
 }

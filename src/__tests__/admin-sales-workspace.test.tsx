@@ -117,6 +117,43 @@ describe("SalesWorkspaceClient", () => {
     );
   });
 
+  it("groups Overview metrics into Today and Pipeline sections", async () => {
+    mockFetch(defaultResponses());
+    render(<SalesWorkspaceClient />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Today" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Pipeline" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Follow-ups due")).toBeInTheDocument();
+    expect(screen.getByText("Contacted leads")).toBeInTheDocument();
+  });
+
+  it("applies active-tab styling to the selected tab", async () => {
+    mockFetch(defaultResponses());
+    render(<SalesWorkspaceClient />);
+
+    await screen.findByText("Eligible outreach leads");
+
+    const overviewTab = screen.getByRole("tab", { name: "Overview" });
+    const pipelineTab = screen.getByRole("tab", { name: "Pipeline" });
+
+    // Active tab is visually distinct (solid app-tab style), inactive is not.
+    expect(overviewTab).toHaveClass("bg-slate-900");
+    expect(pipelineTab).not.toHaveClass("bg-slate-900");
+
+    fireEvent.click(pipelineTab);
+
+    expect(screen.getByRole("tab", { name: "Pipeline" })).toHaveClass(
+      "bg-slate-900",
+    );
+    expect(screen.getByRole("tab", { name: "Overview" })).not.toHaveClass(
+      "bg-slate-900",
+    );
+  });
+
   it("switches tabs to Outreach Review and shows the preview-only warning", async () => {
     mockFetch(defaultResponses());
     render(<SalesWorkspaceClient />);

@@ -70,7 +70,9 @@ function FooterColumn({
 export default function AppFooter() {
   const pathname = usePathname() ?? "";
 
-  if (pathname.startsWith("/portal")) {
+  // Sales Workspace is a focused admin app surface; hide the public footer
+  // there (same pattern as the portal).
+  if (pathname.startsWith("/portal") || pathname.startsWith("/admin/sales")) {
     return null;
   }
 

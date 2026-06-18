@@ -139,7 +139,9 @@ export default function Nav() {
     accountLink,
   ];
 
-  if (pathname.startsWith("/portal")) {
+  // The Sales Workspace renders its own admin-only chrome, so the public
+  // marketing sidebar is hidden there (same pattern as the portal).
+  if (pathname.startsWith("/portal") || pathname.startsWith("/admin/sales")) {
     return null;
   }
 
