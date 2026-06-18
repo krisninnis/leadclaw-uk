@@ -36,7 +36,10 @@ function makeAdmin({ existingLeads = [], insertError = null } = {}) {
   return { admin, existingSelect, insert };
 }
 
-async function postImport(body, headers = { authorization: "Bearer import-token" }) {
+async function postImport(
+  body,
+  headers = { authorization: "Bearer import-token" },
+) {
   const { POST } = require("@/app/api/leads/import/route");
 
   const req = new Request("http://localhost:3000/api/leads/import", {
@@ -86,7 +89,8 @@ describe("POST /api/leads/import", () => {
       expect.objectContaining({
         company_name: "Calm Clinic Ltd",
         status: "new",
-        score: expect.any(Number),
+        lead_quality_score: expect.any(Number),
+        pecr_classification: "likely_corporate",
       }),
     ]);
   });
