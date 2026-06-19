@@ -106,8 +106,8 @@ export default function AppFooter() {
 
         <div className="mt-10 flex flex-col gap-3 border-t border-border pt-6 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
           <span className="text-muted-2">
-            Copyright {new Date().getFullYear()} LeadClaw. UK-based AI
-            receptionist software
+            &copy; {new Date().getFullYear()} LeadClaw AI Ltd &middot; United Kingdom &middot;
+            UK-based AI receptionist software
           </span>
           <span className="flex flex-wrap gap-4">
             <Link

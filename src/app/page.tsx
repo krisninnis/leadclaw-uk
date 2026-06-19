@@ -43,6 +43,140 @@ const softwareSchema = {
   ],
 };
 
+const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "LeadClaw",
+  legalName: "LeadClaw AI Ltd",
+  url: "https://www.leadclaw.uk",
+  logo: "https://www.leadclaw.uk/brand/icons/leadclaw-logo.png",
+  image: "https://www.leadclaw.uk/brand/og/leadclaw-og.png",
+  description:
+    "LeadClaw is AI receptionist software for UK businesses and clinics. It captures website enquiries, supports missed call recovery, and keeps follow-ups organised 24/7.",
+  areaServed: { "@type": "Country", name: "United Kingdom" },
+  contactPoint: {
+    "@type": "ContactPoint",
+    contactType: "customer support",
+    url: "https://www.leadclaw.uk/contact",
+    availableLanguage: "English",
+  },
+};
+
+const serviceSchema = {
+  "@context": "https://schema.org",
+  "@type": "Service",
+  name: "LeadClaw AI Receptionist",
+  serviceType: "AI receptionist and lead capture software",
+  description:
+    "An AI receptionist for UK service businesses that captures website enquiries, supports missed call recovery, and keeps follow-up organised so fewer leads slip away.",
+  url: "https://www.leadclaw.uk",
+  provider: {
+    "@type": "Organization",
+    name: "LeadClaw",
+    url: "https://www.leadclaw.uk",
+  },
+  areaServed: { "@type": "Country", name: "United Kingdom" },
+  offers: [
+    { "@type": "Offer", name: "Basic", price: "0", priceCurrency: "GBP" },
+    { "@type": "Offer", name: "Growth", price: "79", priceCurrency: "GBP" },
+    { "@type": "Offer", name: "Pro", price: "149", priceCurrency: "GBP" },
+  ],
+};
+
+// FAQ copy is drawn from existing LeadClaw messaging (pricing, free-trial,
+// how-it-works) - nothing here is invented. The same array powers both the
+// on-page FAQ section and the FAQPage structured data, so they never drift.
+const faqs = [
+  {
+    question: "What is LeadClaw?",
+    answer:
+      "LeadClaw is AI receptionist software for UK businesses and clinics. It captures website enquiries, supports missed call recovery, and keeps follow-ups organised so fewer leads slip away while your team is busy or closed.",
+  },
+  {
+    question: "Do I need a phone number to use LeadClaw?",
+    answer:
+      "No. LeadClaw works as a lightweight widget on your website, capturing enquiries and questions 24/7. It complements however you already take calls - you do not need to publish a new phone line.",
+  },
+  {
+    question: "How does the free trial work?",
+    answer:
+      "You can start with a 7-day free trial. No card is required to begin, and you can cancel anytime. You only continue to a monthly subscription if you are happy with how LeadClaw fits your team.",
+  },
+  {
+    question: "How long does setup take?",
+    answer:
+      "Most businesses are live within 48-72 hours. You submit a short application (around 3-5 minutes), approve the trial terms, and we configure your AI receptionist - no lengthy onboarding calls required.",
+  },
+  {
+    question: "How much does LeadClaw cost?",
+    answer:
+      "LeadClaw has three plans: Basic at GBP 0/month (a free intake widget), Growth at GBP 79/month (lead capture and follow-up support), and Pro at GBP 149/month (advanced support for busier teams). You can compare them in full on the pricing page.",
+  },
+  {
+    question: "Will LeadClaw replace my reception team?",
+    answer:
+      "No. LeadClaw is built to support your team, not replace them. It answers faster, captures the right details, recovers missed enquiries, and keeps follow-up visible so your people can focus on customers.",
+  },
+  {
+    question: "What does LeadClaw capture from an enquiry?",
+    answer:
+      "It collects the key details of each enquiry - name, contact details, the service someone is asking about, preferred times, and notes - and stores them in one simple workspace inbox for your team to action.",
+  },
+  {
+    question: "Which businesses is LeadClaw for?",
+    answer:
+      "LeadClaw is designed for UK service businesses and clinics - from dentists, aesthetic clinics, physiotherapists, and chiropractors to plumbers, electricians, and other teams that cannot afford to miss enquiries.",
+  },
+  {
+    question: "How does LeadClaw handle my data?",
+    answer:
+      "LeadClaw is built in the UK and designed around UK GDPR expectations. Enquiry data lives in your portal workspace, and our privacy policy, terms, and DPA set out exactly how information is handled.",
+  },
+  {
+    question: "Can I cancel at any time?",
+    answer:
+      "Yes. There is no long lock-in. The free trial requires no card, and paid plans can be cancelled anytime if LeadClaw is not the right fit for your business.",
+  },
+  {
+    question: "How do I get started or see it in action?",
+    answer:
+      "You can start a free trial, book a demo, or run a free website audit to see where you are losing enquiries today. The team behind LeadClaw is UK-based and happy to help you get set up - just get in touch via the contact page.",
+  },
+];
+
+const faqSchema = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: faqs.map((item) => ({
+    "@type": "Question",
+    name: item.question,
+    acceptedAnswer: { "@type": "Answer", text: item.answer },
+  })),
+};
+
+// Honest, mechanism-based proof - no invented customer numbers or testimonials.
+// Each block describes how the product changes the maths of enquiry handling.
+const outcomeProof = [
+  {
+    metric: "1 enquiry",
+    label: "can cover the plan",
+    body:
+      "For most service businesses, the value of a single recovered job is more than a month of LeadClaw. The platform is designed to pay for itself on the enquiries you are currently missing.",
+  },
+  {
+    metric: "24/7",
+    label: "enquiry capture",
+    body:
+      "Enquiries rarely arrive only in office hours. LeadClaw captures website questions and requests around the clock, so an after-hours enquiry becomes a tracked next action instead of a lost lead.",
+  },
+  {
+    metric: "48-72h",
+    label: "to go live",
+    body:
+      "There is no drawn-out implementation. A short application, trial-terms approval, and configuration is typically all it takes to start capturing enquiries within a few days.",
+  },
+];
+
 const painPoints = [
   "Enquiries arrive while your team is busy with customers",
   "Missed calls and forms turn into cold leads",
@@ -123,6 +257,18 @@ export default function Home() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       <section className="page-hero section-shell">
         <div className="container-shell relative">
@@ -445,6 +591,140 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <section className="section-shell">
+        <div className="container-shell">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
+              Why teams choose LeadClaw
+            </p>
+            <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+              Outcomes that change the maths of every enquiry
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-muted">
+              We do not publish invented ratings or fake testimonials. Instead,
+              here is the honest case for LeadClaw - how it changes what happens
+              to an enquiry the moment it arrives.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {outcomeProof.map((item) => (
+              <div key={item.label} className="card-premium p-6">
+                <p className="text-4xl font-semibold tracking-tight text-brand-strong">
+                  {item.metric}
+                </p>
+                <p className="mt-1 text-sm font-semibold uppercase tracking-[0.14em] text-muted-2">
+                  {item.label}
+                </p>
+                <p className="mt-4 text-sm leading-7 text-muted">{item.body}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-6 grid gap-5 lg:grid-cols-2">
+            <div className="card-premium p-6 md:p-8">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
+                How the proof works
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                A worked example, not a promise
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-muted">
+                Suppose ten enquiries reach your business in a week and two
+                arrive while everyone is busy. If LeadClaw captures those two and
+                keeps the follow-up visible, recovering even one is usually worth
+                more than a month of the platform. The figures are illustrative -
+                the mechanism is real: capture the enquiry, make the next action
+                obvious, and let the results show up in your workspace.
+              </p>
+            </div>
+            <div className="card-premium p-6 md:p-8">
+              <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
+                Built in the UK
+              </p>
+              <h3 className="mt-2 text-2xl font-semibold tracking-tight text-foreground">
+                Real software, run by a real team
+              </h3>
+              <p className="mt-4 text-sm leading-7 text-muted">
+                LeadClaw is built and run in the United Kingdom by our team at
+                LeadClaw AI Ltd. Enquiry data lives in your portal
+                workspace, handled in line with UK GDPR - set out plainly in our
+                privacy policy, terms, and DPA. No hidden card requirement, no
+                invented reviews.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-shell pt-0">
+        <div className="container-shell">
+          <div className="overflow-hidden rounded-[32px] bg-slate-950 p-8 text-white shadow-xl md:p-12">
+            <div className="grid items-center gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.16em] text-cyan-300">
+                  Free website audit
+                </p>
+                <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight md:text-4xl">
+                  See where your website is losing enquiries - free
+                </h2>
+                <p className="mt-4 max-w-xl text-base leading-7 text-slate-300">
+                  Get an instant score across website health, SEO, trust,
+                  conversion, and AI readiness, with prioritised actions you can
+                  use straight away. No call required.
+                </p>
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+                <Link href="/free-audit" className="button-primary text-center">
+                  Get your free audit
+                </Link>
+                <Link
+                  href="/demo"
+                  className="button-secondary border-white/20 bg-white/10 text-center text-white hover:bg-white/20"
+                >
+                  Book a demo
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-shell pt-0">
+        <div className="container-shell">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-brand-strong">
+              Frequently asked questions
+            </p>
+            <h2 className="mt-3 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
+              Common questions about LeadClaw
+            </h2>
+            <p className="mt-4 text-lg leading-8 text-muted">
+              Everything UK service teams ask before they start. Still unsure?
+              Contact us or book a demo and we will walk you through it.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-10 max-w-3xl space-y-3">
+            {faqs.map((item) => (
+              <details
+                key={item.question}
+                className="group rounded-[20px] border border-border bg-white p-5 md:p-6"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold text-foreground">
+                  {item.question}
+                  <span className="ml-2 shrink-0 text-brand-strong transition-transform group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <p className="mt-3 text-sm leading-7 text-muted">{item.answer}</p>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="section-shell pt-0">
         <div className="container-shell">
           <div className="rounded-[32px] border border-border bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(230,251,255,0.94))] p-8 shadow-[var(--shadow-pop)] md:p-12">
