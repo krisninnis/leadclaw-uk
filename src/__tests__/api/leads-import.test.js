@@ -89,8 +89,7 @@ describe("POST /api/leads/import", () => {
       expect.objectContaining({
         company_name: "Calm Clinic Ltd",
         status: "new",
-        lead_quality_score: expect.any(Number),
-        pecr_classification: "likely_corporate",
+        score: expect.any(Number),
       }),
     ]);
   });

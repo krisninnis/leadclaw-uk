@@ -162,7 +162,7 @@ describe("SalesWorkspaceClient", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: "Outreach Review" }));
 
-    expect(await screen.findByText(/Preview only/i)).toBeInTheDocument();
+    expect(await screen.findByText(/Preview only\. This page does not send outreach emails\./i)).toBeInTheDocument();
     expect(
       screen.getByRole("tab", { name: "Outreach Review" }),
     ).toHaveAttribute("aria-selected", "true");
@@ -174,7 +174,7 @@ describe("SalesWorkspaceClient", () => {
 
     await screen.findByText("Eligible outreach leads");
     fireEvent.click(screen.getByRole("tab", { name: "Outreach Review" }));
-    await screen.findByText(/Preview only/i);
+    await screen.findByText(/Preview only\. This page does not send outreach emails\./i);
 
     expect(screen.queryByRole("button", { name: /send/i })).toBeNull();
   });
