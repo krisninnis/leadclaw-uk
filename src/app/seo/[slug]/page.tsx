@@ -4,7 +4,7 @@ import SeoLandingPage from "@/components/seo/seo-landing-page";
 import { getSeoPage, seoPages } from "@/lib/seo-pages";
 
 const siteUrl = "https://www.leadclaw.uk";
-const ogImage = "/brand/mascots/panther-growth.jpg";
+const ogImage = "/brand/og/leadclaw-og.png";
 
 type SeoRouteProps = {
   params: Promise<{

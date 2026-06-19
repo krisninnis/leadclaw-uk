@@ -9,9 +9,8 @@ export const metadata: Metadata = {
   title: "LeadClaw | AI Receptionist for UK Businesses",
   description:
     "LeadClaw is AI receptionist software for UK businesses and clinics. Capture enquiries, recover missed calls, follow up faster, and book more appointments.",
-  icons: {
-    icon: "/favicon.ico",
-  },
+  // Icons are auto-generated from src/app/favicon.ico, icon.png and apple-icon.png
+  // via the Next.js file conventions, so no manual `icons` config is needed.
   metadataBase: new URL("https://www.leadclaw.uk"),
   openGraph: {
     type: "website",
@@ -22,10 +21,10 @@ export const metadata: Metadata = {
       "Capture enquiries, recover missed calls, follow up faster, and book more appointments with LeadClaw's AI receptionist.",
     images: [
       {
-        url: "/brand/mascots/panther-growth.jpg",
+        url: "/brand/og/leadclaw-og.png",
         width: 1200,
         height: 630,
-        alt: "LeadClaw AI receptionist software",
+        alt: "LeadClaw — AI receptionist software for UK businesses",
       },
     ],
   },
@@ -34,7 +33,7 @@ export const metadata: Metadata = {
     title: "LeadClaw | AI Receptionist for UK Businesses",
     description:
       "Capture enquiries, recover missed calls, and follow up faster with LeadClaw.",
-    images: ["/brand/mascots/panther-growth.jpg"],
+    images: ["/brand/og/leadclaw-og.png"],
   },
   keywords: [
     "AI receptionist",

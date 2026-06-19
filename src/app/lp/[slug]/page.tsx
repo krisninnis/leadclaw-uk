@@ -13,7 +13,7 @@ import {
 } from "@/lib/landing/store";
 
 const siteUrl = "https://www.leadclaw.uk";
-const defaultOgImage = "/brand/mascots/panther-growth.jpg";
+const defaultOgImage = "/brand/og/leadclaw-og.png";
 
 // Statically cache published pages; refresh hourly and on publish/unpublish.
 export const revalidate = 3600;

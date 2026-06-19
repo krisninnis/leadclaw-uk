@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { SeoPage } from "@/lib/seo-pages";
 
 const siteUrl = "https://www.leadclaw.uk";
-const ogImage = "/brand/mascots/panther-growth.jpg";
+const ogImage = "/brand/og/leadclaw-og.png";
 
 export function buildSeoPageMetadata(page: SeoPage): Metadata {
   const url = `${siteUrl}${page.canonicalPath}`;

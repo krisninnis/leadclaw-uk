@@ -7,7 +7,7 @@ import TrialCtaLink from "@/components/trial-cta-link";
 const siteUrl = "https://www.leadclaw.uk";
 const canonicalPath = "/best-ai-receptionist-uk";
 const articleUrl = `${siteUrl}${canonicalPath}`;
-const ogImage = "/brand/mascots/panther-growth.jpg";
+const ogImage = "/brand/og/leadclaw-og.png";
 const title =
   "Best AI Receptionist UK: A Practical Guide for Small Businesses | LeadClaw";
 const description =

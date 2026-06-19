@@ -36,7 +36,7 @@ export type SeoArticlePage = {
 };
 
 const siteUrl = "https://www.leadclaw.uk";
-const ogImage = "/brand/mascots/panther-growth.jpg";
+const ogImage = "/brand/og/leadclaw-og.png";
 
 const coreRelatedLinks: SeoArticleRelatedLink[] = [
   { href: "/ai-receptionist-uk", label: "AI receptionist UK guide" },
