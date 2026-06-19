@@ -38,6 +38,15 @@ export const auditRateLimit = new Ratelimit({
   prefix: "leadclaw:audit",
 });
 
+// Public website audits are substantially more expensive than ordinary public
+// widgets. Keep this deliberately tight and key it by client IP in the route.
+export const publicAuditRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(3, "10 m"),
+  analytics: true,
+  prefix: "leadclaw:public-audit",
+});
+
 // AI visibility scans — 10 per minute per user. Cheap (no crawl; derived from
 // the existing audit), so a slightly higher allowance than audit runs.
 export const visibilityRateLimit = new Ratelimit({
