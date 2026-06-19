@@ -5,6 +5,7 @@ import {
   normalizeAuditUrl,
   UrlValidationError,
   type AuditDnsLookup,
+  type AuditPinnedRequest,
 } from "@/lib/audit/fetch-site";
 
 describe("public audit SSRF protection", () => {
@@ -50,16 +51,54 @@ describe("public audit SSRF protection", () => {
     const lookup: AuditDnsLookup = async () => [
       { address: "93.184.216.34", family: 4 },
     ];
-    const fetchImpl = jest.fn(async () =>
+    const requestImpl = jest.fn(async () =>
       new Response("", {
         status: 302,
         headers: { location: "http://127.0.0.1/admin" },
       }),
-    ) as unknown as typeof fetch;
+    ) as unknown as AuditPinnedRequest;
 
     await expect(
-      fetchSite("https://audit.example.com", { lookup, fetchImpl }),
+      fetchSite("https://audit.example.com", { lookup, requestImpl }),
     ).rejects.toThrow(UrlValidationError);
-    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(requestImpl).toHaveBeenCalledTimes(1);
+  });
+
+  it("pins the validated DNS address into the outbound request", async () => {
+    const lookup = jest.fn(async () => [
+      { address: "93.184.216.34", family: 4 },
+    ]) as unknown as AuditDnsLookup;
+    const requestImpl = jest.fn(async () => new Response("<html>ok</html>")) as
+      unknown as AuditPinnedRequest;
+
+    await expect(
+      fetchSite("https://audit.example.com", { lookup, requestImpl }),
+    ).resolves.toMatchObject({ ok: true, finalUrl: "https://audit.example.com" });
+
+    expect(lookup).toHaveBeenCalledTimes(1);
+    expect(requestImpl).toHaveBeenCalledTimes(1);
+    expect(requestImpl).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: "93.184.216.34",
+        family: 4,
+        url: expect.objectContaining({ hostname: "audit.example.com" }),
+      }),
+      expect.objectContaining({ method: "GET" }),
+    );
+  });
+
+  it.each([22, 3306, 6379, 8080])("rejects non-web port %s", (port) => {
+    expect(() => normalizeAuditUrl(`https://example.com:${port}`)).toThrow(
+      "Only the standard website ports 80 and 443 can be audited",
+    );
+  });
+
+  it.each([
+    "https://example.com",
+    "https://example.com:443",
+    "https://example.com:80",
+    "http://example.com:80",
+  ])("allows the default web ports for %s", (target) => {
+    expect(() => normalizeAuditUrl(target)).not.toThrow();
   });
 });

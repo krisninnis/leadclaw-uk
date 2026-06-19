@@ -1,5 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { isIP } from "node:net";
 
 const redis = new Redis({
   url: process.env.UPSTASH_REDIS_REST_URL!,
@@ -88,7 +89,49 @@ export async function checkRateLimit(
   }
 }
 
-// Shared helper for extracting the client IP from request headers
+// Expensive unauthenticated routes must stop when the limiter is unavailable.
+// Keep the existing fail-open helper for established routes whose availability
+// policy is different; the public audit explicitly opts into this strict path.
+export async function checkRateLimitStrict(
+  limiter: Ratelimit,
+  key: string,
+): Promise<boolean> {
+  try {
+    const { success } = await limiter.limit(key);
+    return success;
+  } catch (err) {
+    console.error("[rate-limit] limiter unavailable, failing closed", err);
+    return false;
+  }
+}
+
+function rightmostValidIp(value: string | null) {
+  if (!value) return null;
+  const candidates = value.split(",").map((candidate) => candidate.trim());
+  for (let index = candidates.length - 1; index >= 0; index--) {
+    if (isIP(candidates[index])) return candidates[index];
+  }
+  return null;
+}
+
+// Vercel keeps its platform-derived client address in
+// x-vercel-forwarded-for even when another proxy overwrites X-Forwarded-For.
+// For every list, choose the right-most valid hop rather than a spoofable
+// left-most value supplied by the caller.
+export function getPublicAuditClientIp(request: Request) {
+  for (const header of [
+    "x-vercel-forwarded-for",
+    "x-forwarded-for",
+    "x-real-ip",
+  ]) {
+    const address = rightmostValidIp(request.headers.get(header));
+    if (address) return address;
+  }
+  return "unknown";
+}
+
+// Existing low-cost public routes retain their established extraction
+// behaviour. The expensive audit route uses getPublicAuditClientIp above.
 export function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {

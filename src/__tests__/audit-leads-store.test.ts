@@ -1,6 +1,10 @@
 import { describe, expect, it, jest } from "@jest/globals";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { saveAuditLead } from "@/lib/audit/leads-store";
+import {
+  PUBLIC_AUDIT_CONSENT_TEXT,
+  PUBLIC_AUDIT_CONSENT_VERSION,
+} from "@/lib/audit/lead-consent";
 import type { AuditResult } from "@/lib/audit/types";
 
 jest.mock("@/lib/supabase/admin", () => ({ createAdminClient: jest.fn() }));
@@ -47,7 +51,7 @@ const RESULT: AuditResult = {
 };
 
 describe("saveAuditLead", () => {
-  it("creates one isolated audit_leads row with the score and summary", async () => {
+  it("upserts one deduplicated lead with consent and reusable report context", async () => {
     const row = {
       id: "lead-1",
       created_at: "2026-06-19T12:00:00.000Z",
@@ -57,32 +61,76 @@ describe("saveAuditLead", () => {
       audit_score: 72,
       audit_summary:
         "Audit score 72/100. Top priorities: Add a clear booking action.",
+      category_scores: {
+        health: 80,
+        seo: 70,
+        trust: 75,
+        conversion: 65,
+        ai_readiness: 70,
+      },
+      top_recommendations: RESULT.recommendations,
+      report_context: {
+        status: "completed",
+        recommendations: RESULT.recommendations,
+      },
+      consent: true,
+      consent_text: PUBLIC_AUDIT_CONSENT_TEXT,
+      consent_version: PUBLIC_AUDIT_CONSENT_VERSION,
+      consent_captured_at: "2026-06-19T12:00:00.000Z",
       source: "free_audit",
     };
     const single = jest.fn(async () => ({ data: row, error: null }));
     const select = jest.fn().mockReturnValue({ single });
-    const insert = jest.fn().mockReturnValue({ select });
-    const from = jest.fn().mockReturnValue({ insert });
+    const upsert = jest.fn().mockReturnValue({ select });
+    const from = jest.fn().mockReturnValue({ upsert });
     mockedCreateAdminClient.mockReturnValue({ from } as never);
 
     await expect(
       saveAuditLead({
         name: "  Alex Smith  ",
         email: "  ALEX@EXAMPLE.COM  ",
+        consent: true,
         result: RESULT,
       }),
     ).resolves.toEqual(row);
 
     expect(from).toHaveBeenCalledWith("audit_leads");
-    expect(insert).toHaveBeenCalledTimes(1);
-    expect(insert).toHaveBeenCalledWith({
-      name: "Alex Smith",
-      email: "alex@example.com",
-      website_url: "https://example.com",
-      audit_score: 72,
-      audit_summary:
-        "Audit score 72/100. Top priorities: Add a clear booking action.",
-      source: "free_audit",
-    });
+    expect(upsert).toHaveBeenCalledTimes(1);
+    expect(upsert).toHaveBeenCalledWith(
+      {
+        name: "Alex Smith",
+        email: "alex@example.com",
+        website_url: "https://example.com",
+        audit_score: 72,
+        audit_summary:
+          "Audit score 72/100. Top priorities: Add a clear booking action.",
+        category_scores: {
+          health: 80,
+          seo: 70,
+          trust: 75,
+          conversion: 65,
+          ai_readiness: 70,
+        },
+        top_recommendations: RESULT.recommendations,
+        report_context: {
+          websiteUrl: RESULT.websiteUrl,
+          status: RESULT.status,
+          error: RESULT.error,
+          inputUrl: RESULT.inputUrl,
+          finalUrl: RESULT.finalUrl,
+          scores: RESULT.scores,
+          checks: RESULT.checks,
+          recommendations: RESULT.recommendations,
+          meta: RESULT.meta,
+          engineVersion: RESULT.engineVersion,
+        },
+        consent: true,
+        consent_text: PUBLIC_AUDIT_CONSENT_TEXT,
+        consent_version: PUBLIC_AUDIT_CONSENT_VERSION,
+        consent_captured_at: expect.any(String),
+        source: "free_audit",
+      },
+      { onConflict: "email,website_url" },
+    );
   });
 });

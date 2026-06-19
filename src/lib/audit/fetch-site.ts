@@ -4,7 +4,15 @@
 // the public audit endpoint cannot be used to reach private infrastructure.
 
 import { lookup as dnsLookup } from "node:dns/promises";
+import {
+  request as httpRequest,
+  type IncomingMessage,
+  type RequestOptions as HttpRequestOptions,
+} from "node:http";
+import { request as httpsRequest } from "node:https";
 import { isIP } from "node:net";
+import { Readable } from "node:stream";
+import { checkServerIdentity, type PeerCertificate } from "node:tls";
 
 export const LEADCLAW_USER_AGENT =
   "LeadClawAuditBot/1.0 (+https://leadclaw.uk/audit)";
@@ -35,10 +43,19 @@ export type AuditDnsLookup = (
   options: { all: true; verbatim: true },
 ) => Promise<Array<{ address: string; family: number }>>;
 
-type AuditFetch = typeof fetch;
+export type ResolvedAuditTarget = {
+  url: URL;
+  address: string;
+  family: 4 | 6;
+};
+
+export type AuditPinnedRequest = (
+  target: ResolvedAuditTarget,
+  init: { method: string; headers: Headers; signal: AbortSignal },
+) => Promise<Response>;
 
 type FetchDependencies = {
-  fetchImpl?: AuditFetch;
+  requestImpl?: AuditPinnedRequest;
   lookup?: AuditDnsLookup;
 };
 
@@ -174,21 +191,33 @@ export function assertPublicHost(hostname: string) {
   if (isIP(host)) assertPublicIp(host);
 }
 
+function assertAllowedPort(parsed: URL) {
+  if (parsed.port && parsed.port !== "80" && parsed.port !== "443") {
+    throw new UrlValidationError(
+      "Only the standard website ports 80 and 443 can be audited.",
+    );
+  }
+}
+
 export async function assertPublicAuditTarget(
   target: string | URL,
   resolver: AuditDnsLookup = systemLookup,
-) {
+): Promise<ResolvedAuditTarget> {
   const parsed = target instanceof URL ? target : new URL(target);
   if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
     throw new UrlValidationError("Only http and https URLs are supported.");
   }
+  assertAllowedPort(parsed);
   if (parsed.username || parsed.password) {
     throw new UrlValidationError("URLs containing credentials cannot be audited.");
   }
 
   const host = unbracket(parsed.hostname);
   assertPublicHost(host);
-  if (isIP(host)) return;
+  const literalFamily = isIP(host);
+  if (literalFamily === 4 || literalFamily === 6) {
+    return { url: parsed, address: host, family: literalFamily };
+  }
 
   let addresses: Array<{ address: string; family: number }>;
   try {
@@ -201,6 +230,18 @@ export async function assertPublicAuditTarget(
     throw new UrlValidationError("The website hostname could not be resolved.");
   }
   for (const { address } of addresses) assertPublicIp(address);
+
+  const selected = addresses[0];
+  const family = isIP(selected.address);
+  if (family !== 4 && family !== 6) {
+    throw new UrlValidationError("The website hostname could not be resolved.");
+  }
+
+  return {
+    url: parsed,
+    address: unbracket(selected.address),
+    family,
+  };
 }
 
 // Returns an https origin URL (scheme + host[:port]) with the path normalised.
@@ -227,6 +268,7 @@ export function normalizeAuditUrl(input: string): {
 
   parsed.protocol = "https:";
   parsed.hash = "";
+  assertAllowedPort(parsed);
   assertPublicHost(parsed.hostname);
 
   const origin = `${parsed.protocol}//${parsed.host}`;
@@ -238,6 +280,71 @@ function isRedirect(status: number) {
   return [301, 302, 303, 307, 308].includes(status);
 }
 
+function responseFromIncoming(message: IncomingMessage): Response {
+  const status = message.statusCode || 500;
+  const headers = new Headers();
+  for (const [name, value] of Object.entries(message.headers)) {
+    if (Array.isArray(value)) {
+      value.forEach((item) => headers.append(name, item));
+    } else if (value !== undefined) {
+      headers.set(name, String(value));
+    }
+  }
+
+  if (status === 204 || status === 205 || status === 304) {
+    message.resume();
+    return new Response(null, {
+      status,
+      statusText: message.statusMessage,
+      headers,
+    });
+  }
+
+  return new Response(
+    Readable.toWeb(message) as ReadableStream<Uint8Array>,
+    { status, statusText: message.statusMessage, headers },
+  );
+}
+
+// Connect to the exact address that passed validation. The original hostname
+// remains in Host, SNI, and certificate verification, so pinning closes the
+// DNS TOCTOU gap without weakening TLS identity checks.
+const pinnedNodeRequest: AuditPinnedRequest = async (target, init) => {
+  const originalHostname = unbracket(target.url.hostname);
+  const headers = new Headers(init.headers);
+  headers.set("host", target.url.host);
+
+  const options: HttpRequestOptions = {
+    protocol: target.url.protocol,
+    hostname: target.address,
+    family: target.family,
+    port:
+      target.url.port || (target.url.protocol === "https:" ? 443 : 80),
+    method: init.method,
+    path: `${target.url.pathname}${target.url.search}`,
+    headers: Object.fromEntries(headers.entries()),
+    signal: init.signal,
+    agent: false,
+  };
+
+  if (target.url.protocol === "https:") {
+    Object.assign(options, {
+      servername: isIP(originalHostname) ? undefined : originalHostname,
+      checkServerIdentity: (_hostname: string, certificate: PeerCertificate) =>
+        checkServerIdentity(originalHostname, certificate),
+    });
+  }
+
+  return new Promise<Response>((resolve, reject) => {
+    const request =
+      target.url.protocol === "https:"
+        ? httpsRequest(options, (message) => resolve(responseFromIncoming(message)))
+        : httpRequest(options, (message) => resolve(responseFromIncoming(message)));
+    request.once("error", reject);
+    request.end();
+  });
+};
+
 async function timedFetch(
   url: string,
   init: RequestInit | undefined,
@@ -245,7 +352,7 @@ async function timedFetch(
 ): Promise<{ response: Response; finalUrl: string; redirected: boolean }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  const fetchImpl = dependencies.fetchImpl ?? fetch;
+  const requestImpl = dependencies.requestImpl ?? pinnedNodeRequest;
   const resolver = dependencies.lookup ?? systemLookup;
   const headers = new Headers(init?.headers);
   headers.set("user-agent", LEADCLAW_USER_AGENT);
@@ -259,12 +366,11 @@ async function timedFetch(
   let currentUrl = url;
   try {
     for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
-      await assertPublicAuditTarget(currentUrl, resolver);
-      const response = await fetchImpl(currentUrl, {
-        ...init,
+      const target = await assertPublicAuditTarget(currentUrl, resolver);
+      const response = await requestImpl(target, {
+        method: init?.method || "GET",
         headers,
         signal: controller.signal,
-        redirect: "manual",
       });
 
       const location = response.headers.get("location");

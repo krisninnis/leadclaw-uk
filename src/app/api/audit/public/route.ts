@@ -4,8 +4,8 @@ import { runAudit, isUrlValidationError } from "@/lib/audit/run-audit";
 import { saveAuditLead } from "@/lib/audit/leads-store";
 import { buildPublicAuditReport } from "@/lib/audit/public-report";
 import {
-  checkRateLimit,
-  getClientIp,
+  checkRateLimitStrict,
+  getPublicAuditClientIp,
   publicAuditRateLimit,
 } from "@/lib/rate-limit";
 
@@ -16,6 +16,7 @@ const requestSchema = z.object({
   websiteUrl: z.string().trim().min(3).max(2048),
   name: z.string().trim().min(1).max(120),
   email: z.string().trim().email().max(320),
+  consent: z.literal(true),
 });
 
 function json(body: object, status = 200) {
@@ -26,8 +27,8 @@ function json(body: object, status = 200) {
 }
 
 export async function POST(request: Request) {
-  const clientIp = getClientIp(request);
-  const allowed = await checkRateLimit(publicAuditRateLimit, clientIp);
+  const clientIp = getPublicAuditClientIp(request);
+  const allowed = await checkRateLimitStrict(publicAuditRateLimit, clientIp);
   if (!allowed) {
     return json(
       {
@@ -49,7 +50,8 @@ export async function POST(request: Request) {
       {
         ok: false,
         error: "invalid_request",
-        message: "Enter a valid website URL, name, and email address.",
+        message:
+          "Enter a valid website URL, name, and email address, then confirm consent.",
       },
       400,
     );
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
     const lead = await saveAuditLead({
       name: input.name,
       email: input.email.toLowerCase(),
+      consent: true,
       result,
     });
 

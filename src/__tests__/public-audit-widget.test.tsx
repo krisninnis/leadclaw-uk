@@ -96,6 +96,7 @@ describe("PublicAuditWidget", () => {
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "alex@example.com" },
     });
+    fireEvent.click(screen.getByRole("checkbox"));
     fireEvent.click(screen.getByRole("button", { name: "Run my free audit" }));
 
     await waitFor(() => {
@@ -110,6 +111,7 @@ describe("PublicAuditWidget", () => {
           websiteUrl: "example.com",
           name: "Alex Smith",
           email: "alex@example.com",
+          consent: true,
         }),
       }),
     );

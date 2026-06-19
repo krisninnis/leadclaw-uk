@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { POST } from "@/app/api/audit/public/route";
 import { runAudit } from "@/lib/audit/run-audit";
 import { saveAuditLead } from "@/lib/audit/leads-store";
-import { checkRateLimit } from "@/lib/rate-limit";
+import { checkRateLimitStrict } from "@/lib/rate-limit";
 import type { AuditResult } from "@/lib/audit/types";
 
 jest.mock("@/lib/audit/run-audit", () => ({
@@ -12,13 +12,13 @@ jest.mock("@/lib/audit/run-audit", () => ({
 jest.mock("@/lib/audit/leads-store", () => ({ saveAuditLead: jest.fn() }));
 jest.mock("@/lib/rate-limit", () => ({
   publicAuditRateLimit: {},
-  checkRateLimit: jest.fn(),
-  getClientIp: jest.fn(() => "203.0.113.10"),
+  checkRateLimitStrict: jest.fn(),
+  getPublicAuditClientIp: jest.fn(() => "203.0.113.10"),
 }));
 
 const mockedRunAudit = jest.mocked(runAudit);
 const mockedSaveAuditLead = jest.mocked(saveAuditLead);
-const mockedCheckRateLimit = jest.mocked(checkRateLimit);
+const mockedCheckRateLimit = jest.mocked(checkRateLimitStrict);
 
 const RESULT: AuditResult = {
   websiteUrl: "https://example.com",
@@ -86,6 +86,19 @@ describe("POST /api/audit/public", () => {
       website_url: RESULT.websiteUrl,
       audit_score: 74,
       audit_summary: "Audit score 74/100.",
+      category_scores: {
+        health: 80,
+        seo: 70,
+        trust: 75,
+        conversion: 65,
+        ai_readiness: 80,
+      },
+      top_recommendations: RESULT.recommendations.slice(0, 5),
+      report_context: {},
+      consent: true,
+      consent_text: "Consent text",
+      consent_version: "v1",
+      consent_captured_at: "2026-06-19T12:00:00.000Z",
       source: "free_audit",
     });
   });
@@ -96,6 +109,7 @@ describe("POST /api/audit/public", () => {
         websiteUrl: "example.com",
         name: "Alex Smith",
         email: "ALEX@EXAMPLE.COM",
+        consent: true,
       }),
     );
     const body = await response.json();
@@ -107,6 +121,7 @@ describe("POST /api/audit/public", () => {
     expect(mockedSaveAuditLead).toHaveBeenCalledWith({
       name: "Alex Smith",
       email: "alex@example.com",
+      consent: true,
       result: RESULT,
     });
     expect(body.report.overallScore).toBe(74);
@@ -123,6 +138,7 @@ describe("POST /api/audit/public", () => {
         websiteUrl: "example.com",
         name: "Alex Smith",
         email: "alex@example.com",
+        consent: true,
       }),
     );
     const body = await response.json();
@@ -132,9 +148,29 @@ describe("POST /api/audit/public", () => {
     expect(body.report).toBeUndefined();
   });
 
-  it("requires all three lead fields before running an audit", async () => {
+  it("requires valid lead fields before running an audit", async () => {
     const response = await POST(
-      request({ websiteUrl: "example.com", name: "", email: "not-an-email" }),
+      request({
+        websiteUrl: "example.com",
+        name: "",
+        email: "not-an-email",
+        consent: true,
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(mockedRunAudit).not.toHaveBeenCalled();
+    expect(mockedSaveAuditLead).not.toHaveBeenCalled();
+  });
+
+  it("requires explicit consent before running an audit", async () => {
+    const response = await POST(
+      request({
+        websiteUrl: "example.com",
+        name: "Alex Smith",
+        email: "alex@example.com",
+        consent: false,
+      }),
     );
 
     expect(response.status).toBe(400);
@@ -150,6 +186,7 @@ describe("POST /api/audit/public", () => {
         websiteUrl: "example.com",
         name: "Alex Smith",
         email: "alex@example.com",
+        consent: true,
       }),
     );
 

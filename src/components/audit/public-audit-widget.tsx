@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { Check, LockKeyhole, MinusCircle, X } from "lucide-react";
 import type { PublicAuditReport } from "@/lib/audit/public-report";
+import { PUBLIC_AUDIT_CONSENT_TEXT } from "@/lib/audit/lead-consent";
 import AuditScoreRing from "./audit-score-ring";
 import CategoryScoreCard from "./category-score-card";
 import RecommendationsList from "./recommendations-list";
@@ -13,13 +14,19 @@ type FormState = {
   websiteUrl: string;
   name: string;
   email: string;
+  consent: boolean;
 };
 
 type ApiResponse =
   | { ok: true; report: PublicAuditReport }
   | { ok: false; error: string; message?: string };
 
-const EMPTY_FORM: FormState = { websiteUrl: "", name: "", email: "" };
+const EMPTY_FORM: FormState = {
+  websiteUrl: "",
+  name: "",
+  email: "",
+  consent: false,
+};
 
 function FullCategoryBreakdown({ report }: { report: PublicAuditReport }) {
   return (
@@ -130,7 +137,10 @@ export default function PublicAuditWidget() {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  function update(field: keyof FormState, value: string) {
+  function update<Key extends keyof FormState>(
+    field: Key,
+    value: FormState[Key],
+  ) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -194,8 +204,9 @@ export default function PublicAuditWidget() {
               the analysis finishes.
             </p>
             <p className="mt-3 text-xs leading-6 text-muted-2">
-              This captures an audit lead only. It does not add you to an
-              outreach sequence. See our{" "}
+              Your report and its findings are stored with your lead so we can
+              help with this audit. Nothing is added to an automated outreach
+              sequence. See our{" "}
               <Link href="/legal/privacy" className="underline hover:text-foreground">
                 privacy policy
               </Link>
@@ -254,6 +265,25 @@ export default function PublicAuditWidget() {
                 />
               </label>
             </div>
+
+            <label className="flex items-start gap-3 rounded-2xl border border-border bg-surface-2 p-4">
+              <input
+                type="checkbox"
+                className="mt-1 h-4 w-4 shrink-0 accent-cyan-600"
+                checked={form.consent}
+                onChange={(event) => update("consent", event.target.checked)}
+                required
+              />
+              <span className="text-xs leading-6 text-muted">
+                {PUBLIC_AUDIT_CONSENT_TEXT}{" "}
+                <Link
+                  href="/legal/privacy"
+                  className="font-medium underline hover:text-foreground"
+                >
+                  Read the privacy policy.
+                </Link>
+              </span>
+            </label>
 
             {error ? (
               <div
