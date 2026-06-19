@@ -9,6 +9,7 @@ import CategoryScoreCard from "@/components/audit/category-score-card";
 import RecommendationsList from "@/components/audit/recommendations-list";
 import RunAuditForm from "@/components/audit/run-audit-form";
 import { Check, X, MinusCircle } from "lucide-react";
+import AuditScopeNotice from "@/components/audit/audit-scope-notice";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ export default async function AuditDetailPage({
           <CategoryScoreCard label={CATEGORY_LABELS.conversion} score={audit.conversion_score} />
           <CategoryScoreCard label={CATEGORY_LABELS.ai_readiness} score={audit.ai_readiness_score} />
         </div>
+        <AuditScopeNotice className="mt-6" />
       </section>
 
       <section className="card-premium p-6 md:p-8">

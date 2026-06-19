@@ -90,6 +90,62 @@ export async function getScanById(
   return (data as unknown as AiVisibilityScanRow) || null;
 }
 
+// Pure: decide whether an already-persisted scan can be reused instead of
+// inserting a new row. We reuse when an existing scan was derived from the same
+// source audit — that audit hasn't changed, so the readiness result is
+// identical and a new history entry would just be a duplicate. Extracted as a
+// pure function so the dedup rule is deterministically unit-testable.
+export function canReuseScan(
+  existing: AiVisibilityScanRow | null,
+  result: ScanResult,
+): boolean {
+  const sourceAuditId = result.meta?.sourceAuditId;
+  if (!existing || !sourceAuditId) return false;
+  return existing.meta?.sourceAuditId === sourceAuditId;
+}
+
+// Find the most recent scan derived from a specific source audit, if any.
+export async function getScanBySourceAuditId(
+  userId: string,
+  sourceAuditId: string,
+): Promise<AiVisibilityScanRow | null> {
+  const db = admin();
+  if (!db) return null;
+
+  const { data, error } = await db
+    .from(TABLE)
+    .select(SELECT_COLS)
+    .eq("user_id", userId)
+    .eq("meta->>sourceAuditId", sourceAuditId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("[visibility] failed to look up scan by source audit", error);
+    return null;
+  }
+  return (data as unknown as AiVisibilityScanRow) || null;
+}
+
+// Persist a scan at most once per source audit: if a scan already exists for
+// the same sourceAuditId, return it (reused: true) instead of inserting a
+// duplicate history entry. Otherwise insert a new row (reused: false).
+export async function persistScanOnce(
+  userId: string,
+  result: ScanResult,
+): Promise<{ scan: AiVisibilityScanRow | null; reused: boolean }> {
+  const sourceAuditId = result.meta?.sourceAuditId;
+  if (sourceAuditId) {
+    const existing = await getScanBySourceAuditId(userId, sourceAuditId);
+    if (canReuseScan(existing, result)) {
+      return { scan: existing, reused: true };
+    }
+  }
+  const scan = await saveScan(userId, result);
+  return { scan, reused: false };
+}
+
 export async function getScanHistory(
   userId: string,
   limit = 25,

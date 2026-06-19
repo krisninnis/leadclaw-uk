@@ -24,15 +24,36 @@ export class NoAuditError extends Error {
 export const isNoAuditError = (e: unknown): e is NoAuditError =>
   e instanceof NoAuditError;
 
+// Raised when the source audit did not complete (e.g. the homepage failed to
+// load). We refuse to derive a "completed" readiness scan from a failed audit
+// because the underlying signals are unreliable and the score would mislead.
+// The API layer maps this to a friendly "re-run your audit" response.
+export class AuditFailedError extends Error {
+  constructor(
+    message = "The source website audit failed, so readiness cannot be scored.",
+  ) {
+    super(message);
+    this.name = "AuditFailedError";
+  }
+}
+
+export const isAuditFailedError = (e: unknown): e is AuditFailedError =>
+  e instanceof AuditFailedError;
+
 // Pure: derive a full ScanResult from an existing audit row.
+// Throws AuditFailedError if the source audit did not complete — callers should
+// surface a meaningful state rather than persist a misleading scan.
 export function buildScanFromAudit(audit: WebsiteAuditRow): ScanResult {
+  if (audit.status === "failed") {
+    throw new AuditFailedError();
+  }
+
   const { scores, breakdown } = calculateVisibilityScore(audit.checks);
   const recommendations = generateVisibilityRecommendations(breakdown);
 
   return {
     websiteUrl: audit.website_url,
-    // An audit that failed to load the site still yields a (low) scored result,
-    // mirroring the audit engine's behaviour — surface it as completed.
+    // Only reached for a completed audit (failed audits throw above).
     status: "completed",
     error: null,
     scores,
@@ -50,7 +71,8 @@ export function buildScanFromAudit(audit: WebsiteAuditRow): ScanResult {
 }
 
 // Orchestrator: load the latest audit for the user (optionally for a specific
-// website_url) and derive a visibility scan. Throws NoAuditError if none exist.
+// website_url) and derive a visibility scan. Throws NoAuditError if none exist,
+// or AuditFailedError if the latest audit did not complete.
 export async function runVisibilityScan(
   userId: string,
   websiteUrl?: string,

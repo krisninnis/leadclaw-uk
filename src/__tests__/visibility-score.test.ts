@@ -4,7 +4,12 @@
 import type { AuditChecksPayload, CheckResult } from "@/lib/audit/types";
 import { calculateVisibilityScore } from "@/lib/visibility/score";
 import { generateVisibilityRecommendations } from "@/lib/visibility/recommendations";
-import { buildScanFromAudit } from "@/lib/visibility/run-scan";
+import {
+  buildScanFromAudit,
+  isAuditFailedError,
+} from "@/lib/visibility/run-scan";
+import { canReuseScan } from "@/lib/visibility/store";
+import type { AiVisibilityScanRow, ScanResult } from "@/lib/visibility/types";
 import type { WebsiteAuditRow } from "@/lib/audit/types";
 
 // Build a minimal AuditChecksPayload from a map of checkId -> score (0..1).
@@ -116,16 +121,21 @@ describe("generateVisibilityRecommendations", () => {
 });
 
 describe("buildScanFromAudit", () => {
-  it("derives a completed ScanResult from an audit row", () => {
-    const audit = {
+  const completedAudit = (
+    overrides: Partial<WebsiteAuditRow> = {},
+  ): WebsiteAuditRow =>
+    ({
       id: "audit-123",
       website_url: "https://example.co.uk",
+      status: "completed",
       engine_version: "v1",
       created_at: "2026-06-15T10:00:00.000Z",
       checks: checksFrom(ALL_PASS),
-    } as unknown as WebsiteAuditRow;
+      ...overrides,
+    }) as unknown as WebsiteAuditRow;
 
-    const scan = buildScanFromAudit(audit);
+  it("derives a completed ScanResult from an audit row", () => {
+    const scan = buildScanFromAudit(completedAudit());
     expect(scan.status).toBe("completed");
     expect(scan.websiteUrl).toBe("https://example.co.uk");
     expect(scan.scores.visibility_score).toBe(100);
@@ -133,5 +143,61 @@ describe("buildScanFromAudit", () => {
     expect(scan.meta.auditedAt).toBe("2026-06-15T10:00:00.000Z");
     expect(scan.meta.providers).toEqual([]);
     expect(scan.meta.breakdown.categories).toHaveLength(4);
+  });
+
+  it("throws AuditFailedError when the source audit failed (no misleading score)", () => {
+    const failed = completedAudit({ status: "failed" });
+    expect(() => buildScanFromAudit(failed)).toThrow();
+    try {
+      buildScanFromAudit(failed);
+    } catch (err) {
+      expect(isAuditFailedError(err)).toBe(true);
+    }
+  });
+
+  it("does not treat a completed audit as failed", () => {
+    expect(() => buildScanFromAudit(completedAudit())).not.toThrow();
+  });
+});
+
+describe("canReuseScan (duplicate readiness prevention)", () => {
+  const result = (sourceAuditId: string | null): ScanResult =>
+    ({
+      websiteUrl: "https://example.co.uk",
+      status: "completed",
+      error: null,
+      scores: {
+        visibility_score: 80,
+        content_score: 80,
+        authority_score: 80,
+        citation_score: 80,
+        schema_score: 80,
+      },
+      recommendations: [],
+      meta: { sourceAuditId },
+    }) as unknown as ScanResult;
+
+  const existingScan = (sourceAuditId: string): AiVisibilityScanRow =>
+    ({
+      id: "scan-1",
+      website_url: "https://example.co.uk",
+      visibility_score: 80,
+      meta: { sourceAuditId },
+    }) as unknown as AiVisibilityScanRow;
+
+  it("reuses when an existing scan shares the same sourceAuditId", () => {
+    expect(canReuseScan(existingScan("audit-123"), result("audit-123"))).toBe(true);
+  });
+
+  it("does not reuse when the source audit differs", () => {
+    expect(canReuseScan(existingScan("audit-123"), result("audit-999"))).toBe(false);
+  });
+
+  it("does not reuse when there is no existing scan", () => {
+    expect(canReuseScan(null, result("audit-123"))).toBe(false);
+  });
+
+  it("does not reuse when the result has no sourceAuditId", () => {
+    expect(canReuseScan(existingScan("audit-123"), result(null))).toBe(false);
   });
 });

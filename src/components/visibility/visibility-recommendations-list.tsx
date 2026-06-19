@@ -21,9 +21,9 @@ export default function VisibilityRecommendationsList({
   if (items.length === 0) {
     return (
       <div className="rounded-[22px] border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
-        <p className="font-medium">Strong AI visibility foundations</p>
+        <p className="font-medium">Strong AI readiness foundations</p>
         <p className="mt-1 leading-7">
-          Every visibility factor we can derive from your audit is in good shape.
+          Every readiness factor we can derive from your audit is in good shape.
           Re-run periodically as your site changes.
         </p>
       </div>

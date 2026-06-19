@@ -14,7 +14,7 @@ type Props = {
 };
 
 export default function RunVisibilityForm({
-  label = "Generate visibility report",
+  label = "Generate readiness report",
   compact = false,
 }: Props) {
   const router = useRouter();
@@ -38,7 +38,7 @@ export default function RunVisibilityForm({
       // Server component re-reads the latest scan on refresh.
       router.refresh();
     } catch {
-      setError("Something went wrong generating your report. Please try again.");
+      setError("Something went wrong generating your readiness report. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -64,10 +64,12 @@ function friendlyError(code?: string) {
     case "rate_limited":
       return "You're generating reports too quickly. Please wait a minute and try again.";
     case "no_audit":
-      return "Run a website audit first — your visibility report is built from it.";
+      return "Run a website audit first — your readiness report is built from it.";
+    case "audit_failed":
+      return "Your latest audit couldn't load the site, so we can't score readiness yet. Re-run the audit, then try again.";
     case "invalid_request":
       return "That request didn't look right. Please try again.";
     default:
-      return "We couldn't generate your visibility report. Please try again.";
+      return "We couldn't generate your readiness report. Please try again.";
   }
 }

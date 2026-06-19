@@ -28,7 +28,7 @@ function Sparkline({ scores }: { scores: number[] }) {
       viewBox={`0 0 ${w} ${h}`}
       className="h-32 w-full"
       role="img"
-      aria-label="AI visibility score trend"
+      aria-label="AI readiness score trend"
       preserveAspectRatio="none"
     >
       <line x1={pad} y1={h - pad} x2={w - pad} y2={h - pad} stroke="#e5e7eb" strokeWidth={1} />
@@ -51,7 +51,7 @@ export default function VisibilityTrend({ history }: { history: AiVisibilityScan
         <Sparkline scores={scores} />
         <div className="mt-3 flex items-center justify-between text-xs text-muted-2">
           <span>{new Date(ordered[0].created_at).toLocaleDateString()}</span>
-          <span>Overall visibility score over time</span>
+          <span>Overall readiness score over time</span>
           <span>{new Date(ordered[ordered.length - 1].created_at).toLocaleDateString()}</span>
         </div>
         <p className="mt-4 rounded-[18px] border border-dashed border-border bg-surface-2 px-4 py-3 text-sm text-muted">
@@ -68,7 +68,7 @@ export default function VisibilityTrend({ history }: { history: AiVisibilityScan
       </div>
       <p className="mt-3 font-medium text-foreground">Trend chart coming soon</p>
       <p className="mx-auto mt-2 max-w-md text-sm leading-7 text-muted">
-        Generate a few reports over time and your AI visibility trend will appear here —
+        Generate a few reports over time and your AI readiness trend will appear here —
         with per-engine breakdowns once provider tracking goes live.
       </p>
     </div>

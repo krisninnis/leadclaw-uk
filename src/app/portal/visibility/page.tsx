@@ -14,6 +14,7 @@ import VisibilityTrend from "@/components/visibility/visibility-trend";
 import ProviderCoverage from "@/components/visibility/provider-coverage";
 import CompetitorPlaceholder from "@/components/visibility/competitor-placeholder";
 import VisibilityHistoryList from "@/components/visibility/visibility-history-list";
+import AuditScopeNotice from "@/components/audit/audit-scope-notice";
 
 export const dynamic = "force-dynamic";
 
@@ -43,19 +44,20 @@ export default async function PortalVisibilityPage() {
     <div className="space-y-6">
       {/* Hero */}
       <section className="card-premium p-6 md:p-8">
-        <Badge tone="violet">AI Visibility</Badge>
+        <Badge tone="violet">AI Readiness</Badge>
         <h1 className="mt-4 text-balance text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-          AI Visibility
+          AI Readiness
         </h1>
         <p className="mt-4 max-w-2xl text-lg leading-8 text-muted">
-          See how visible and AI-ready your website is — how easily systems like ChatGPT,
-          Perplexity, Google AI Overviews and Claude can understand, trust, and recommend your
-          business. Your report is built from your latest website audit.
+          See how well your website is set up for AI assistants like ChatGPT, Perplexity, Google
+          AI Overviews and Claude to understand, trust, and recommend your business. Your AI
+          Readiness Score is built from your latest website audit — it measures how prepared your
+          site is, not your live ranking inside any AI system.
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           {hasAudit ? (
             <RunVisibilityForm
-              label={latest ? "Refresh visibility report" : "Generate visibility report"}
+              label={latest ? "Refresh readiness report" : "Generate readiness report"}
             />
           ) : (
             <Link href="/portal/audit" className="button-primary">
@@ -68,6 +70,7 @@ export default async function PortalVisibilityPage() {
             </span>
           ) : null}
         </div>
+        <AuditScopeNotice className="mt-6 max-w-2xl" />
       </section>
 
       {latest ? (
@@ -76,7 +79,7 @@ export default async function PortalVisibilityPage() {
           <section className="card-premium p-6 md:p-8">
             <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-center lg:justify-between">
               <div className="flex flex-col items-center gap-4 lg:flex-row lg:gap-8">
-                <AuditScoreRing score={latest.visibility_score} label="AI visibility score" />
+                <AuditScoreRing score={latest.visibility_score} label="AI readiness score" />
                 <div className="text-center lg:text-left">
                   <p className="text-sm text-muted-2">Latest report</p>
                   <p className="mt-1 text-xl font-semibold text-foreground">
@@ -118,7 +121,7 @@ export default async function PortalVisibilityPage() {
             <SectionHeading
               eyebrow="Breakdown"
               title="What drives your score"
-              description="Each factor is read from your latest website audit and reframed for AI visibility."
+              description="Each factor is read from your latest website audit and reframed for AI readiness."
               maxWidth="md"
             />
             <div className="mt-6">
@@ -130,7 +133,7 @@ export default async function PortalVisibilityPage() {
           <section className="card-premium p-6 md:p-8">
             <SectionHeading
               eyebrow="Priority actions"
-              title="Improve your AI visibility"
+              title="Improve your AI readiness"
               description="The highest-impact changes to help AI systems find, trust, and recommend you."
               maxWidth="md"
             />
@@ -145,15 +148,15 @@ export default async function PortalVisibilityPage() {
       ) : (
         <section className="card-premium p-6 md:p-8">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="AI visibility" value="—" hint="Generate a report to see your score." />
+            <StatCard label="AI readiness" value="—" hint="Generate a report to see your score." />
             <StatCard label="Content" value="—" hint="Clarity AI can summarise." />
             <StatCard label="Authority" value="—" hint="Expertise & reputation (E-E-A-T)." />
             <StatCard label="Schema" value="—" hint="Machine-readable structured data." />
           </div>
           <p className="mt-6 text-sm leading-7 text-muted">
             {hasAudit
-              ? "Generate your first visibility report above — it’s built instantly from your latest website audit."
-              : "Run a website audit first. Your AI visibility report is derived from it, so there’s nothing extra to fill in."}
+              ? "Generate your first readiness report above — it’s built instantly from your latest website audit."
+              : "Run a website audit first. Your AI readiness report is derived from it, so there’s nothing extra to fill in."}
           </p>
         </section>
       )}
@@ -162,8 +165,8 @@ export default async function PortalVisibilityPage() {
       <section className="card-premium p-6 md:p-8">
         <SectionHeading
           eyebrow="Trend"
-          title="Visibility over time"
-          description="Track how your AI visibility moves as you ship improvements."
+          title="Readiness over time"
+          description="Track how your AI readiness moves as you ship improvements."
           maxWidth="md"
         />
         <div className="mt-6">
@@ -176,7 +179,7 @@ export default async function PortalVisibilityPage() {
         <SectionHeading
           eyebrow="Competitors"
           title="How you compare"
-          description="Benchmark your AI visibility against the businesses you compete with."
+          description="Benchmark your AI readiness against the businesses you compete with."
           maxWidth="md"
         />
         <div className="mt-6">
@@ -201,8 +204,8 @@ export default async function PortalVisibilityPage() {
       <section className="card-premium p-6 md:p-8">
         <SectionHeading
           eyebrow="History"
-          title="Past reports"
-          description="Every visibility report you’ve generated."
+          title="AI Readiness History"
+          description="Every readiness report you’ve generated."
           maxWidth="md"
         />
         <div className="mt-6">

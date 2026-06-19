@@ -9,6 +9,7 @@ import CategoryScoreCard from "@/components/audit/category-score-card";
 import RecommendationsList from "@/components/audit/recommendations-list";
 import RunAuditForm from "@/components/audit/run-audit-form";
 import AuditHistoryList from "@/components/audit/audit-history-list";
+import AuditScopeNotice from "@/components/audit/audit-scope-notice";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,7 @@ export default async function PortalAuditPage() {
         <div className="mt-6 max-w-2xl">
           <RunAuditForm defaultUrl={defaultUrl} compact />
         </div>
+        <AuditScopeNotice className="mt-6 max-w-2xl" />
       </section>
 
       {latest ? (

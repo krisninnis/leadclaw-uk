@@ -1,5 +1,5 @@
 // Phase 3 — AI Visibility (Foundation)
-// POST /api/visibility/run — generate a fresh AI-visibility scan for the
+// POST /api/visibility/run — generate a fresh AI-readiness scan for the
 // authenticated user, derived from their latest website audit.
 // Body: { url?: string }  (optional — defaults to the user's most recent audit)
 
@@ -7,8 +7,12 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/api-auth";
 import { visibilityRateLimit, checkRateLimit } from "@/lib/rate-limit";
-import { runVisibilityScan, isNoAuditError } from "@/lib/visibility/run-scan";
-import { saveScan } from "@/lib/visibility/store";
+import {
+  runVisibilityScan,
+  isNoAuditError,
+  isAuditFailedError,
+} from "@/lib/visibility/run-scan";
+import { persistScanOnce } from "@/lib/visibility/store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,11 +47,14 @@ export async function POST(req: Request) {
 
   try {
     const result = await runVisibilityScan(authed.user.id, url);
-    const saved = await saveScan(authed.user.id, result);
+    // Reuse an existing scan for the same source audit instead of creating a
+    // duplicate history entry (the audit hasn't changed -> the score is identical).
+    const { scan: saved, reused } = await persistScanOnce(authed.user.id, result);
 
     return NextResponse.json({
       ok: true,
       scan: saved,
+      reused,
       // Always return the computed result even if persistence is unavailable.
       result: saved ? undefined : result,
     });
@@ -55,6 +62,12 @@ export async function POST(req: Request) {
     if (isNoAuditError(err)) {
       return NextResponse.json(
         { ok: false, error: "no_audit", message: err.message },
+        { status: 409 },
+      );
+    }
+    if (isAuditFailedError(err)) {
+      return NextResponse.json(
+        { ok: false, error: "audit_failed", message: err.message },
         { status: 409 },
       );
     }

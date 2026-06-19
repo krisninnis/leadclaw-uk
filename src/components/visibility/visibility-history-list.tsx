@@ -18,9 +18,9 @@ export default function VisibilityHistoryList({
   if (scans.length === 0) {
     return (
       <div className="rounded-[24px] border border-dashed border-border bg-surface-2 p-6 text-sm text-muted">
-        <p className="font-medium text-foreground">No visibility reports yet</p>
+        <p className="font-medium text-foreground">No readiness reports yet</p>
         <p className="mt-2 leading-7">
-          Generate your first report above to start tracking how visible you are to AI systems.
+          Generate your first report above to start tracking how ready your site is for AI systems.
         </p>
       </div>
     );
@@ -43,7 +43,7 @@ export default function VisibilityHistoryList({
               <p className={`text-2xl font-semibold ${BAND_TEXT[band]}`}>
                 {scan.visibility_score}
               </p>
-              <p className="text-xs text-muted-2">visibility</p>
+              <p className="text-xs text-muted-2">readiness</p>
             </div>
           </div>
         );
