@@ -40,6 +40,20 @@ export const CATEGORY_WEIGHTS: Record<AuditCategory, number> = {
 
 export type CheckSeverity = "high" | "medium" | "low";
 
+// Concrete proof behind a finding, so the report shows evidence rather than a
+// bare assertion. All fields optional — a check only sets what it can prove.
+// This rides inside the existing `checks` jsonb column (no schema change).
+export type CheckEvidence = {
+  // A short verbatim excerpt we matched (e.g. the actual <title> text).
+  snippet?: string;
+  // The single concrete thing we found (e.g. a detected phone number).
+  found?: string;
+  // A count behind the finding (e.g. number of images missing alt text).
+  count?: number;
+  // A small sample of items (e.g. a few image srcs missing alt text).
+  sample?: string[];
+};
+
 // Result of a single check after it runs against the crawled site.
 export type CheckResult = {
   id: string;
@@ -55,6 +69,8 @@ export type CheckResult = {
   detail: string;
   // Actionable fix shown when the check did not fully pass.
   recommendation?: string;
+  // Optional concrete proof shown beneath the finding in the report.
+  evidence?: CheckEvidence;
 };
 
 export type CategoryResult = {
@@ -73,6 +89,8 @@ export type Recommendation = {
   detail: string;
   // Higher = do sooner. Derived from severity + how far the check missed.
   priority: number;
+  // Concrete proof carried over from the originating check (optional).
+  evidence?: CheckEvidence;
 };
 
 // Persisted shape of the `checks` jsonb column.

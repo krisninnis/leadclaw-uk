@@ -2,6 +2,7 @@
 
 import type { Recommendation } from "@/lib/audit/types";
 import { SEVERITY_BADGE } from "./score-utils";
+import AuditEvidence from "./audit-evidence";
 
 type Props = {
   recommendations: Recommendation[];
@@ -44,6 +45,7 @@ export default function RecommendationsList({ recommendations, limit, title }: P
               </div>
             </div>
             <p className="mt-2 text-sm leading-7 text-muted">{rec.detail}</p>
+            <AuditEvidence evidence={rec.evidence} />
           </div>
         );
       })}

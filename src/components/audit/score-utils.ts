@@ -2,15 +2,21 @@
 
 export type ScoreBand = "good" | "fair" | "poor";
 
+// Urgency bands shown across the audit UI:
+//   Healthy (75+) · At risk (50–74) · Needs urgent attention (<50)
 export function scoreBand(score: number): ScoreBand {
-  if (score >= 80) return "good";
+  if (score >= 75) return "good";
   if (score >= 50) return "fair";
   return "poor";
 }
 
 export function scoreLabel(score: number): string {
   const band = scoreBand(score);
-  return band === "good" ? "Strong" : band === "fair" ? "Needs work" : "At risk";
+  return band === "good"
+    ? "Healthy"
+    : band === "fair"
+      ? "At risk"
+      : "Needs urgent attention";
 }
 
 // Tailwind colour classes per band (text + ring + soft background).

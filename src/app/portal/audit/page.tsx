@@ -10,6 +10,7 @@ import RecommendationsList from "@/components/audit/recommendations-list";
 import RunAuditForm from "@/components/audit/run-audit-form";
 import AuditHistoryList from "@/components/audit/audit-history-list";
 import AuditScopeNotice from "@/components/audit/audit-scope-notice";
+import AuditCta from "@/components/audit/audit-cta";
 
 export const dynamic = "force-dynamic";
 
@@ -104,6 +105,11 @@ export default async function PortalAuditPage() {
               </Link>
             </div>
           </section>
+
+          <AuditCta
+            recommendations={latest.recommendations || []}
+            rerunUrl={latest.input_url || latest.website_url}
+          />
         </>
       ) : (
         <section className="card-premium p-6 md:p-8">

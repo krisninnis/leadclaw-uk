@@ -3,7 +3,12 @@
 // returns a 0..1 score, a weight, and (when imperfect) a recommendation.
 // Categories: Website Health, SEO, Trust, Conversion, AI Readiness.
 
-import type { AuditCategory, CheckResult, CheckSeverity } from "./types";
+import type {
+  AuditCategory,
+  CheckEvidence,
+  CheckResult,
+  CheckSeverity,
+} from "./types";
 import type { ParsedSignals } from "./parse-html";
 import type { SiteFetchResult } from "./fetch-site";
 
@@ -17,13 +22,20 @@ export type CheckInput = {
   sitemapFound: boolean;
 };
 
+type CheckRun = {
+  score: number;
+  detail: string;
+  recommendation?: string;
+  evidence?: CheckEvidence;
+};
+
 type CheckDef = {
   id: string;
   label: string;
   category: AuditCategory;
   weight: number;
   severity: CheckSeverity;
-  run: (i: CheckInput) => { score: number; detail: string; recommendation?: string };
+  run: (i: CheckInput) => CheckRun;
 };
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
@@ -32,10 +44,11 @@ const bool = (
   passDetail: string,
   failDetail: string,
   recommendation: string,
-) =>
+  evidence?: CheckEvidence,
+): CheckRun =>
   pass
-    ? { score: 1, detail: passDetail }
-    : { score: 0, detail: failDetail, recommendation };
+    ? { score: 1, detail: passDetail, evidence }
+    : { score: 0, detail: failDetail, recommendation, evidence };
 
 // ---------------------------------------------------------------------------
 // WEBSITE HEALTH
@@ -52,7 +65,7 @@ const HEALTH_CHECKS: CheckDef[] = [
         i.httpsOk,
         "The site is served securely over HTTPS.",
         "The site did not respond securely over HTTPS.",
-        "Install a valid SSL certificate and serve all pages over HTTPS.",
+        "Browsers mark sites without HTTPS as “Not secure”, which makes visitors hesitate before sharing contact details. Install a valid SSL certificate and serve every page over HTTPS.",
       ),
   },
   {
@@ -66,7 +79,8 @@ const HEALTH_CHECKS: CheckDef[] = [
         i.fetch.ok,
         `The homepage returned status ${i.fetch.status ?? "?"}.`,
         i.fetch.error || "The homepage could not be loaded.",
-        "Ensure the homepage loads reliably and returns a 200 status.",
+        "If the homepage doesn’t load reliably, visitors and search engines simply leave. Make sure it returns a 200 status every time.",
+        { found: i.fetch.status != null ? `HTTP ${i.fetch.status}` : undefined },
       ),
   },
   {
@@ -80,7 +94,7 @@ const HEALTH_CHECKS: CheckDef[] = [
         i.signals.hasViewportMeta,
         "A responsive viewport meta tag is present.",
         "No responsive viewport meta tag was found.",
-        'Add <meta name="viewport" content="width=device-width, initial-scale=1"> so the site renders well on phones.',
+        "Most clinic visitors browse on a phone. Without a responsive viewport tag the page can render zoomed-out or broken on mobile, and those visitors bounce. Add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">.",
       ),
   },
   {
@@ -94,7 +108,7 @@ const HEALTH_CHECKS: CheckDef[] = [
         i.signals.hasFavicon,
         "A favicon / touch icon is declared.",
         "No favicon was found.",
-        "Add a favicon so the site looks polished in browser tabs and bookmarks.",
+        "A missing favicon makes the site look unfinished in browser tabs and bookmarks. Add one so your brand is recognisable when visitors keep your tab open.",
       ),
   },
   {
@@ -108,7 +122,7 @@ const HEALTH_CHECKS: CheckDef[] = [
         i.robotsFound,
         "robots.txt is present.",
         "No robots.txt was found.",
-        "Add a robots.txt to guide search engine and AI crawlers.",
+        "Add a robots.txt so search engines and AI crawlers know which pages to index — it’s the first file they look for.",
       ),
   },
   {
@@ -122,7 +136,7 @@ const HEALTH_CHECKS: CheckDef[] = [
         i.sitemapFound,
         "sitemap.xml is present.",
         "No sitemap.xml was found.",
-        "Publish a sitemap.xml so every page is discoverable by crawlers.",
+        "Without a sitemap, newer or deeper pages can go undiscovered by search engines. Publish a sitemap.xml so every page can be found and indexed.",
       ),
   },
   {
@@ -140,8 +154,9 @@ const HEALTH_CHECKS: CheckDef[] = [
         detail: `The homepage responded in ${ms} ms.`,
         recommendation:
           score < 1
-            ? "Improve server/page response time (caching, image compression, fewer blocking resources)."
+            ? "Slow pages lose visitors before they ever see your services. Speed up response time with caching, image compression, and fewer blocking scripts."
             : undefined,
+        evidence: { count: ms },
       };
     },
   },
@@ -156,7 +171,8 @@ const HEALTH_CHECKS: CheckDef[] = [
         Boolean(i.signals.langAttr),
         `The page declares a language (lang="${i.signals.langAttr}").`,
         "The <html> element has no lang attribute.",
-        'Add a lang attribute (e.g. lang="en") to the <html> tag for accessibility and SEO.',
+        "A missing lang attribute makes screen readers and search engines guess your content’s language. Add lang=\"en\" (or your language) to the <html> tag.",
+        i.signals.langAttr ? { found: `lang="${i.signals.langAttr}"` } : undefined,
       ),
   },
 ];
@@ -178,7 +194,7 @@ const SEO_CHECKS: CheckDef[] = [
           score: 0,
           detail: "No <title> tag was found.",
           recommendation:
-            "Add a descriptive <title> of roughly 50–60 characters including your clinic name and location.",
+            "The title is the headline that shows in Google and AI search results — without one, your listing is unclickable. Add a descriptive title of roughly 50–60 characters including your clinic name and location.",
         };
       }
       const good = t.length >= 20 && t.length <= 65;
@@ -187,7 +203,8 @@ const SEO_CHECKS: CheckDef[] = [
         detail: `Title is ${t.length} characters: “${t.slice(0, 70)}”.`,
         recommendation: good
           ? undefined
-          : "Aim for a title of roughly 50–60 characters that includes your service and location.",
+          : "Your title is too short or too long to show well in search results. Aim for roughly 50–60 characters including your service and location.",
+        evidence: { snippet: t.slice(0, 120), count: t.length },
       };
     },
   },
@@ -204,7 +221,7 @@ const SEO_CHECKS: CheckDef[] = [
           score: 0,
           detail: "No meta description was found.",
           recommendation:
-            "Add a compelling meta description of roughly 140–160 characters to improve click-through from search.",
+            "Without a meta description, Google writes its own snippet from random page text — costing you clicks. Add a compelling description of roughly 140–160 characters that gives searchers a reason to choose you.",
         };
       }
       const good = d.length >= 70 && d.length <= 165;
@@ -213,7 +230,8 @@ const SEO_CHECKS: CheckDef[] = [
         detail: `Meta description is ${d.length} characters.`,
         recommendation: good
           ? undefined
-          : "Aim for a meta description of roughly 140–160 characters.",
+          : "Your meta description is outside the length that displays cleanly in search. Aim for roughly 140–160 characters.",
+        evidence: { snippet: d.slice(0, 160), count: d.length },
       };
     },
   },
@@ -228,17 +246,21 @@ const SEO_CHECKS: CheckDef[] = [
         return {
           score: 0,
           detail: "No H1 heading was found.",
-          recommendation: "Add a single, descriptive H1 heading to the page.",
+          recommendation:
+            "The H1 is the main heading search engines use to understand what a page is about. Add a single, descriptive H1 stating your core service and location.",
+          evidence: { count: 0 },
         };
       }
       if (i.signals.h1Count > 1) {
         return {
           score: 0.6,
           detail: `${i.signals.h1Count} H1 headings were found.`,
-          recommendation: "Use exactly one H1 per page; demote the others to H2/H3.",
+          recommendation:
+            "Multiple H1s dilute the signal of what the page is about. Use exactly one H1 per page and demote the others to H2/H3.",
+          evidence: { count: i.signals.h1Count },
         };
       }
-      return { score: 1, detail: "Exactly one H1 heading is present." };
+      return { score: 1, detail: "Exactly one H1 heading is present.", evidence: { count: 1 } };
     },
   },
   {
@@ -252,7 +274,8 @@ const SEO_CHECKS: CheckDef[] = [
         i.signals.h2Count >= 2,
         `The page uses a heading hierarchy (${i.signals.headingCount} headings).`,
         "The page has little heading structure.",
-        "Use H2/H3 subheadings to structure content for readers and search engines.",
+        "Without subheadings, visitors skim past your content and search engines struggle to parse it. Use H2/H3 subheadings to break content into clear sections.",
+        { count: i.signals.headingCount },
       ),
   },
   {
@@ -266,13 +289,18 @@ const SEO_CHECKS: CheckDef[] = [
         return { score: 1, detail: "No images requiring alt text were found." };
       }
       const ratio = i.signals.imagesWithAlt / i.signals.imageCount;
+      const missing = i.signals.imageCount - i.signals.imagesWithAlt;
       return {
         score: clamp01(ratio),
         detail: `${i.signals.imagesWithAlt} of ${i.signals.imageCount} images have alt text.`,
         recommendation:
           ratio < 0.9
-            ? "Add descriptive alt text to all meaningful images for accessibility and image SEO."
+            ? "Images without alt text are invisible to screen-reader users and to image search. Add descriptive alt text to every meaningful image."
             : undefined,
+        evidence:
+          missing > 0
+            ? { count: missing, sample: i.signals.imagesMissingAltSample }
+            : { count: 0 },
       };
     },
   },
@@ -287,7 +315,8 @@ const SEO_CHECKS: CheckDef[] = [
         i.signals.internalLinks >= 3,
         `The homepage has ${i.signals.internalLinks} internal links.`,
         "The homepage has very few internal links.",
-        "Link to your key pages (services, contact, about) from the homepage.",
+        "Few internal links means visitors and crawlers can’t reach your key pages from the homepage. Link out to your services, contact, and about pages.",
+        { count: i.signals.internalLinks },
       ),
   },
   {
@@ -301,7 +330,8 @@ const SEO_CHECKS: CheckDef[] = [
         Boolean(i.signals.canonical),
         "A canonical tag is present.",
         "No canonical tag was found.",
-        "Add a canonical link tag to prevent duplicate-content issues.",
+        "Without a canonical tag, search engines can split your ranking across duplicate URLs. Add a canonical link tag pointing to the preferred version of each page.",
+        i.signals.canonical ? { found: i.signals.canonical } : undefined,
       ),
   },
   {
@@ -321,7 +351,7 @@ const SEO_CHECKS: CheckDef[] = [
         detail: `Local signals — schema: ${hasLocalSchema ? "yes" : "no"}, address on page: ${hasAddress ? "yes" : "no"}.`,
         recommendation:
           score < 1
-            ? "Add LocalBusiness structured data and a visible NAP (name, address, phone) for local search."
+            ? "Local searchers (“dentist near me”) won’t find you without clear location signals. Add LocalBusiness structured data and a visible name, address, and phone number."
             : undefined,
       };
     },
@@ -343,7 +373,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.hasContactLink || i.signals.hasMailtoLink,
         "Contact information / a contact route is present.",
         "No clear contact information was found.",
-        "Add a clearly linked contact page with email and enquiry options.",
+        "If visitors can’t find how to reach you, they move on to a competitor who makes it easy. Add a clearly linked contact page with email and enquiry options.",
       ),
   },
   {
@@ -357,7 +387,8 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.mentionsAddress,
         "A physical address appears on the page.",
         "No physical address was detected.",
-        "Display your clinic address (ideally in the footer on every page).",
+        "A visible address reassures visitors you’re a real, local practice and feeds local search. Show your clinic address, ideally in the footer of every page.",
+        i.signals.addressMatch ? { snippet: i.signals.addressMatch.trim().slice(0, 120) } : undefined,
       ),
   },
   {
@@ -371,7 +402,8 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.hasTelLink || i.signals.phoneNumbers > 0,
         "A phone number is shown.",
         "No phone number was found.",
-        "Show a clickable phone number (tel: link) prominently in the header.",
+        "Many prospective patients want to call before booking — without a visible number, those enquiries are lost. Show a clickable phone number (tel: link) prominently in the header.",
+        i.signals.phoneSample ? { found: i.signals.phoneSample.trim() } : undefined,
       ),
   },
   {
@@ -385,7 +417,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.mentionsReviews,
         "Reviews or testimonials are referenced on the page.",
         "No reviews or testimonials were detected.",
-        "Display patient reviews/testimonials (and star ratings) to build trust.",
+        "Reviews are often the deciding factor for a new patient. Display testimonials and star ratings so visitors can see others trust you.",
       ),
   },
   {
@@ -399,7 +431,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.mentionsBeforeAfter,
         "A results / before-and-after gallery is referenced.",
         "No before/after or results gallery was detected.",
-        "Add a before/after or results gallery to demonstrate outcomes.",
+        "Visitors want proof of your results before they commit. Add a before/after or results gallery to demonstrate outcomes.",
       ),
   },
   {
@@ -413,7 +445,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.hasPrivacyLink,
         "A privacy policy is linked.",
         "No privacy policy link was found.",
-        "Publish and link a privacy policy (required under UK GDPR).",
+        "A privacy policy is required under UK GDPR and signals to visitors that their data is handled responsibly. Publish and link one.",
       ),
   },
   {
@@ -427,7 +459,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.hasTermsLink,
         "A terms / conditions page is linked.",
         "No terms or conditions page was found.",
-        "Add a terms & conditions page for clarity and credibility.",
+        "Clear terms set expectations and add to your credibility. Add a terms & conditions page.",
       ),
   },
   {
@@ -441,7 +473,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.hasAboutLink || i.signals.mentionsTeam,
         "An about / team presence was found.",
         "No about or team page was detected.",
-        "Add an about/team page with practitioner names and credentials.",
+        "Patients trust named, qualified people more than a faceless business. Add an about/team page with practitioner names and credentials.",
       ),
   },
 ];
@@ -461,7 +493,8 @@ const CONVERSION_CHECKS: CheckDef[] = [
         i.signals.ctaPhrases > 0,
         `Call-to-action language is present (${i.signals.ctaPhrases} CTA phrases).`,
         "No obvious call to action was detected.",
-        'Add a prominent primary CTA (e.g. "Book a consultation") above the fold.',
+        "If the page doesn’t tell visitors what to do next, most do nothing. Add a prominent primary call to action (e.g. “Book a consultation”) above the fold.",
+        { count: i.signals.ctaPhrases },
       ),
   },
   {
@@ -475,7 +508,7 @@ const CONVERSION_CHECKS: CheckDef[] = [
         i.signals.hasForm,
         "A form is present for capturing enquiries.",
         "No enquiry form was found on the page.",
-        "Add a short enquiry form to capture leads directly on the page.",
+        "A form lets interested visitors reach you the moment they’re ready, instead of leaving to think about it. Add a short enquiry form on the page.",
       ),
   },
   {
@@ -489,7 +522,7 @@ const CONVERSION_CHECKS: CheckDef[] = [
         i.signals.hasBookingLink,
         "An online booking / appointment route is present.",
         "No online booking option was detected.",
-        "Offer online booking so visitors can self-schedule appointments.",
+        "Many people prefer to book outside office hours rather than phone during the day. Offer online booking so visitors can self-schedule.",
       ),
   },
   {
@@ -503,7 +536,7 @@ const CONVERSION_CHECKS: CheckDef[] = [
         i.signals.hasTelLink,
         "A click-to-call (tel:) link is present.",
         "No click-to-call link was found.",
-        "Add a tap-to-call (tel:) button so mobile visitors can call instantly.",
+        "On a phone, a number that isn’t tappable adds friction — and mobile visitors who’d have called give up. Add a tap-to-call (tel:) button.",
       ),
   },
   {
@@ -517,7 +550,7 @@ const CONVERSION_CHECKS: CheckDef[] = [
         i.signals.hasViewportMeta,
         "The page is configured for mobile devices.",
         "The page is not configured for mobile devices.",
-        "Ensure the site is mobile-responsive — most clinic visitors are on phones.",
+        "Most clinic visitors are on phones — if the page isn’t mobile-responsive, they leave before converting. Make sure the site adapts to small screens.",
       ),
   },
 ];
@@ -540,7 +573,7 @@ const AI_CHECKS: CheckDef[] = [
         detail: `FAQ — schema: ${hasFaqSchema ? "yes" : "no"}, FAQ text: ${i.signals.mentionsFaq ? "yes" : "no"}.`,
         recommendation:
           score < 1
-            ? "Add an FAQ section with FAQPage structured data — AI assistants quote FAQ answers directly."
+            ? "AI assistants often quote FAQ answers directly when recommending a practice. Add an FAQ section, marked up with FAQPage structured data, covering the questions patients actually ask."
             : undefined,
       };
     },
@@ -556,7 +589,7 @@ const AI_CHECKS: CheckDef[] = [
         i.signals.mentionsTreatments,
         "Treatment / service content is present.",
         "No clear treatment or service content was detected.",
-        "Publish detailed pages for each treatment/service so AI tools can describe what you offer.",
+        "AI tools can only describe and recommend services they can read about. Publish a detailed page for each treatment so your offering is discoverable.",
       ),
   },
   {
@@ -567,16 +600,19 @@ const AI_CHECKS: CheckDef[] = [
     severity: "high",
     run: (i) => {
       const n = i.signals.jsonLdBlocks.length;
+      const types = [...new Set(i.signals.jsonLdTypes)];
       return {
         score: n === 0 ? 0 : n === 1 ? 0.7 : 1,
         detail:
           n === 0
             ? "No JSON-LD structured data was found."
-            : `${n} JSON-LD block(s) found (${[...new Set(i.signals.jsonLdTypes)].join(", ") || "untyped"}).`,
+            : `${n} JSON-LD block(s) found (${types.join(", ") || "untyped"}).`,
         recommendation:
           n < 2
-            ? "Add JSON-LD structured data (LocalBusiness, Service, FAQPage) to help AI models understand your site."
+            ? "Structured data is how search engines and AI models reliably read your business details. Add JSON-LD markup (LocalBusiness, Service, FAQPage) so they describe you accurately."
             : undefined,
+        evidence:
+          n === 0 ? { count: 0 } : { count: n, sample: types.length ? types : undefined },
       };
     },
   },
@@ -591,7 +627,7 @@ const AI_CHECKS: CheckDef[] = [
         i.signals.mentionsTeam,
         "Practitioner / author information is present.",
         "No author or practitioner expertise information was detected.",
-        "Show named clinicians with credentials — AI models weight expertise (E-E-A-T) signals.",
+        "Search engines and AI models weight named expertise (E-E-A-T) when deciding who to recommend. Show your clinicians with their credentials.",
       ),
   },
   {
@@ -608,7 +644,7 @@ const AI_CHECKS: CheckDef[] = [
         detail: `Reviews — schema: ${hasReviewSchema ? "yes" : "no"}, review text: ${i.signals.mentionsReviews ? "yes" : "no"}.`,
         recommendation:
           score < 1
-            ? "Publish reviews with Review/AggregateRating structured data so AI tools can cite your reputation."
+            ? "When AI assistants summarise your reputation, they lean on machine-readable reviews. Publish reviews with Review/AggregateRating structured data."
             : undefined,
       };
     },
@@ -627,8 +663,9 @@ const AI_CHECKS: CheckDef[] = [
         detail: `Approx. ${i.signals.textLength} characters of body content.`,
         recommendation:
           score < 1
-            ? "Add substantive, helpful content (guides, treatment explainers) for AI assistants to draw on."
+            ? "Thin pages give AI assistants little to draw on when answering questions about your field. Add substantive, helpful content such as treatment explainers and guides."
             : undefined,
+        evidence: { count: i.signals.textLength },
       };
     },
   },
@@ -656,6 +693,7 @@ export function runChecks(input: CheckInput): CheckResult[] {
       passed: score >= 0.999,
       detail: r.detail,
       recommendation: score < 0.999 ? r.recommendation : undefined,
+      evidence: r.evidence,
     };
   });
 }

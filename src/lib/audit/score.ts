@@ -85,6 +85,7 @@ export function buildRecommendations(checks: CheckResult[]): Recommendation[] {
         title: c.label,
         detail: c.recommendation as string,
         priority,
+        evidence: c.evidence,
       };
     })
     .sort((a, b) => b.priority - a.priority);

@@ -10,6 +10,8 @@ import RecommendationsList from "@/components/audit/recommendations-list";
 import RunAuditForm from "@/components/audit/run-audit-form";
 import { Check, X, MinusCircle } from "lucide-react";
 import AuditScopeNotice from "@/components/audit/audit-scope-notice";
+import AuditEvidence from "@/components/audit/audit-evidence";
+import AuditCta from "@/components/audit/audit-cta";
 
 export const dynamic = "force-dynamic";
 
@@ -84,6 +86,11 @@ export default async function AuditDetailPage({
         </div>
       </section>
 
+      <AuditCta
+        recommendations={audit.recommendations || []}
+        rerunUrl={audit.input_url || audit.website_url}
+      />
+
       {categories.map((cat) => {
         const passed = cat.checks.filter((c) => c.passed).length;
         return (
@@ -106,6 +113,7 @@ export default async function AuditDetailPage({
                     <div className="min-w-0">
                       <p className="font-medium text-foreground">{check.label}</p>
                       <p className="mt-1 text-sm text-muted">{check.detail}</p>
+                      <AuditEvidence evidence={check.evidence} />
                       {check.recommendation ? (
                         <p className="mt-1 text-sm text-brand-strong">→ {check.recommendation}</p>
                       ) : null}

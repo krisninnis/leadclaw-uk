@@ -20,6 +20,8 @@ export type ParsedSignals = {
   externalLinks: number;
   imageCount: number;
   imagesWithAlt: number;
+  // A small sample of image srcs missing (usable) alt text — for evidence.
+  imagesMissingAltSample: string[];
   // Structured data / AI readiness
   jsonLdBlocks: string[];
   jsonLdTypes: string[];
@@ -33,6 +35,10 @@ export type ParsedSignals = {
   hasMailtoLink: boolean;
   hasForm: boolean;
   phoneNumbers: number;
+  // First detected phone number, for evidence ("we found 020 7…").
+  phoneSample: string | null;
+  // First matched address-like line, for evidence.
+  addressMatch: string | null;
   // Body text for keyword heuristics (FAQ, reviews, address, treatments).
   textLength: number;
   mentionsFaq: boolean;
@@ -139,9 +145,13 @@ export function parseHtml(html: string, finalUrl: string | null): ParsedSignals 
   // ---- Images ----
   const imgTags = html.match(/<img\b[^>]*>/gi) || [];
   const imageCount = imgTags.length;
-  const imagesWithAlt = imgTags.filter((t) =>
-    /\balt=["'][^"']*["']/i.test(t) && !/\balt=["']\s*["']/i.test(t),
-  ).length;
+  const hasUsableAlt = (t: string) =>
+    /\balt=["'][^"']*["']/i.test(t) && !/\balt=["']\s*["']/i.test(t);
+  const imagesWithAlt = imgTags.filter(hasUsableAlt).length;
+  const imagesMissingAltSample = imgTags
+    .filter((t) => !hasUsableAlt(t))
+    .map((t) => firstMatch(t, /\bsrc=["']([^"']+)["']/i) || "(inline image)")
+    .slice(0, 3);
 
   // ---- Structured data (JSON-LD) ----
   const jsonLdBlocks: string[] = [];
@@ -165,10 +175,20 @@ export function parseHtml(html: string, finalUrl: string | null): ParsedSignals 
   const text = visibleText(html);
   const textLower = text.toLowerCase();
 
-  const phoneNumbers = countMatches(
-    text,
-    /(?:\+?\d[\d\s().-]{7,}\d)/g,
-  );
+  const phoneRe = /(?:\+?\d[\d\s().-]{7,}\d)/g;
+  const phoneNumbers = countMatches(text, phoneRe);
+  const phoneSample = firstMatch(text, /((?:\+?\d[\d\s().-]{7,}\d))/) || null;
+
+  const addressMatch =
+    firstMatch(
+      text,
+      /([^.]*?\b(?:[a-z]{1,2}\d{1,2}\s*\d[a-z]{2})\b[^.]*)/i,
+    ) ||
+    firstMatch(
+      text,
+      /([^.]*?\b(?:street|road|lane|avenue)\b[^.]*)/i,
+    ) ||
+    null;
 
   const ctaPhrases = countMatches(
     textLower,
@@ -189,6 +209,7 @@ export function parseHtml(html: string, finalUrl: string | null): ParsedSignals 
     externalLinks,
     imageCount,
     imagesWithAlt,
+    imagesMissingAltSample,
     jsonLdBlocks,
     jsonLdTypes,
     hasContactLink,
@@ -200,6 +221,8 @@ export function parseHtml(html: string, finalUrl: string | null): ParsedSignals 
     hasMailtoLink,
     hasForm,
     phoneNumbers,
+    phoneSample,
+    addressMatch,
     textLength: text.length,
     mentionsFaq: /\bfaq|frequently asked/.test(textLower),
     mentionsReviews: /\breview|testimonial|rated|google rating|trustpilot|stars\b/.test(textLower),
