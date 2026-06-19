@@ -29,7 +29,7 @@ export default function AuditCta({ recommendations, rerunUrl }: Props) {
         href: "/demo",
         label: "Book a demo",
         heading: "Some high-priority issues need attention",
-        body: "These gaps are the kind that quietly cost you patients. Book a demo and we’ll walk through fixing them for you.",
+        body: "These gaps are the kind that quietly cost you customers. Book a demo and we’ll walk through fixing them for you.",
       }
     : {
         href: "/free-trial",

@@ -94,7 +94,7 @@ const HEALTH_CHECKS: CheckDef[] = [
         i.signals.hasViewportMeta,
         "A responsive viewport meta tag is present.",
         "No responsive viewport meta tag was found.",
-        "Most clinic visitors browse on a phone. Without a responsive viewport tag the page can render zoomed-out or broken on mobile, and those visitors bounce. Add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">.",
+        "Most visitors browse on a phone. Without a responsive viewport tag the page can render zoomed-out or broken on mobile, and those visitors bounce. Add <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">.",
       ),
   },
   {
@@ -194,7 +194,7 @@ const SEO_CHECKS: CheckDef[] = [
           score: 0,
           detail: "No <title> tag was found.",
           recommendation:
-            "The title is the headline that shows in Google and AI search results — without one, your listing is unclickable. Add a descriptive title of roughly 50–60 characters including your clinic name and location.",
+            "The title is the headline that shows in Google and AI search results — without one, your listing is unclickable. Add a descriptive title of roughly 50–60 characters including your business name and location.",
         };
       }
       const good = t.length >= 20 && t.length <= 65;
@@ -351,7 +351,7 @@ const SEO_CHECKS: CheckDef[] = [
         detail: `Local signals — schema: ${hasLocalSchema ? "yes" : "no"}, address on page: ${hasAddress ? "yes" : "no"}.`,
         recommendation:
           score < 1
-            ? "Local searchers (“dentist near me”) won’t find you without clear location signals. Add LocalBusiness structured data and a visible name, address, and phone number."
+            ? "Local searchers looking for a business near them won’t find you without clear location signals. Add LocalBusiness structured data and a visible name, address, and phone number."
             : undefined,
       };
     },
@@ -387,7 +387,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.mentionsAddress,
         "A physical address appears on the page.",
         "No physical address was detected.",
-        "A visible address reassures visitors you’re a real, local practice and feeds local search. Show your clinic address, ideally in the footer of every page.",
+        "A visible address reassures visitors you’re a real, local business and feeds local search. Show your business address, ideally in the footer of every page.",
         i.signals.addressMatch ? { snippet: i.signals.addressMatch.trim().slice(0, 120) } : undefined,
       ),
   },
@@ -402,7 +402,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.hasTelLink || i.signals.phoneNumbers > 0,
         "A phone number is shown.",
         "No phone number was found.",
-        "Many prospective patients want to call before booking — without a visible number, those enquiries are lost. Show a clickable phone number (tel: link) prominently in the header.",
+        "Many prospective customers want to call before they buy — without a visible number, those enquiries are lost. Show a clickable phone number (tel: link) prominently in the header.",
         i.signals.phoneSample ? { found: i.signals.phoneSample.trim() } : undefined,
       ),
   },
@@ -417,7 +417,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.mentionsReviews,
         "Reviews or testimonials are referenced on the page.",
         "No reviews or testimonials were detected.",
-        "Reviews are often the deciding factor for a new patient. Display testimonials and star ratings so visitors can see others trust you.",
+        "Reviews are often the deciding factor for a new customer. Display testimonials and star ratings so visitors can see others trust you.",
       ),
   },
   {
@@ -473,7 +473,7 @@ const TRUST_CHECKS: CheckDef[] = [
         i.signals.hasAboutLink || i.signals.mentionsTeam,
         "An about / team presence was found.",
         "No about or team page was detected.",
-        "Patients trust named, qualified people more than a faceless business. Add an about/team page with practitioner names and credentials.",
+        "Visitors trust named, real people more than a faceless business. Add an about/team page with names and credentials.",
       ),
   },
 ];
@@ -493,7 +493,7 @@ const CONVERSION_CHECKS: CheckDef[] = [
         i.signals.ctaPhrases > 0,
         `Call-to-action language is present (${i.signals.ctaPhrases} CTA phrases).`,
         "No obvious call to action was detected.",
-        "If the page doesn’t tell visitors what to do next, most do nothing. Add a prominent primary call to action (e.g. “Book a consultation”) above the fold.",
+        "If the page doesn’t tell visitors what to do next, most do nothing. Add a prominent primary call to action (e.g. “Get in touch” or “Book now”) above the fold.",
         { count: i.signals.ctaPhrases },
       ),
   },
@@ -550,7 +550,7 @@ const CONVERSION_CHECKS: CheckDef[] = [
         i.signals.hasViewportMeta,
         "The page is configured for mobile devices.",
         "The page is not configured for mobile devices.",
-        "Most clinic visitors are on phones — if the page isn’t mobile-responsive, they leave before converting. Make sure the site adapts to small screens.",
+        "Most visitors are on phones — if the page isn’t mobile-responsive, they leave before converting. Make sure the site adapts to small screens.",
       ),
   },
 ];
@@ -573,7 +573,7 @@ const AI_CHECKS: CheckDef[] = [
         detail: `FAQ — schema: ${hasFaqSchema ? "yes" : "no"}, FAQ text: ${i.signals.mentionsFaq ? "yes" : "no"}.`,
         recommendation:
           score < 1
-            ? "AI assistants often quote FAQ answers directly when recommending a practice. Add an FAQ section, marked up with FAQPage structured data, covering the questions patients actually ask."
+            ? "AI assistants often quote FAQ answers directly when recommending a business. Add an FAQ section, marked up with FAQPage structured data, covering the questions customers actually ask."
             : undefined,
       };
     },
@@ -627,7 +627,7 @@ const AI_CHECKS: CheckDef[] = [
         i.signals.mentionsTeam,
         "Practitioner / author information is present.",
         "No author or practitioner expertise information was detected.",
-        "Search engines and AI models weight named expertise (E-E-A-T) when deciding who to recommend. Show your clinicians with their credentials.",
+        "Search engines and AI models weight named expertise (E-E-A-T) when deciding who to recommend. Show the real people behind your business, with their credentials and experience.",
       ),
   },
   {
