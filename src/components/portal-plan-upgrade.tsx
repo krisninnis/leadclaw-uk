@@ -33,6 +33,10 @@ function checkoutErrorMessage(error: string, requiredEnvVar?: string) {
     return "You are already on that plan.";
   }
 
+  if (error === "active_subscription_exists") {
+    return "You already have an active subscription. Use Manage billing to change or cancel your plan.";
+  }
+
   if (error === "stripe_not_configured") {
     return "Stripe checkout is not configured yet. Please contact support to upgrade.";
   }

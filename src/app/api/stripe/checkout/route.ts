@@ -4,6 +4,7 @@ import { resolveCheckoutPlan } from "@/lib/checkout-plans";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getAppBaseUrl } from "@/lib/app-url";
+import { shouldRedirectExistingToPortal } from "@/lib/checkout-guard";
 
 type SubscriptionRow = {
   id?: string;
@@ -110,9 +111,13 @@ export async function POST(req: Request) {
       .trim()
       .toLowerCase();
 
-    if (existingStatus === "active" && existingPlan === requestedPaidPlan) {
+    // Existing real Stripe subscribers (active / trialing / past_due) must change
+    // or cancel their plan via the Billing Portal — never create a second
+    // subscription through Checkout. No-card trials (trial_ placeholder id) are
+    // intentionally allowed to convert to paid here.
+    if (shouldRedirectExistingToPortal(existing)) {
       return NextResponse.json(
-        { ok: false, error: "already_on_requested_plan" },
+        { ok: false, error: "active_subscription_exists", usePortal: true },
         { status: 409 },
       );
     }

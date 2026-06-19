@@ -7,6 +7,7 @@ import { logSystemEvent } from "@/lib/ops";
 import { provisionClinicWorkspace } from "@/lib/provision-clinic";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { planFromStripePriceId } from "@/lib/stripe-plans";
+import { getSubscriptionCurrentPeriodEnd } from "@/lib/stripe-subscription";
 
 type ApplicationIdRow = {
   id: string;
@@ -104,6 +105,7 @@ export async function POST(req: Request) {
             plan: planFromStripePriceId(priceId),
             status: sub.status,
             trialEnd: sub.trial_end,
+            currentPeriodEnd: getSubscriptionCurrentPeriodEnd(sub),
             cancelAtPeriodEnd: sub.cancel_at_period_end,
           });
 
@@ -141,6 +143,7 @@ export async function POST(req: Request) {
         break;
       }
 
+      case "customer.subscription.created":
       case "customer.subscription.updated":
       case "customer.subscription.deleted": {
         const sub = event.data.object as Stripe.Subscription;
@@ -155,6 +158,7 @@ export async function POST(req: Request) {
           plan: planFromStripePriceId(priceId),
           status: sub.status,
           trialEnd: sub.trial_end,
+          currentPeriodEnd: getSubscriptionCurrentPeriodEnd(sub),
           cancelAtPeriodEnd: sub.cancel_at_period_end,
         });
 
