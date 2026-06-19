@@ -1,24 +1,19 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import ManageBillingButton from "@/components/manage-billing-button";
 import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import { Badge, SectionHeading, StatCard } from "@/components/ui";
+import {
+  deriveBillingView,
+  formatBillingDate,
+  type BillingSubscriptionRow,
+} from "@/lib/billing-view";
 
-type PortalSubscriptionRow = {
-  status: string | null;
-  plan: string | null;
-  trial_end: string | null;
-  current_period_end: string | null;
+type PortalSubscriptionRow = BillingSubscriptionRow & {
+  user_id: string | null;
+  email: string | null;
 };
-
-function formatDateTime(value: string | null) {
-  if (!value) return "—";
-  return new Date(value).toLocaleString();
-}
-
-function normalizePlan(value: string | null | undefined) {
-  return String(value || "basic").toLowerCase();
-}
 
 function getPlanTone(
   planValue: string,
@@ -43,87 +38,65 @@ export default async function PortalBillingPage({
   if (!user) redirect("/login");
 
   const params = (await searchParams) || {};
-  const expired = params.expired === "1";
-  const accountActive = params.account === "active";
-
   const admin = createAdminClient();
-
-  let rawSubscriptionStatus = "none";
-  let currentPlan = "basic";
-  let trialEnd: string | null = null;
-  let currentPeriodEnd: string | null = null;
-
-  let hasFullSubscriptionAccess = false;
-  let hasBasicAccess = true;
-  let isTrialing = false;
-  let isTrialExpired = false;
-  let trialEndedIntoBasic = false;
+  let subscription: PortalSubscriptionRow | null = null;
 
   if (admin) {
+    const normalizedEmail = user.email?.trim().toLowerCase() || "";
+    const filters = [`user_id.eq.${user.id}`];
+    if (normalizedEmail) filters.push(`email.eq.${normalizedEmail}`);
+
     const { data } = await (admin as unknown as SupabaseUntypedClient)
       .from("subscriptions")
-      .select("status,plan,trial_end,current_period_end")
-      .eq("email", user.email || "")
+      .select(
+        "user_id,email,status,plan,trial_end,current_period_end,stripe_customer_id,stripe_subscription_id",
+      )
+      .or(filters.join(","))
       .order("updated_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(10);
 
-    const subscription = data as PortalSubscriptionRow | null;
-
-    if (subscription) {
-      rawSubscriptionStatus = String(subscription.status || "").toLowerCase();
-      currentPlan = normalizePlan(subscription.plan);
-      trialEnd = subscription.trial_end || null;
-      currentPeriodEnd = subscription.current_period_end || null;
-
-      isTrialing = rawSubscriptionStatus === "trialing";
-      isTrialExpired =
-        rawSubscriptionStatus === "expired" ||
-        rawSubscriptionStatus === "canceled";
-
-      hasFullSubscriptionAccess = ["trialing", "active", "past_due"].includes(
-        rawSubscriptionStatus,
-      );
-
-      hasBasicAccess = currentPlan === "basic" || hasFullSubscriptionAccess;
-
-      trialEndedIntoBasic =
-        currentPlan === "basic" &&
-        (rawSubscriptionStatus === "expired" ||
-          rawSubscriptionStatus === "canceled");
-    }
+    const rows = (data || []) as PortalSubscriptionRow[];
+    subscription =
+      rows.find((row) => row.user_id === user.id) ||
+      rows.find(
+        (row) => row.email?.trim().toLowerCase() === normalizedEmail,
+      ) ||
+      null;
   }
 
+  const billing = deriveBillingView(subscription, {
+    account: params.account,
+    expired: params.expired,
+  });
+  const {
+    status: rawSubscriptionStatus,
+    currentPlan,
+    planLabel,
+    trialEnd,
+    currentPeriodEnd,
+    hasFullAccess: hasFullSubscriptionAccess,
+    hasBasicAccess,
+    accessStateLabel,
+    isTrialing,
+    trialEnded: trialEndedIntoBasic,
+    showTrialEndedNotice,
+    showPastDueNotice: showPastDueBox,
+    showUpgradeNotice: showUpgradeBox,
+    showActiveAccountNotice,
+    canManageBilling,
+    usePortalForPlanChanges,
+  } = billing;
   const currentPlanTone = getPlanTone(currentPlan);
-
-  const planLabel =
-    currentPlan === "basic"
-      ? "Basic"
-      : currentPlan === "growth"
-        ? "Growth"
-        : currentPlan === "pro"
-          ? "Pro"
-          : "Basic";
-
-  const accessStateLabel = hasFullSubscriptionAccess
-    ? "Full"
-    : hasBasicAccess
-      ? "Basic"
-      : "Blocked";
 
   const trialStatusLabel = isTrialing
     ? "Active"
-    : trialEndedIntoBasic || expired || isTrialExpired
+    : trialEndedIntoBasic
       ? "Ended"
       : "Not in trial";
 
-  const showTrialEndedNotice = trialEndedIntoBasic || expired;
-  const showPastDueBox = rawSubscriptionStatus === "past_due";
-  const showUpgradeBox = hasBasicAccess && !hasFullSubscriptionAccess;
-
   return (
     <div className="space-y-6">
-      {accountActive && (
+      {showActiveAccountNotice && (
         <div className="rounded-[24px] border border-sky-200 bg-sky-50 p-5">
           <h2 className="text-lg font-semibold text-sky-950">
             You already have an active LeadClaw account
@@ -174,14 +147,14 @@ export default async function PortalBillingPage({
             value={trialStatusLabel}
             hint={
               trialEnd
-                ? `Trial date: ${formatDateTime(trialEnd)}`
+                ? `Trial date: ${formatBillingDate(trialEnd)}`
                 : "No trial date on file."
             }
           />
 
           <StatCard
             label="Renewal / period end"
-            value={formatDateTime(currentPeriodEnd)}
+            value={formatBillingDate(currentPeriodEnd)}
             hint="Shown when available from your latest subscription record."
           />
 
@@ -207,17 +180,21 @@ export default async function PortalBillingPage({
           maxWidth="md"
         />
 
-        <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Badge tone={currentPlanTone}>{planLabel}</Badge>
+        <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge tone={currentPlanTone}>{planLabel}</Badge>
 
-          {isTrialing && (
-            <Badge tone="brand">
-              Trial
-              {trialEnd ? ` • ends ${formatDateTime(trialEnd)}` : ""}
-            </Badge>
-          )}
+            {isTrialing && (
+              <Badge tone="brand">
+                Trial
+                {trialEnd ? ` • ends ${formatBillingDate(trialEnd)}` : ""}
+              </Badge>
+            )}
 
-          {trialEndedIntoBasic && <Badge tone="amber">Basic active</Badge>}
+            {trialEndedIntoBasic && <Badge tone="amber">Basic active</Badge>}
+          </div>
+
+          {canManageBilling && <ManageBillingButton />}
         </div>
 
         <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -252,9 +229,9 @@ export default async function PortalBillingPage({
             </p>
             <p className="mt-2 text-sm text-muted">
               {isTrialing && trialEnd
-                ? `Trial ends ${formatDateTime(trialEnd)}`
+                ? `Trial ends ${formatBillingDate(trialEnd)}`
                 : currentPeriodEnd
-                  ? `Current period ends ${formatDateTime(currentPeriodEnd)}`
+                  ? `${hasFullSubscriptionAccess ? "Current period ends" : "Previous period ended"} ${formatBillingDate(currentPeriodEnd)}`
                   : trialEndedIntoBasic
                     ? "Your account has automatically moved to Basic after trial expiry."
                     : "No billing date is currently available."}
@@ -263,7 +240,13 @@ export default async function PortalBillingPage({
         </div>
 
         <div className="mt-5">
-          <PortalPlanUpgrade email={user.email} />
+          <PortalPlanUpgrade
+            email={user.email}
+            currentPlan={currentPlan}
+            subscriptionStatus={rawSubscriptionStatus}
+            usePortalForPlanChanges={usePortalForPlanChanges}
+            canManageBilling={canManageBilling}
+          />
         </div>
       </div>
 
@@ -278,9 +261,11 @@ export default async function PortalBillingPage({
             also remain on Basic if you do not want to continue with a paid
             plan.
           </p>
-          <div className="mt-4">
-            <PortalPlanUpgrade email={user.email} />
-          </div>
+          {canManageBilling && (
+            <div className="mt-4">
+              <ManageBillingButton label="Fix payment in Manage billing" />
+            </div>
+          )}
         </div>
       )}
 
@@ -294,9 +279,6 @@ export default async function PortalBillingPage({
             Growth for full automation, or upgrade to Pro for more advanced
             support and performance features.
           </p>
-          <div className="mt-4">
-            <PortalPlanUpgrade email={user.email} />
-          </div>
         </div>
       )}
     </div>

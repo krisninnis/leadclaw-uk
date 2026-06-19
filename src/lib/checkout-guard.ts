@@ -7,9 +7,14 @@ export function isRealStripeSubscriptionId(value?: string | null): boolean {
   return typeof value === "string" && value.startsWith("sub_");
 }
 
+export function isRealStripeCustomerId(value?: string | null): boolean {
+  return typeof value === "string" && value.startsWith("cus_");
+}
+
 type ExistingSubscriptionForGuard =
   | {
       status?: string | null;
+      stripe_customer_id?: string | null;
       stripe_subscription_id?: string | null;
     }
   | null
@@ -19,7 +24,10 @@ export function shouldRedirectExistingToPortal(
   existing: ExistingSubscriptionForGuard,
 ): boolean {
   if (!existing) return false;
-  if (!isRealStripeSubscriptionId(existing.stripe_subscription_id)) return false;
+  const hasRealStripeReference =
+    isRealStripeSubscriptionId(existing.stripe_subscription_id) ||
+    isRealStripeCustomerId(existing.stripe_customer_id);
+  if (!hasRealStripeReference) return false;
 
   const status = String(existing.status || "")
     .trim()

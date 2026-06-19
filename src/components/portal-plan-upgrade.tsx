@@ -5,49 +5,40 @@ import {
   PLAN_DISPLAY_NAMES,
   PLAN_MONTHLY_PRICES,
   type PaidPlanSlug,
+  type PlanSlug,
 } from "@/lib/plans";
+import ManageBillingButton from "@/components/manage-billing-button";
+import {
+  getBillingPlanAction,
+  getCheckoutErrorMessage,
+} from "@/lib/billing-view";
 
 const upgradePlans: Array<{
   slug: PaidPlanSlug;
   summary: string;
-  cta: string;
 }> = [
   {
     slug: "growth",
     summary: "Full lead capture, follow-up automation, and workspace features.",
-    cta: "Upgrade to Growth",
   },
   {
     slug: "pro",
     summary: "Advanced automation, stronger reporting, and priority support.",
-    cta: "Upgrade to Pro",
   },
 ];
 
-function checkoutErrorMessage(error: string, requiredEnvVar?: string) {
-  if (error === "missing_price_id" && requiredEnvVar) {
-    return `${requiredEnvVar} is not configured yet. Please contact support to upgrade.`;
-  }
-
-  if (error === "already_on_requested_plan") {
-    return "You are already on that plan.";
-  }
-
-  if (error === "active_subscription_exists") {
-    return "You already have an active subscription. Use Manage billing to change or cancel your plan.";
-  }
-
-  if (error === "stripe_not_configured") {
-    return "Stripe checkout is not configured yet. Please contact support to upgrade.";
-  }
-
-  return "Could not start checkout right now. Please try again or contact support.";
-}
-
 export default function PortalPlanUpgrade({
   email,
+  currentPlan = "basic",
+  subscriptionStatus = "none",
+  usePortalForPlanChanges = false,
+  canManageBilling = false,
 }: {
   email?: string | null;
+  currentPlan?: PlanSlug;
+  subscriptionStatus?: string | null;
+  usePortalForPlanChanges?: boolean;
+  canManageBilling?: boolean;
 }) {
   const earlyAccessMode =
     process.env["NEXT_PUBLIC_EARLY_ACCESS_MODE"] === "true";
@@ -56,6 +47,7 @@ export default function PortalPlanUpgrade({
   >("idle");
   const [loadingPlan, setLoadingPlan] = useState<PaidPlanSlug | null>(null);
   const [checkoutStatus, setCheckoutStatus] = useState("");
+  const [portalSuggested, setPortalSuggested] = useState(false);
 
   async function handleEarlyAccess() {
     if (!email) return;
@@ -90,11 +82,12 @@ export default function PortalPlanUpgrade({
 
       if (!res.ok || !data?.ok || !data?.url) {
         setCheckoutStatus(
-          checkoutErrorMessage(
+          getCheckoutErrorMessage(
             data?.error || "checkout_failed",
             data?.requiredEnvVar,
           ),
         );
+        setPortalSuggested(Boolean(data?.usePortal));
         setLoadingPlan(null);
         return;
       }
@@ -140,6 +133,13 @@ export default function PortalPlanUpgrade({
       <div className="grid gap-4 md:grid-cols-2">
         {upgradePlans.map((plan) => {
           const isLoading = loadingPlan === plan.slug;
+          const action = getBillingPlanAction({
+            plan: plan.slug,
+            currentPlan,
+            subscriptionStatus,
+            usePortalForPlanChanges,
+            canManageBilling,
+          });
 
           return (
             <div
@@ -155,21 +155,39 @@ export default function PortalPlanUpgrade({
               <p className="mt-3 text-sm leading-7 text-muted">
                 {plan.summary}
               </p>
-              <button
-                type="button"
-                onClick={() => startCheckout(plan.slug)}
-                disabled={Boolean(loadingPlan)}
-                className="button-primary mt-5"
-              >
-                {isLoading ? "Opening checkout..." : plan.cta}
-              </button>
+              {action.kind === "portal" ? (
+                <div className="mt-5">
+                  <ManageBillingButton
+                    label={action.label}
+                    className="button-primary"
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() =>
+                    action.kind === "checkout"
+                      ? startCheckout(plan.slug)
+                      : undefined
+                  }
+                  disabled={
+                    Boolean(loadingPlan) || action.kind !== "checkout"
+                  }
+                  className="button-primary mt-5"
+                >
+                  {isLoading ? "Opening checkout..." : action.label}
+                </button>
+              )}
             </div>
           );
         })}
       </div>
 
       {checkoutStatus ? (
-        <p className="text-sm text-muted">{checkoutStatus}</p>
+        <div className="space-y-3">
+          <p className="text-sm text-muted">{checkoutStatus}</p>
+          {portalSuggested && canManageBilling ? <ManageBillingButton /> : null}
+        </div>
       ) : null}
     </div>
   );

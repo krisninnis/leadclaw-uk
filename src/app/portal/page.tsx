@@ -365,7 +365,7 @@ export default async function PortalPage({
             issue that needs attention to avoid interruption.
           </p>
           <div className="mt-4">
-            <PortalPlanUpgrade email={user.email} />
+            <ManageBillingButton label="Fix payment in Manage billing" />
           </div>
         </div>
       )}
