@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import TrialCtaLink from "@/components/trial-cta-link";
@@ -9,6 +11,13 @@ const utm = "utm_source=x&utm_medium=social&utm_campaign=missed_call_video";
 const trialHref = `/free-trial?${utm}`;
 const demoHref = `/demo?${utm}`;
 const auditHref = `/free-audit?${utm}`;
+
+const demoVideoSrc = "/videos/leadclaw-social-demo.mp4";
+// Resolve at the server (build/render) so a missing file shows a clean
+// fallback CTA instead of rendering a broken player or 404-ing the asset.
+const hasDemoVideo = fs.existsSync(
+  path.join(process.cwd(), "public", "videos", "leadclaw-social-demo.mp4"),
+);
 
 export const metadata: Metadata = {
   title: "LeadClaw Social | Never Miss Another Lead",
@@ -102,6 +111,31 @@ export default function SocialLandingPage() {
               into lost customers. LeadClaw helps capture those enquiries before
               they disappear.
             </p>
+
+            {hasDemoVideo ? (
+              <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-black">
+                <video
+                  className="aspect-video w-full"
+                  controls
+                  playsInline
+                  preload="metadata"
+                >
+                  <source src={demoVideoSrc} type="video/mp4" />
+                  Your browser does not support embedded video. Use the links
+                  below to start a free trial or book a demo.
+                </video>
+              </div>
+            ) : (
+              <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface-2 p-6 text-center">
+                <p className="text-sm font-medium text-foreground">
+                  The demo video isn&rsquo;t available right now.
+                </p>
+                <p className="mt-1 text-sm text-muted">
+                  You can still start your free trial or book a demo below.
+                </p>
+              </div>
+            )}
+
             <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
               <TrialCtaLink
                 href={trialHref}
