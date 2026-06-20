@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildWidgetSnippet } from "@/lib/onboarding";
 import InstallSnippetCard from "@/components/install-snippet-card";
+import InstallStatusActions from "@/components/install-status-actions";
 import { SectionHeading } from "@/components/ui";
 import {
   canUseLeadClawProduct,
@@ -177,6 +178,11 @@ export default async function PortalInstallPage() {
     : "";
   const snippetReady = widgetSnippet.trim().length > 0;
   const widgetDetected = Boolean(portalContext?.widgetLastSeenAt);
+  const lastSeenMs = portalContext?.widgetLastSeenAt
+    ? new Date(portalContext.widgetLastSeenAt).getTime()
+    : 0;
+  const widgetDetectedRecently =
+    lastSeenMs > 0 && Date.now() - lastSeenMs < 15 * 60 * 1000;
 
   const widgetStatus = !hasWidgetAccess
     ? "Paused"
@@ -222,6 +228,8 @@ export default async function PortalInstallPage() {
           </div>
         </div>
 
+        <InstallStatusActions canSendTest={hasWidgetAccess} />
+
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-[22px] border border-border bg-white p-5">
             <p className="text-sm font-medium text-muted">Site</p>
@@ -236,7 +244,11 @@ export default async function PortalInstallPage() {
           <div className="rounded-[22px] border border-border bg-white p-5">
             <p className="text-sm font-medium text-muted">Widget detection</p>
             <p className="mt-2 text-base font-semibold text-foreground">
-              {widgetDetected ? "Detected" : "Not detected yet"}
+              {widgetDetectedRecently
+                ? "Detected recently"
+                : widgetDetected
+                  ? "Detected earlier"
+                  : "Not detected yet"}
             </p>
             <p className="mt-2 text-sm text-muted">
               Last seen:{" "}

@@ -193,6 +193,27 @@ export async function GET(req: NextRequest) {
   const SITE_STATUS = \`${safeSiteStatus}\`;
   const DEMO_MODE = ${isDemoMode ? "true" : "false"};
 
+  // Best-effort installation ping so the portal can confirm the widget is
+  // live. Fire-and-forget: never blocks rendering, only runs once per load,
+  // sends no PII, and stays silent for normal visitors.
+  if (!DEMO_MODE && !window.__leadclawPinged) {
+    window.__leadclawPinged = true;
+    try {
+      const pingDomain =
+        (window.location && window.location.hostname) || CLINIC_DOMAIN || "";
+      if (pingDomain) {
+        fetch(APP_URL + "/api/widget/ping", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          keepalive: true,
+          body: JSON.stringify({ token: TOKEN, domain: pingDomain }),
+        }).catch(() => {});
+      }
+    } catch (_pingError) {
+      /* ignore: ping is best-effort only */
+    }
+  }
+
   const state = {
     open: false,
     submitted: false,
