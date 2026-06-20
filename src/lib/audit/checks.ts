@@ -599,14 +599,14 @@ const AI_CHECKS: CheckDef[] = [
     weight: 2,
     severity: "high",
     run: (i) => {
-      const n = i.signals.jsonLdBlocks.length;
-      const types = [...new Set(i.signals.jsonLdTypes)];
+      const n = i.signals.structuredDataCount;
+      const types = [...new Set(i.signals.structuredDataTypes)];
       return {
         score: n === 0 ? 0 : n === 1 ? 0.7 : 1,
         detail:
           n === 0
-            ? "No JSON-LD structured data was found."
-            : `${n} JSON-LD block(s) found (${types.join(", ") || "untyped"}).`,
+            ? "No structured data (JSON-LD or microdata) was found."
+            : `${n} structured-data block(s) found (${types.join(", ") || "untyped"}).`,
         recommendation:
           n < 2
             ? "Structured data is how search engines and AI models reliably read your business details. Add JSON-LD markup (LocalBusiness, Service, FAQPage) so they describe you accurately."

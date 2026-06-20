@@ -25,6 +25,12 @@ export type ParsedSignals = {
   // Structured data / AI readiness
   jsonLdBlocks: string[];
   jsonLdTypes: string[];
+  // Microdata (schema.org itemtype) types — a secondary structured-data signal.
+  microdataTypes: string[];
+  // Combined structured-data presence: JSON-LD blocks + microdata (as one block).
+  structuredDataCount: number;
+  // Unique types across JSON-LD + microdata, for evidence/detail.
+  structuredDataTypes: string[];
   // Trust + conversion (text/link heuristics)
   hasContactLink: boolean;
   hasPrivacyLink: boolean;
@@ -153,7 +159,7 @@ export function parseHtml(html: string, finalUrl: string | null): ParsedSignals 
     .map((t) => firstMatch(t, /\bsrc=["']([^"']+)["']/i) || "(inline image)")
     .slice(0, 3);
 
-  // ---- Structured data (JSON-LD) ----
+  // ---- Structured data (JSON-LD + microdata) ----
   const jsonLdBlocks: string[] = [];
   const ldRe =
     /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
@@ -161,14 +167,60 @@ export function parseHtml(html: string, finalUrl: string | null): ParsedSignals 
   while ((lm = ldRe.exec(html)) !== null) {
     jsonLdBlocks.push(lm[1].trim());
   }
+
+  // Robustly collect @type values: handles string types, array types
+  // ("@type": ["LocalBusiness","Dentist"]), @graph wrappers, and nested nodes
+  // (e.g. FAQPage > mainEntity > Question). Falls back to a regex scan when a
+  // block is not valid JSON (trailing commas, JS-built markup, etc.).
+  const collectTypes = (node: unknown, out: string[]): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) collectTypes(item, out);
+      return;
+    }
+    if (node && typeof node === "object") {
+      const t = (node as Record<string, unknown>)["@type"];
+      if (typeof t === "string") out.push(t);
+      else if (Array.isArray(t)) {
+        for (const item of t) if (typeof item === "string") out.push(item);
+      }
+      for (const value of Object.values(node as Record<string, unknown>)) {
+        collectTypes(value, out);
+      }
+    }
+  };
   const jsonLdTypes: string[] = [];
   for (const block of jsonLdBlocks) {
-    const types = block.match(/"@type"\s*:\s*"([^"]+)"/g) || [];
-    for (const t of types) {
-      const v = t.match(/"@type"\s*:\s*"([^"]+)"/);
-      if (v && v[1]) jsonLdTypes.push(v[1]);
+    let parsed = false;
+    try {
+      collectTypes(JSON.parse(block), jsonLdTypes);
+      parsed = true;
+    } catch {
+      parsed = false;
+    }
+    if (!parsed) {
+      const matches = block.match(/"@type"\s*:\s*"([^"]+)"/g) || [];
+      for (const t of matches) {
+        const v = t.match(/"@type"\s*:\s*"([^"]+)"/);
+        if (v && v[1]) jsonLdTypes.push(v[1]);
+      }
     }
   }
+
+  // Microdata (schema.org) as a secondary structured-data signal: many older
+  // sites express structured data via itemscope/itemtype rather than JSON-LD.
+  const microdataTypes: string[] = [];
+  const microRe = /itemtype=["']https?:\/\/schema\.org\/([A-Za-z]+)["']/gi;
+  let mdm: RegExpExecArray | null;
+  while ((mdm = microRe.exec(html)) !== null) {
+    microdataTypes.push(mdm[1]);
+  }
+
+  // Combined structured-data presence: JSON-LD blocks plus microdata counted as
+  // a single additional block. Fixes "no structured data" false positives on
+  // sites that use microdata or array/@graph-typed JSON-LD.
+  const structuredDataCount =
+    jsonLdBlocks.length + (microdataTypes.length > 0 ? 1 : 0);
+  const structuredDataTypes = [...new Set([...jsonLdTypes, ...microdataTypes])];
 
   // ---- Forms / CTA ----
   const hasForm = /<form\b/i.test(html);
@@ -212,6 +264,9 @@ export function parseHtml(html: string, finalUrl: string | null): ParsedSignals 
     imagesMissingAltSample,
     jsonLdBlocks,
     jsonLdTypes,
+    microdataTypes,
+    structuredDataCount,
+    structuredDataTypes,
     hasContactLink,
     hasPrivacyLink,
     hasTermsLink,
