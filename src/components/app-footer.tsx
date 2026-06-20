@@ -91,9 +91,8 @@ export default function AppFooter() {
               </div>
             </div>
             <p className="mt-4 max-w-xs text-sm leading-7 text-muted">
-              AI receptionist and lead capture for UK service businesses -
-              answer every call and enquiry, capture the lead, and follow up
-              automatically.
+              AI receptionist software for UK service businesses - capture every
+              website enquiry, keep it in one inbox, and follow up automatically.
             </p>
           </div>
 

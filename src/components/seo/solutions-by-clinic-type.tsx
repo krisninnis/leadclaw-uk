@@ -39,12 +39,12 @@ export default function SolutionsByClinicType({
           By business type
         </p>
         <h2 className="mt-3 text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
-          Solutions by Clinic Type
+          Solutions by industry
         </h2>
         <p className="mt-4 text-base leading-7 text-muted md:text-lg">
-          See how LeadClaw answers calls and website enquiries, captures leads,
-          and keeps follow-up moving for your industry - from dental and
-          aesthetic clinics to physiotherapists, chiropractors, and other UK
+          See how LeadClaw captures website enquiries, keeps leads in one inbox,
+          and follows up automatically for your industry - from aesthetic and
+          dental clinics to physiotherapists, plumbers, agencies, and other UK
           service businesses.
         </p>
       </div>
