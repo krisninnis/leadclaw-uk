@@ -1,15 +1,30 @@
 -- Run in Supabase SQL editor
 create extension if not exists pgcrypto;
 
+-- Shared updated_at trigger function. Defined here (the baseline) so it exists
+-- before any migration that attaches an updated_at trigger. Several migrations
+-- redefine it idempotently; that is safe.
+create or replace function public.set_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 create table if not exists public.applications (
   id uuid primary key default gen_random_uuid(),
-  clinic_name text not null,
+  -- Nullability reflects production: only contact_name, email, agreed and
+  -- status are NOT NULL. contact_name NOT NULL is enforced by the intake route.
+  clinic_name text,
   contact_name text not null,
   email text not null,
-  phone text not null,
-  city text not null,
+  phone text,
+  city text,
   website text,
-  services text not null,
+  services text,
   lead_volume text,
   notes text,
   agreed boolean not null default false,
@@ -19,14 +34,23 @@ create table if not exists public.applications (
   waiver_accepted_at timestamptz,
   agreement_ip text,
   status text not null default 'new',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Billing linkage (production cols 19-20).
+  plan text,
+  stripe_customer_id text
 );
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   role text not null default 'client',
   clinic_name text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Contact detail columns (production cols 5-9).
+  name text,
+  phone text,
+  email text,
+  city text,
+  services text
 );
 
 create table if not exists public.client_messages (
@@ -75,7 +99,29 @@ create table if not exists public.leads (
   status text not null default 'new',
   notes text,
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  -- Lead-intelligence / normalisation / PECR / outreach field set
+  -- (production cols 14-33). last_contacted_at is timestamp WITHOUT tz in prod.
+  website_norm text,
+  company_name_norm text,
+  city_norm text,
+  name_norm text,
+  google_rating numeric,
+  review_count integer,
+  has_live_chat boolean,
+  has_contact_form boolean,
+  lead_score integer,
+  outreach_subject text,
+  outreach_message text,
+  outreach_angle text,
+  follow_up_stage integer default 0,
+  last_contacted_at timestamp without time zone,
+  pecr_classification text,
+  pecr_reason text,
+  company_number text,
+  pecr_classified_at timestamptz,
+  lead_quality_score integer,
+  lead_quality_reason text
 );
 
 create table if not exists public.outreach_events (
@@ -160,8 +206,14 @@ create table if not exists public.onboarding_clients (
 
 create table if not exists public.clinics (
   id uuid primary key default gen_random_uuid(),
-  name text,
+  name text not null,
+  -- Ownership + subscription state (production cols 3-5).
+  owner_user_id uuid,
+  subscription_status text not null default 'trial',
+  plan text not null default 'trial',
   created_at timestamptz not null default now(),
+  -- NOTE: updated_at is repo-only (not present in the production snapshot);
+  -- retained for the existing update trigger contract.
   updated_at timestamptz not null default now()
 );
 
@@ -182,12 +234,19 @@ create table if not exists public.widget_tokens (
   onboarding_site_id uuid not null references public.onboarding_sites(id) on delete cascade,
   token text not null unique,
   status text not null default 'active',
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  -- Last-seen telemetry (production cols 6-7).
+  last_seen_at timestamptz,
+  last_seen_domain text
 );
 
 create table if not exists public.enquiries (
     id uuid primary key default gen_random_uuid(),
     clinic_id uuid not null references public.clinics(id) on delete cascade,
+    -- conversation_id references the legacy conversations table in production;
+    -- kept here as a plain nullable uuid (no FK) to avoid depending on a legacy
+    -- structure.
+    conversation_id uuid,
     name text,
     email text,
     phone text,
@@ -195,7 +254,11 @@ create table if not exists public.enquiries (
     preferred_time text,
     status text not null default 'new',
     notes text,
-    created_at timestamptz not null default now()
+    created_at timestamptz not null default now(),
+    -- Auto-reply + follow-up lifecycle (production cols 12-14).
+    auto_reply_sent_at timestamptz,
+    follow_up_sent_at timestamptz,
+    follow_up_eligible boolean default true
   );
 
 create table if not exists public.onboarding_tasks (
@@ -451,3 +514,127 @@ create policy "service_role_only_early_access"
 alter table public.onboarding_clients add column if not exists notify_whatsapp text;
 alter table public.onboarding_clients add column if not exists notify_sms text;
 alter table public.onboarding_clients add column if not exists notify_channels text[] not null default array['email'];
+
+-- ===================================================================
+-- Production reconciliation (2026-06-20)
+-- Active production tables that were missing from this baseline. Shapes mirror
+-- PRODUCTION-COLUMNS.csv exactly. Also created additively by
+-- supabase/migrations/20260620101703_reconcile_production_schema_additive.sql.
+-- ===================================================================
+
+-- appointments: clinic appointment book + reminder / review lifecycle.
+-- Used by src/app/api/appointments/*.
+create table if not exists public.appointments (
+  id uuid primary key default gen_random_uuid(),
+  clinic_id uuid not null,
+  patient_name text not null,
+  patient_email text,
+  patient_phone text,
+  service text,
+  appointment_at timestamptz not null,
+  reminder_48h_sent_at timestamptz,
+  reminder_2h_sent_at timestamptz,
+  review_request_sent_at timestamptz,
+  reminder_eligible boolean default true,
+  review_eligible boolean default true,
+  status text default 'scheduled',
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- clinic_settings: one row per clinic (clinic_id is the primary key).
+-- Used by src/app/api/clinic-settings/route.ts and the review runner.
+create table if not exists public.clinic_settings (
+  clinic_id uuid primary key,
+  receptionist_prompt text not null default
+    'You are an AI receptionist for a UK beauty clinic. Be friendly, concise, and helpful.
+Your goal: collect name + contact + service + preferred time. If unsure, ask one question at a time.',
+  business_hours text default 'Mon-Fri 09:00-18:00',
+  services_json jsonb default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  google_review_url text,
+  review_requests_enabled boolean default true,
+  reminders_enabled boolean default true
+);
+
+-- outreach_log: append-only send log used by src/app/api/outreach/run/route.ts.
+create table if not exists public.outreach_log (
+  id uuid primary key default gen_random_uuid(),
+  email text not null,
+  business_name text,
+  subject text,
+  sent_at timestamptz default now(),
+  email_number integer default 1,
+  status text default 'sent',
+  classification text,
+  company_number text,
+  google_place_id text
+);
+
+-- ai_visibility_scans: derived AI-visibility scan per (user_id, website_url).
+-- Full definition (RLS, indexes, trigger) lives in
+-- supabase/migrations/20260620_add_ai_visibility_scans.sql. Repeated here so the
+-- baseline reflects the target state. NOTE: present in repo code + migrations
+-- but ABSENT from the current production snapshot (drift resolved by applying
+-- that migration to production — out of scope for this additive pass).
+create table if not exists public.ai_visibility_scans (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  website_url text not null,
+  status text not null default 'completed'
+    check (status in ('queued', 'running', 'completed', 'failed')),
+  error text,
+  visibility_score int not null default 0 check (visibility_score between 0 and 100),
+  content_score int not null default 0 check (content_score between 0 and 100),
+  authority_score int not null default 0 check (authority_score between 0 and 100),
+  citation_score int not null default 0 check (citation_score between 0 and 100),
+  schema_score int not null default 0 check (schema_score between 0 and 100),
+  recommendations jsonb not null default '[]'::jsonb,
+  meta jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table public.appointments        enable row level security;
+alter table public.clinic_settings      enable row level security;
+alter table public.outreach_log         enable row level security;
+alter table public.ai_visibility_scans  enable row level security;
+
+drop policy if exists "deny_appointments" on public.appointments;
+create policy "deny_appointments"
+  on public.appointments for all to authenticated
+  using (false) with check (false);
+
+drop policy if exists "deny_clinic_settings" on public.clinic_settings;
+create policy "deny_clinic_settings"
+  on public.clinic_settings for all to authenticated
+  using (false) with check (false);
+
+drop policy if exists "deny_outreach_log" on public.outreach_log;
+create policy "deny_outreach_log"
+  on public.outreach_log for all to authenticated
+  using (false) with check (false);
+
+-- ===================================================================
+-- LEGACY structures (documentation only — DO NOT use / DO NOT extend)
+-- These tables still exist in production from earlier product iterations
+-- (chat-widget era). They are intentionally NOT (re)created in this baseline.
+-- Recorded here so the drift is explicit:
+--   * classification_cache  (superseded by inline PECR classification on leads)
+--   * conversations         (legacy chat widget)
+--   * messages              (legacy chat widget)
+--   * visitors              (legacy chat widget)
+--   * subscribers           (superseded by newsletter_subscribers)
+--
+-- EXCLUDED operational backups (snapshots, never part of the target schema):
+--   * leads_backup_20260320
+--   * outreach_events_backup_20260320
+--
+-- Additional ACTIVE tables are defined in supabase/migrations/* rather than in
+-- this file and remain the source of truth there:
+--   agent_commands, billing_notifications, website_audits, lead_finder_configs,
+--   lead_finder_runs, landing_page_templates, landing_pages, landing_page_events,
+--   audit_leads, outreach_templates, outreach_queue, outreach_activity.
+-- ===================================================================

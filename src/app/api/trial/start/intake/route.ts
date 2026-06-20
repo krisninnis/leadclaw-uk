@@ -25,7 +25,11 @@ export async function POST(req: NextRequest) {
   }
 
   const clinicName = String(body?.clinicName || "").trim() || null;
-  const contactName = String(body?.contactName || "").trim() || null;
+  // Production requires applications.contact_name NOT NULL. Guarantee a
+  // non-null value: fall back to the clinic name, then the (already validated,
+  // always present) email so the insert can never violate the constraint.
+  const contactName =
+    String(body?.contactName || "").trim() || clinicName || email;
   const website = String(body?.website || "").trim() || null;
   const phone = String(body?.phone || "").trim() || null;
   const plan = String(body?.plan || "growth")
