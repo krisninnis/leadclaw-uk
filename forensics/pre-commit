@@ -1,0 +1,28 @@
+#!/bin/sh
+# LeadClaw corruption guard: reject any commit that stages a file containing a
+# NUL byte. Catches the trailing-NUL-pad corruption class before it is committed.
+# Install:  cp forensics/pre-commit .git/hooks/pre-commit   (then chmod +x on *nix)
+# Bypass (only if you are certain):  git commit --no-verify
+
+fail=0
+for f in $(git diff --cached --name-only --diff-filter=ACM); do
+  case "$f" in
+    *.png|*.jpg|*.jpeg|*.gif|*.webp|*.ico|*.pdf|*.zip|*.woff|*.woff2|*.ttf|*.eot|*.mp4|*.mov|*.wasm|*.gz|*.br) continue ;;
+  esac
+  full=$(git show ":$f" | wc -c)
+  stripped=$(git show ":$f" | tr -d '\000' | wc -c)
+  if [ "$full" -ne "$stripped" ]; then
+    printf '  REJECTED  %s NUL byte(s) in staged file: %s\n' "$((full - stripped))" "$f" >&2
+    fail=1
+  fi
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo '' >&2
+  echo 'Commit blocked: staged file(s) contain NUL bytes (file corruption).' >&2
+  echo 'Repair with:  pwsh -c ". ./forensics/Guard-FileIntegrity.ps1; Repair-AllTrailingNul"' >&2
+  echo 'then re-stage. NOTE: this hook does NOT catch mid-statement truncation' >&2
+  echo '(no NUL byte) -- keep tsc/next build in CI as the truncation backstop.' >&2
+  exit 1
+fi
+exit 0
