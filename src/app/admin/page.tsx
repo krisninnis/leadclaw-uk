@@ -11,6 +11,7 @@ import LeadsTable from "@/components/leads-table";
 import LeadCommandCenter from "@/components/lead-command-center";
 import OpsActivityLog from "@/components/ops-activity-log";
 import AdminSection from "@/components/admin-section";
+import CommandCentre from "@/components/admin/command-centre";
 
 type AppRow = {
   id?: string;
@@ -413,6 +414,8 @@ export default async function AdminPage() {
           </div>
         </div>
       </section>
+
+      <CommandCentre />
 
       <div className="rounded-[24px] border bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-xl font-semibold text-foreground">
