@@ -37,3 +37,8 @@ coverage
 *.tar
 *.gz
 .vercel
+
+# build info / python caches
+*.tsbuildinfo
+__pycache__/
+*.pyc

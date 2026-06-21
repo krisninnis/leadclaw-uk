@@ -5,7 +5,10 @@ import { createClient } from "@/lib/supabase/server";
 import { Badge, SectionHeading, StatCard } from "@/components/ui";
 import { getLatestAudit } from "@/lib/audit/store";
 import { getLatestScan, getScanHistory } from "@/lib/visibility/store";
-import { VISIBILITY_CATEGORY_LABELS } from "@/lib/visibility/types";
+import { VISIBILITY_CATEGORY_LABELS, type VisibilityScores } from "@/lib/visibility/types";
+import { listCompetitorsWithLatestScans } from "@/lib/visibility/competitors-store";
+import { computeBenchmark } from "@/lib/visibility/competitor-benchmark";
+import { MAX_COMPETITORS } from "@/lib/visibility/competitors-types";
 import AuditScoreRing from "@/components/audit/audit-score-ring";
 import CategoryScoreCard from "@/components/audit/category-score-card";
 import RunVisibilityForm from "@/components/visibility/run-visibility-form";
@@ -13,7 +16,7 @@ import VisibilityRecommendationsList from "@/components/visibility/visibility-re
 import VisibilityCategoryBreakdown from "@/components/visibility/visibility-category-breakdown";
 import VisibilityTrend from "@/components/visibility/visibility-trend";
 import ProviderCoverage from "@/components/visibility/provider-coverage";
-import CompetitorPlaceholder from "@/components/visibility/competitor-placeholder";
+import CompetitorBenchmark from "@/components/visibility/competitor-benchmark";
 import VisibilityHistoryList from "@/components/visibility/visibility-history-list";
 import AuditScopeNotice from "@/components/audit/audit-scope-notice";
 
@@ -32,14 +35,33 @@ export default async function PortalVisibilityPage() {
 
   if (!user) redirect("/login?next=/portal/visibility");
 
-  const [latest, history, latestAudit] = await Promise.all([
+  const [latest, history, latestAudit, competitors] = await Promise.all([
     getLatestScan(user.id),
     getScanHistory(user.id, 10),
     getLatestAudit(user.id),
+    listCompetitorsWithLatestScans(user.id),
   ]);
 
   const hasAudit = Boolean(latestAudit);
   const categories = latest?.meta?.breakdown?.categories || [];
+
+  const yourScores: VisibilityScores | null = latest
+    ? {
+        visibility_score: latest.visibility_score,
+        content_score: latest.content_score,
+        authority_score: latest.authority_score,
+        citation_score: latest.citation_score,
+        schema_score: latest.schema_score,
+      }
+    : null;
+
+  const benchmark =
+    latest && yourScores
+      ? computeBenchmark(
+          { websiteUrl: latest.website_url, scores: yourScores },
+          competitors,
+        )
+      : null;
 
   return (
     <div className="space-y-6">
@@ -176,7 +198,7 @@ export default async function PortalVisibilityPage() {
         </div>
       </section>
 
-      {/* Competitors (placeholder) */}
+      {/* Competitors */}
       <section className="card-premium p-6 md:p-8">
         <SectionHeading
           eyebrow="Competitors"
@@ -185,7 +207,15 @@ export default async function PortalVisibilityPage() {
           maxWidth="md"
         />
         <div className="mt-6">
-          <CompetitorPlaceholder />
+          <CompetitorBenchmark
+            hasReadiness={Boolean(latest)}
+            yourWebsiteUrl={latest?.website_url ?? null}
+            yourScores={yourScores}
+            yourCheckedAt={latest?.created_at ?? null}
+            competitors={competitors}
+            benchmark={benchmark}
+            max={MAX_COMPETITORS}
+          />
         </div>
       </section>
 

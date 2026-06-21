@@ -140,6 +140,63 @@ export function generateDraftFromTemplate(
   };
 }
 
+// Editable list-style sections that support a per-section "Use template
+// defaults" control in the editor. (h1/subheading/seo are single fields and are
+// covered by the full Generate draft action.)
+export type LandingSectionKey =
+  | "pains"
+  | "benefits"
+  | "features"
+  | "useCases"
+  | "faq"
+  | "services";
+
+export const LANDING_SECTION_KEYS: LandingSectionKey[] = [
+  "pains",
+  "benefits",
+  "features",
+  "useCases",
+  "faq",
+  "services",
+];
+
+export const LANDING_SECTION_LABELS: Record<LandingSectionKey, string> = {
+  pains: "Pain points",
+  benefits: "Benefits",
+  features: "Features / steps",
+  useCases: "Use cases",
+  faq: "FAQs",
+  services: "Services",
+};
+
+export type SectionDefaults = {
+  pains: string[];
+  benefits: string[];
+  features: string[];
+  useCases: string[];
+  faq: LandingFaqItem[];
+  services: string[];
+};
+
+// Deterministically produce just the list-style section defaults for a city /
+// region. Reuses generateDraftFromTemplate so a section button fills exactly
+// what Generate draft would for that section — never an address, phone, rating
+// or business name.
+export function generateSectionDefaults(
+  def: LandingTemplateDef,
+  input: GenerateDraftInput,
+): SectionDefaults {
+  const draft = generateDraftFromTemplate(def, input);
+  return {
+    pains: draft.content.pains,
+    benefits: draft.content.benefits,
+    features: draft.content.features,
+    useCases: draft.content.useCases,
+    faq: draft.content.faq.map((item) => ({ ...item })),
+    services: draft.services,
+  };
+}
+
 export type TemplateSummary = {
   pains: number;
   benefits: number;

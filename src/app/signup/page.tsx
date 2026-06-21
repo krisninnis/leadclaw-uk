@@ -5,8 +5,11 @@ import { FormEvent, Suspense, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { tryCreateClient } from "@/lib/supabase/client";
 import { queueGaEvent, trackGaEvent } from "@/lib/ga";
+import { track, emailDomain } from "@/lib/analytics";
 import GoogleIcon from "@/components/auth/google-icon";
 import AccountFlowNotice from "@/components/auth/account-flow-notice";
+import LegalConsentCheckboxes from "@/components/auth/legal-consent-checkboxes";
+import { TERMS_VERSION, PRIVACY_VERSION } from "@/lib/legal-consent";
 
 type PlanSlug = "basic";
 
@@ -30,16 +33,44 @@ function SignupContent() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  // Legal acceptance (mandatory) + marketing consent (optional, unticked).
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
+
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [magicLinkLoading, setMagicLinkLoading] = useState(false);
   const [status, setStatus] = useState("");
+
+  const legalAccepted = termsAccepted && privacyAccepted;
+
+  // Consent snapshot stored in Supabase user_metadata at signup (password +
+  // magic-link flows). Kept in sync with /api/account/consent at onboarding.
+  function consentMetadata() {
+    const now = new Date().toISOString();
+    return {
+      accepted_terms_at: now,
+      terms_version: TERMS_VERSION,
+      accepted_privacy_at: now,
+      privacy_version: PRIVACY_VERSION,
+      marketing_consent: marketingConsent,
+      marketing_consent_updated_at: now,
+    };
+  }
 
   function buildNextUrl() {
     return `/portal?startBasic=1&setup=ready&plan=${plan}`;
   }
 
   async function signInWithGoogle() {
+    if (!legalAccepted) {
+      setStatus(
+        "Please agree to the Terms of Service and Privacy Policy to continue.",
+      );
+      return;
+    }
+
     setGoogleLoading(true);
     setPasswordLoading(false);
     setMagicLinkLoading(false);
@@ -75,6 +106,7 @@ function SignupContent() {
         { dedupeKey: "signup_started_basic_google" },
       );
 
+      track("signup_started", { method: "google", plan, route: "/signup" });
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -100,6 +132,13 @@ function SignupContent() {
 
   async function signUpWithPassword(e: FormEvent) {
     e.preventDefault();
+
+    if (!legalAccepted) {
+      setStatus(
+        "Please agree to the Terms of Service and Privacy Policy to continue.",
+      );
+      return;
+    }
 
     setPasswordLoading(true);
     setGoogleLoading(false);
@@ -154,6 +193,7 @@ function SignupContent() {
         route: "/signup",
       });
 
+      track("signup_started", { method: "password", plan, route: "/signup" });
       const { error } = await supabase.auth.signUp({
         email: normalizedEmail,
         password,
@@ -164,6 +204,7 @@ function SignupContent() {
           data: {
             name: trimmedName,
             plan,
+            ...consentMetadata(),
           },
         },
       });
@@ -177,6 +218,12 @@ function SignupContent() {
       setStatus(
         "Account created. Check your email to confirm your address and start your free Basic plan.",
       );
+      track("signup_completed", {
+        method: "password",
+        plan,
+        route: "/signup",
+        email_domain: emailDomain(normalizedEmail),
+      });
       trackGaEvent(
         "signup_completed",
         {
@@ -203,6 +250,13 @@ function SignupContent() {
   }
 
   async function sendMagicLink() {
+    if (!legalAccepted) {
+      setStatus(
+        "Please agree to the Terms of Service and Privacy Policy to continue.",
+      );
+      return;
+    }
+
     setMagicLinkLoading(true);
     setGoogleLoading(false);
     setPasswordLoading(false);
@@ -245,6 +299,7 @@ function SignupContent() {
         { dedupeKey: "signup_started_basic_magic_link" },
       );
 
+      track("signup_started", { method: "magic_link", plan, route: "/signup" });
       const { error } = await supabase.auth.signInWithOtp({
         email: normalizedEmail,
         options: {
@@ -254,6 +309,7 @@ function SignupContent() {
           data: {
             name: name.trim(),
             plan,
+            ...consentMetadata(),
           },
         },
       });
@@ -297,10 +353,32 @@ function SignupContent() {
         </div>
 
         <div className="rounded-3xl border border-border bg-white p-6 shadow-sm space-y-4">
+          <LegalConsentCheckboxes
+            termsAccepted={termsAccepted}
+            privacyAccepted={privacyAccepted}
+            marketingConsent={marketingConsent}
+            onTermsChange={(value) => {
+              setTermsAccepted(value);
+              if (value)
+                track("legal_terms_accepted", { route: "/signup", document: "terms" });
+            }}
+            onPrivacyChange={setPrivacyAccepted}
+            onMarketingChange={(value) => {
+              setMarketingConsent(value);
+              track("marketing_consent_changed", { route: "/signup", consent: value });
+            }}
+            disabled={googleLoading || passwordLoading || magicLinkLoading}
+          />
+
           <button
             type="button"
             onClick={signInWithGoogle}
-            disabled={googleLoading || passwordLoading || magicLinkLoading}
+            disabled={
+              googleLoading ||
+              passwordLoading ||
+              magicLinkLoading ||
+              !legalAccepted
+            }
             className="button-secondary w-full"
           >
             <GoogleIcon className="shrink-0" />
@@ -352,7 +430,12 @@ function SignupContent() {
             <button
               type="submit"
               className="button-primary w-full"
-              disabled={googleLoading || passwordLoading || magicLinkLoading}
+              disabled={
+                googleLoading ||
+                passwordLoading ||
+                magicLinkLoading ||
+                !legalAccepted
+              }
             >
               {passwordLoading ? "Creating account..." : "Create free account"}
             </button>
@@ -361,7 +444,12 @@ function SignupContent() {
           <button
             type="button"
             onClick={sendMagicLink}
-            disabled={googleLoading || passwordLoading || magicLinkLoading}
+            disabled={
+              googleLoading ||
+              passwordLoading ||
+              magicLinkLoading ||
+              !legalAccepted
+            }
             className="w-full text-sm underline text-center text-muted"
           >
             {magicLinkLoading

@@ -1,0 +1,438 @@
+table_name,ordinal_position,column_name,data_type,udt_name,is_nullable,column_default
+agent_commands,1,id,uuid,uuid,NO,gen_random_uuid()
+agent_commands,2,command,text,text,NO,null
+agent_commands,3,repo,text,text,NO,'leadclaw-uk'::text
+agent_commands,4,status,text,text,NO,'received'::text
+agent_commands,5,result,jsonb,jsonb,YES,null
+agent_commands,6,created_at,timestamp with time zone,timestamptz,NO,now()
+applications,1,id,uuid,uuid,NO,gen_random_uuid()
+applications,2,clinic_name,text,text,YES,null
+applications,3,contact_name,text,text,NO,null
+applications,4,email,text,text,NO,null
+applications,5,phone,text,text,YES,null
+applications,6,city,text,text,YES,null
+applications,7,website,text,text,YES,null
+applications,8,services,text,text,YES,null
+applications,9,lead_volume,text,text,YES,null
+applications,10,notes,text,text,YES,null
+applications,11,agreed,boolean,bool,NO,false
+applications,12,status,text,text,NO,'new'::text
+applications,13,created_at,timestamp with time zone,timestamptz,NO,now()
+applications,14,terms_version,text,text,YES,null
+applications,15,terms_accepted_at,timestamp with time zone,timestamptz,YES,null
+applications,16,privacy_accepted_at,timestamp with time zone,timestamptz,YES,null
+applications,17,waiver_accepted_at,timestamp with time zone,timestamptz,YES,null
+applications,18,agreement_ip,text,text,YES,null
+applications,19,plan,text,text,YES,null
+applications,20,stripe_customer_id,text,text,YES,null
+appointments,1,id,uuid,uuid,NO,gen_random_uuid()
+appointments,2,clinic_id,uuid,uuid,NO,null
+appointments,3,patient_name,text,text,NO,null
+appointments,4,patient_email,text,text,YES,null
+appointments,5,patient_phone,text,text,YES,null
+appointments,6,service,text,text,YES,null
+appointments,7,appointment_at,timestamp with time zone,timestamptz,NO,null
+appointments,8,reminder_48h_sent_at,timestamp with time zone,timestamptz,YES,null
+appointments,9,reminder_2h_sent_at,timestamp with time zone,timestamptz,YES,null
+appointments,10,review_request_sent_at,timestamp with time zone,timestamptz,YES,null
+appointments,11,reminder_eligible,boolean,bool,YES,true
+appointments,12,review_eligible,boolean,bool,YES,true
+appointments,13,status,text,text,YES,'scheduled'::text
+appointments,14,notes,text,text,YES,null
+appointments,15,created_at,timestamp with time zone,timestamptz,YES,now()
+appointments,16,updated_at,timestamp with time zone,timestamptz,YES,now()
+audit_leads,1,id,uuid,uuid,NO,gen_random_uuid()
+audit_leads,2,created_at,timestamp with time zone,timestamptz,NO,now()
+audit_leads,3,name,text,text,NO,null
+audit_leads,4,email,text,text,NO,null
+audit_leads,5,website_url,text,text,NO,null
+audit_leads,6,audit_score,integer,int4,NO,null
+audit_leads,7,audit_summary,text,text,NO,null
+audit_leads,8,source,text,text,NO,'free_audit'::text
+audit_leads,9,category_scores,jsonb,jsonb,NO,'{}'::jsonb
+audit_leads,10,top_recommendations,jsonb,jsonb,NO,'[]'::jsonb
+audit_leads,11,report_context,jsonb,jsonb,NO,'{}'::jsonb
+audit_leads,12,consent,boolean,bool,NO,false
+audit_leads,13,consent_text,text,text,YES,null
+audit_leads,14,consent_version,text,text,YES,null
+audit_leads,15,consent_captured_at,timestamp with time zone,timestamptz,YES,null
+billing_notifications,1,id,uuid,uuid,NO,gen_random_uuid()
+billing_notifications,2,subscription_id,uuid,uuid,NO,null
+billing_notifications,3,email,text,text,NO,null
+billing_notifications,4,stage,text,text,NO,null
+billing_notifications,5,status,text,text,NO,null
+billing_notifications,6,error,text,text,YES,null
+billing_notifications,7,created_at,timestamp with time zone,timestamptz,NO,now()
+classification_cache,1,id,uuid,uuid,NO,gen_random_uuid()
+classification_cache,2,business_name,text,text,NO,null
+classification_cache,3,subscriber_type,text,text,NO,null
+classification_cache,4,confidence,double precision,float8,YES,0.0
+classification_cache,5,company_name_matched,text,text,YES,null
+classification_cache,6,company_number,text,text,YES,null
+classification_cache,7,company_status,text,text,YES,null
+classification_cache,8,company_type,text,text,YES,null
+classification_cache,9,reason,text,text,YES,null
+classification_cache,10,classified_at,timestamp with time zone,timestamptz,YES,now()
+classification_cache,11,expires_at,timestamp with time zone,timestamptz,YES,(now() + '30 days'::interval)
+client_messages,1,id,uuid,uuid,NO,gen_random_uuid()
+client_messages,2,user_id,uuid,uuid,NO,null
+client_messages,3,sender,text,text,NO,null
+client_messages,4,message,text,text,NO,null
+client_messages,5,created_at,timestamp with time zone,timestamptz,NO,now()
+clinic_settings,1,clinic_id,uuid,uuid,NO,null
+clinic_settings,2,receptionist_prompt,text,text,NO,"'You are an AI receptionist for a UK beauty clinic. Be friendly, concise, and helpful.
+Your goal: collect name + contact + service + preferred time. If unsure, ask one question at a time.'::text"
+clinic_settings,3,business_hours,text,text,YES,'Mon-Fri 09:00-18:00'::text
+clinic_settings,4,services_json,jsonb,jsonb,YES,'[]'::jsonb
+clinic_settings,5,created_at,timestamp with time zone,timestamptz,NO,now()
+clinic_settings,6,updated_at,timestamp with time zone,timestamptz,NO,now()
+clinic_settings,7,google_review_url,text,text,YES,null
+clinic_settings,8,review_requests_enabled,boolean,bool,YES,true
+clinic_settings,9,reminders_enabled,boolean,bool,YES,true
+clinics,1,id,uuid,uuid,NO,gen_random_uuid()
+clinics,2,name,text,text,NO,null
+clinics,3,owner_user_id,uuid,uuid,YES,null
+clinics,4,subscription_status,text,text,NO,'trial'::text
+clinics,5,plan,text,text,NO,'trial'::text
+clinics,6,created_at,timestamp with time zone,timestamptz,NO,now()
+conversations,1,id,uuid,uuid,NO,gen_random_uuid()
+conversations,2,clinic_id,uuid,uuid,NO,null
+conversations,3,visitor_id,uuid,uuid,YES,null
+conversations,4,status,text,text,NO,'open'::text
+conversations,5,created_at,timestamp with time zone,timestamptz,NO,now()
+early_access_signups,1,id,uuid,uuid,NO,gen_random_uuid()
+early_access_signups,2,email,text,text,NO,null
+early_access_signups,3,requested_plan,text,text,NO,'growth'::text
+early_access_signups,4,source,text,text,NO,'pricing'::text
+early_access_signups,5,created_at,timestamp with time zone,timestamptz,NO,now()
+email_suppressions,1,id,uuid,uuid,NO,gen_random_uuid()
+email_suppressions,2,email,text,text,NO,null
+email_suppressions,3,reason,text,text,YES,null
+email_suppressions,4,source,text,text,YES,null
+email_suppressions,5,suppressed_at,timestamp with time zone,timestamptz,NO,now()
+enquiries,1,id,uuid,uuid,NO,gen_random_uuid()
+enquiries,2,clinic_id,uuid,uuid,NO,null
+enquiries,3,conversation_id,uuid,uuid,YES,null
+enquiries,4,name,text,text,YES,null
+enquiries,5,phone,text,text,YES,null
+enquiries,6,email,text,text,YES,null
+enquiries,7,service,text,text,YES,null
+enquiries,8,preferred_time,text,text,YES,null
+enquiries,9,status,text,text,NO,'new'::text
+enquiries,10,created_at,timestamp with time zone,timestamptz,NO,now()
+enquiries,11,notes,text,text,YES,null
+enquiries,12,auto_reply_sent_at,timestamp with time zone,timestamptz,YES,null
+enquiries,13,follow_up_sent_at,timestamp with time zone,timestamptz,YES,null
+enquiries,14,follow_up_eligible,boolean,bool,YES,true
+landing_page_events,1,id,uuid,uuid,NO,gen_random_uuid()
+landing_page_events,2,landing_page_id,uuid,uuid,NO,null
+landing_page_events,3,event_type,text,text,NO,null
+landing_page_events,4,context,jsonb,jsonb,NO,'{}'::jsonb
+landing_page_events,5,created_at,timestamp with time zone,timestamptz,NO,now()
+landing_page_templates,1,id,uuid,uuid,NO,gen_random_uuid()
+landing_page_templates,2,key,text,text,NO,null
+landing_page_templates,3,name,text,text,NO,null
+landing_page_templates,4,description,text,text,YES,null
+landing_page_templates,5,default_content,jsonb,jsonb,NO,'{}'::jsonb
+landing_page_templates,6,schema_types,ARRAY,_text,NO,"ARRAY['LocalBusiness'::text, 'Service'::text, 'FAQPage'::text]"
+landing_page_templates,7,status,text,text,NO,'active'::text
+landing_page_templates,8,created_at,timestamp with time zone,timestamptz,NO,now()
+landing_page_templates,9,updated_at,timestamp with time zone,timestamptz,NO,now()
+landing_pages,1,id,uuid,uuid,NO,gen_random_uuid()
+landing_pages,2,slug,text,text,NO,null
+landing_pages,3,template_id,uuid,uuid,YES,null
+landing_pages,4,created_by,uuid,uuid,YES,null
+landing_pages,5,updated_by,uuid,uuid,YES,null
+landing_pages,6,status,text,text,NO,'draft'::text
+landing_pages,7,niche,text,text,YES,null
+landing_pages,8,city,text,text,YES,null
+landing_pages,9,region,text,text,YES,null
+landing_pages,10,country,text,text,NO,'GB'::text
+landing_pages,11,seo_title,text,text,YES,null
+landing_pages,12,seo_description,text,text,YES,null
+landing_pages,13,canonical_path,text,text,YES,null
+landing_pages,14,og_image_path,text,text,YES,null
+landing_pages,15,noindex,boolean,bool,NO,false
+landing_pages,16,content,jsonb,jsonb,NO,'{}'::jsonb
+landing_pages,17,business_schema,jsonb,jsonb,NO,'{}'::jsonb
+landing_pages,18,meta,jsonb,jsonb,NO,'{}'::jsonb
+landing_pages,19,published_at,timestamp with time zone,timestamptz,YES,null
+landing_pages,20,created_at,timestamp with time zone,timestamptz,NO,now()
+landing_pages,21,updated_at,timestamp with time zone,timestamptz,NO,now()
+lead_finder_configs,1,id,uuid,uuid,NO,gen_random_uuid()
+lead_finder_configs,2,name,text,text,NO,'Default Lead Finder'::text
+lead_finder_configs,3,niche_mode,text,text,NO,null
+lead_finder_configs,4,niches,ARRAY,_text,NO,'{}'::text[]
+lead_finder_configs,5,locations,ARRAY,_text,NO,'{}'::text[]
+lead_finder_configs,6,lead_limit,integer,int4,NO,25
+lead_finder_configs,7,discover_emails,boolean,bool,NO,true
+lead_finder_configs,8,email_discovery_max_pages,integer,int4,NO,7
+lead_finder_configs,9,dry_run,boolean,bool,NO,true
+lead_finder_configs,10,schedule_enabled,boolean,bool,NO,false
+lead_finder_configs,11,run_time_local,time without time zone,time,NO,'09:00:00'::time without time zone
+lead_finder_configs,12,timezone,text,text,NO,'Europe/London'::text
+lead_finder_configs,13,created_by,uuid,uuid,YES,null
+lead_finder_configs,14,created_at,timestamp with time zone,timestamptz,NO,now()
+lead_finder_configs,15,updated_at,timestamp with time zone,timestamptz,NO,now()
+lead_finder_runs,1,id,uuid,uuid,NO,gen_random_uuid()
+lead_finder_runs,2,config_id,uuid,uuid,YES,null
+lead_finder_runs,3,status,text,text,NO,'queued'::text
+lead_finder_runs,4,trigger_source,text,text,NO,'manual'::text
+lead_finder_runs,5,dry_run,boolean,bool,NO,true
+lead_finder_runs,6,config_snapshot,jsonb,jsonb,NO,'{}'::jsonb
+lead_finder_runs,7,summary,jsonb,jsonb,NO,'{}'::jsonb
+lead_finder_runs,8,stdout,text,text,YES,null
+lead_finder_runs,9,stderr,text,text,YES,null
+lead_finder_runs,10,exit_code,integer,int4,YES,null
+lead_finder_runs,11,error,text,text,YES,null
+lead_finder_runs,12,started_at,timestamp with time zone,timestamptz,NO,now()
+lead_finder_runs,13,completed_at,timestamp with time zone,timestamptz,YES,null
+lead_finder_runs,14,created_by,uuid,uuid,YES,null
+lead_finder_runs,15,created_at,timestamp with time zone,timestamptz,NO,now()
+lead_finder_runs,16,execution_mode,text,text,YES,null
+lead_finder_runs,17,external_run_id,text,text,YES,null
+lead_finder_runs,18,external_url,text,text,YES,null
+lead_finder_runs,19,queued_at,timestamp with time zone,timestamptz,YES,null
+leads,1,id,uuid,uuid,NO,gen_random_uuid()
+leads,2,niche,text,text,NO,null
+leads,3,company_name,text,text,NO,null
+leads,4,website,text,text,YES,null
+leads,5,contact_email,text,text,YES,null
+leads,6,contact_phone,text,text,YES,null
+leads,7,city,text,text,YES,null
+leads,8,source,text,text,NO,null
+leads,9,score,integer,int4,NO,0
+leads,10,status,text,text,NO,'new'::text
+leads,11,notes,text,text,YES,null
+leads,12,created_at,timestamp with time zone,timestamptz,NO,now()
+leads,13,updated_at,timestamp with time zone,timestamptz,NO,now()
+leads,14,website_norm,text,text,YES,null
+leads,15,company_name_norm,text,text,YES,null
+leads,16,city_norm,text,text,YES,null
+leads,17,name_norm,text,text,YES,null
+leads,18,google_rating,numeric,numeric,YES,null
+leads,19,review_count,integer,int4,YES,null
+leads,20,has_live_chat,boolean,bool,YES,null
+leads,21,has_contact_form,boolean,bool,YES,null
+leads,22,lead_score,integer,int4,YES,null
+leads,23,outreach_subject,text,text,YES,null
+leads,24,outreach_message,text,text,YES,null
+leads,25,outreach_angle,text,text,YES,null
+leads,26,follow_up_stage,integer,int4,YES,0
+leads,27,last_contacted_at,timestamp without time zone,timestamp,YES,null
+leads,28,pecr_classification,text,text,YES,null
+leads,29,pecr_reason,text,text,YES,null
+leads,30,company_number,text,text,YES,null
+leads,31,pecr_classified_at,timestamp with time zone,timestamptz,YES,null
+leads,32,lead_quality_score,integer,int4,YES,null
+leads,33,lead_quality_reason,text,text,YES,null
+leads_backup_20260320,1,id,uuid,uuid,YES,null
+leads_backup_20260320,2,niche,text,text,YES,null
+leads_backup_20260320,3,company_name,text,text,YES,null
+leads_backup_20260320,4,website,text,text,YES,null
+leads_backup_20260320,5,contact_email,text,text,YES,null
+leads_backup_20260320,6,contact_phone,text,text,YES,null
+leads_backup_20260320,7,city,text,text,YES,null
+leads_backup_20260320,8,source,text,text,YES,null
+leads_backup_20260320,9,score,integer,int4,YES,null
+leads_backup_20260320,10,status,text,text,YES,null
+leads_backup_20260320,11,notes,text,text,YES,null
+leads_backup_20260320,12,created_at,timestamp with time zone,timestamptz,YES,null
+leads_backup_20260320,13,updated_at,timestamp with time zone,timestamptz,YES,null
+leads_backup_20260320,14,website_norm,text,text,YES,null
+leads_backup_20260320,15,company_name_norm,text,text,YES,null
+leads_backup_20260320,16,city_norm,text,text,YES,null
+leads_backup_20260320,17,name_norm,text,text,YES,null
+leads_backup_20260320,18,google_rating,numeric,numeric,YES,null
+leads_backup_20260320,19,review_count,integer,int4,YES,null
+leads_backup_20260320,20,has_live_chat,boolean,bool,YES,null
+leads_backup_20260320,21,has_contact_form,boolean,bool,YES,null
+leads_backup_20260320,22,lead_score,integer,int4,YES,null
+leads_backup_20260320,23,outreach_subject,text,text,YES,null
+leads_backup_20260320,24,outreach_message,text,text,YES,null
+leads_backup_20260320,25,outreach_angle,text,text,YES,null
+leads_backup_20260320,26,follow_up_stage,integer,int4,YES,null
+leads_backup_20260320,27,last_contacted_at,timestamp without time zone,timestamp,YES,null
+messages,1,id,uuid,uuid,NO,gen_random_uuid()
+messages,2,conversation_id,uuid,uuid,NO,null
+messages,3,sender,text,text,NO,null
+messages,4,content,text,text,NO,null
+messages,5,created_at,timestamp with time zone,timestamptz,NO,now()
+newsletter_issues,1,id,uuid,uuid,NO,gen_random_uuid()
+newsletter_issues,2,subject,text,text,NO,null
+newsletter_issues,3,content_markdown,text,text,NO,null
+newsletter_issues,4,status,text,text,NO,'draft'::text
+newsletter_issues,5,sent_at,timestamp with time zone,timestamptz,YES,null
+newsletter_issues,6,created_at,timestamp with time zone,timestamptz,NO,now()
+newsletter_subscribers,1,id,uuid,uuid,NO,gen_random_uuid()
+newsletter_subscribers,2,email,text,text,NO,null
+newsletter_subscribers,3,name,text,text,YES,null
+newsletter_subscribers,4,source,text,text,NO,'website'::text
+newsletter_subscribers,5,status,text,text,NO,'active'::text
+newsletter_subscribers,6,created_at,timestamp with time zone,timestamptz,NO,now()
+onboarding_clients,1,id,uuid,uuid,NO,gen_random_uuid()
+onboarding_clients,2,client_name,text,text,NO,null
+onboarding_clients,3,business_name,text,text,YES,null
+onboarding_clients,4,contact_email,text,text,YES,null
+onboarding_clients,5,status,text,text,NO,'new'::text
+onboarding_clients,6,created_at,timestamp with time zone,timestamptz,NO,now()
+onboarding_clients,7,updated_at,timestamp with time zone,timestamptz,NO,now()
+onboarding_clients,8,notify_whatsapp,text,text,YES,null
+onboarding_clients,9,notify_sms,text,text,YES,null
+onboarding_clients,10,notify_channels,ARRAY,_text,NO,ARRAY['email'::text]
+onboarding_reports,1,id,uuid,uuid,NO,gen_random_uuid()
+onboarding_reports,2,onboarding_site_id,uuid,uuid,NO,null
+onboarding_reports,3,report_type,text,text,NO,null
+onboarding_reports,4,content,jsonb,jsonb,YES,null
+onboarding_reports,5,created_at,timestamp with time zone,timestamptz,NO,now()
+onboarding_sites,1,id,uuid,uuid,NO,gen_random_uuid()
+onboarding_sites,2,onboarding_client_id,uuid,uuid,NO,null
+onboarding_sites,3,domain,text,text,NO,null
+onboarding_sites,4,platform,text,text,NO,null
+onboarding_sites,5,settings,jsonb,jsonb,YES,null
+onboarding_sites,6,status,text,text,NO,'pending_install'::text
+onboarding_sites,7,created_at,timestamp with time zone,timestamptz,NO,now()
+onboarding_sites,8,updated_at,timestamp with time zone,timestamptz,NO,now()
+onboarding_sites,9,clinic_id,uuid,uuid,YES,null
+onboarding_tasks,1,id,uuid,uuid,NO,gen_random_uuid()
+onboarding_tasks,2,onboarding_site_id,uuid,uuid,NO,null
+onboarding_tasks,3,task_type,text,text,NO,null
+onboarding_tasks,4,sequence,integer,int4,NO,1
+onboarding_tasks,5,status,text,text,NO,'queued'::text
+onboarding_tasks,6,error,text,text,YES,null
+onboarding_tasks,7,completed_at,timestamp with time zone,timestamptz,YES,null
+onboarding_tasks,8,created_at,timestamp with time zone,timestamptz,NO,now()
+outreach_activity,1,id,uuid,uuid,NO,gen_random_uuid()
+outreach_activity,2,lead_id,uuid,uuid,NO,null
+outreach_activity,3,action,text,text,NO,null
+outreach_activity,4,user_id,uuid,uuid,YES,null
+outreach_activity,5,notes,text,text,YES,null
+outreach_activity,6,metadata,jsonb,jsonb,NO,'{}'::jsonb
+outreach_activity,7,created_at,timestamp with time zone,timestamptz,NO,now()
+outreach_events,1,id,uuid,uuid,NO,gen_random_uuid()
+outreach_events,2,lead_id,uuid,uuid,NO,null
+outreach_events,3,channel,text,text,NO,null
+outreach_events,4,event_type,text,text,NO,null
+outreach_events,5,payload,jsonb,jsonb,YES,null
+outreach_events,6,created_at,timestamp with time zone,timestamptz,NO,now()
+outreach_events_backup_20260320,1,id,uuid,uuid,YES,null
+outreach_events_backup_20260320,2,lead_id,uuid,uuid,YES,null
+outreach_events_backup_20260320,3,channel,text,text,YES,null
+outreach_events_backup_20260320,4,event_type,text,text,YES,null
+outreach_events_backup_20260320,5,payload,jsonb,jsonb,YES,null
+outreach_events_backup_20260320,6,created_at,timestamp with time zone,timestamptz,YES,null
+outreach_log,1,id,uuid,uuid,NO,gen_random_uuid()
+outreach_log,2,email,text,text,NO,null
+outreach_log,3,business_name,text,text,YES,null
+outreach_log,4,subject,text,text,YES,null
+outreach_log,5,sent_at,timestamp with time zone,timestamptz,YES,now()
+outreach_log,6,email_number,integer,int4,YES,1
+outreach_log,7,status,text,text,YES,'sent'::text
+outreach_log,8,classification,text,text,YES,null
+outreach_log,9,company_number,text,text,YES,null
+outreach_log,10,google_place_id,text,text,YES,null
+outreach_queue,1,id,uuid,uuid,NO,gen_random_uuid()
+outreach_queue,2,lead_id,uuid,uuid,NO,null
+outreach_queue,3,status,text,text,NO,'draft'::text
+outreach_queue,4,skipped_at,timestamp with time zone,timestamptz,YES,null
+outreach_queue,5,called_at,timestamp with time zone,timestamptz,YES,null
+outreach_queue,6,do_not_contact_at,timestamp with time zone,timestamptz,YES,null
+outreach_queue,7,created_at,timestamp with time zone,timestamptz,NO,now()
+outreach_queue,8,updated_at,timestamp with time zone,timestamptz,NO,now()
+outreach_queue,9,created_by,uuid,uuid,YES,null
+outreach_queue,10,updated_by,uuid,uuid,YES,null
+outreach_templates,1,id,uuid,uuid,NO,gen_random_uuid()
+outreach_templates,2,name,text,text,NO,null
+outreach_templates,3,subject_template,text,text,NO,null
+outreach_templates,4,body_template,text,text,NO,null
+outreach_templates,5,created_at,timestamp with time zone,timestamptz,NO,now()
+outreach_templates,6,updated_at,timestamp with time zone,timestamptz,NO,now()
+outreach_templates,7,status,text,text,NO,'active'::text
+profiles,1,id,uuid,uuid,NO,null
+profiles,2,role,text,text,NO,'client'::text
+profiles,3,clinic_name,text,text,YES,null
+profiles,4,created_at,timestamp with time zone,timestamptz,NO,now()
+profiles,5,name,text,text,YES,null
+profiles,6,phone,text,text,YES,null
+profiles,7,email,text,text,YES,null
+profiles,8,city,text,text,YES,null
+profiles,9,services,text,text,YES,null
+retention_clients,1,id,uuid,uuid,NO,gen_random_uuid()
+retention_clients,2,external_key,text,text,NO,null
+retention_clients,3,client_name,text,text,YES,null
+retention_clients,4,email,text,text,YES,null
+retention_clients,5,phone,text,text,YES,null
+retention_clients,6,service,text,text,YES,null
+retention_clients,7,clinic_name,text,text,YES,null
+retention_clients,8,objection,text,text,YES,null
+retention_clients,9,last_seen_at,timestamp with time zone,timestamptz,YES,null
+retention_clients,10,created_at,timestamp with time zone,timestamptz,NO,now()
+retention_clients,11,updated_at,timestamp with time zone,timestamptz,NO,now()
+retention_events,1,id,uuid,uuid,NO,gen_random_uuid()
+retention_events,2,retention_task_id,uuid,uuid,YES,null
+retention_events,3,retention_client_id,uuid,uuid,NO,null
+retention_events,4,behavior,text,text,NO,null
+retention_events,5,channel,text,text,NO,null
+retention_events,6,status,text,text,NO,null
+retention_events,7,payload,jsonb,jsonb,YES,null
+retention_events,8,created_at,timestamp with time zone,timestamptz,NO,now()
+retention_tasks,1,id,uuid,uuid,NO,gen_random_uuid()
+retention_tasks,2,retention_client_id,uuid,uuid,NO,null
+retention_tasks,3,behavior,text,text,NO,null
+retention_tasks,4,due_at,timestamp with time zone,timestamptz,NO,null
+retention_tasks,5,status,text,text,NO,'queued'::text
+retention_tasks,6,sent_at,timestamp with time zone,timestamptz,YES,null
+retention_tasks,7,error,text,text,YES,null
+retention_tasks,8,created_at,timestamp with time zone,timestamptz,NO,now()
+subscribers,1,id,uuid,uuid,NO,gen_random_uuid()
+subscribers,2,email,text,text,NO,null
+subscribers,3,created_at,timestamp with time zone,timestamptz,YES,now()
+subscriptions,1,id,uuid,uuid,NO,gen_random_uuid()
+subscriptions,2,user_id,uuid,uuid,YES,null
+subscriptions,3,email,text,text,YES,null
+subscriptions,4,stripe_customer_id,text,text,YES,null
+subscriptions,5,stripe_subscription_id,text,text,YES,null
+subscriptions,6,stripe_price_id,text,text,YES,null
+subscriptions,7,plan,text,text,YES,null
+subscriptions,8,status,text,text,YES,null
+subscriptions,9,trial_end,timestamp with time zone,timestamptz,YES,null
+subscriptions,10,current_period_end,timestamp with time zone,timestamptz,YES,null
+subscriptions,11,cancel_at_period_end,boolean,bool,NO,false
+subscriptions,12,created_at,timestamp with time zone,timestamptz,NO,now()
+subscriptions,13,updated_at,timestamp with time zone,timestamptz,NO,now()
+system_events,1,id,uuid,uuid,NO,gen_random_uuid()
+system_events,2,level,text,text,NO,'info'::text
+system_events,3,category,text,text,NO,null
+system_events,4,message,text,text,NO,null
+system_events,5,meta,jsonb,jsonb,YES,null
+system_events,6,created_at,timestamp with time zone,timestamptz,NO,now()
+visitors,1,id,uuid,uuid,NO,gen_random_uuid()
+visitors,2,clinic_id,uuid,uuid,NO,null
+visitors,3,session_key,text,text,YES,null
+visitors,4,created_at,timestamp with time zone,timestamptz,NO,now()
+website_audits,1,id,uuid,uuid,NO,gen_random_uuid()
+website_audits,2,user_id,uuid,uuid,NO,null
+website_audits,3,website_url,text,text,NO,null
+website_audits,4,input_url,text,text,YES,null
+website_audits,5,final_url,text,text,YES,null
+website_audits,6,status,text,text,NO,'completed'::text
+website_audits,7,error,text,text,YES,null
+website_audits,8,overall_score,integer,int4,NO,0
+website_audits,9,health_score,integer,int4,NO,0
+website_audits,10,seo_score,integer,int4,NO,0
+website_audits,11,trust_score,integer,int4,NO,0
+website_audits,12,conversion_score,integer,int4,NO,0
+website_audits,13,ai_readiness_score,integer,int4,NO,0
+website_audits,14,checks,jsonb,jsonb,NO,'{}'::jsonb
+website_audits,15,recommendations,jsonb,jsonb,NO,'[]'::jsonb
+website_audits,16,meta,jsonb,jsonb,NO,'{}'::jsonb
+website_audits,17,engine_version,text,text,NO,'v1'::text
+website_audits,18,created_at,timestamp with time zone,timestamptz,NO,now()
+website_audits,19,updated_at,timestamp with time zone,timestamptz,NO,now()
+widget_tokens,1,id,uuid,uuid,NO,gen_random_uuid()
+widget_tokens,2,onboarding_site_id,uuid,uuid,NO,null
+widget_tokens,3,token,text,text,NO,null
+widget_tokens,4,status,text,text,NO,'active'::text
+widget_tokens,5,created_at,timestamp with time zone,timestamptz,NO,now()
+widget_tokens,6,last_seen_at,timestamp with time zone,timestamptz,YES,null
+widget_tokens,7,last_seen_domain,text,text,YES,null

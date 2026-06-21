@@ -79,6 +79,15 @@ export default function TermsPage() {
         specific lead volume, or specific revenue outcomes.
       </p>
 
+      <p>
+        <strong>AI-assisted capture.</strong> LeadClaw provides AI-assisted lead
+        capture and response tools. Automated capture and AI-assisted responses
+        may contain errors or miss an enquiry, and must not be relied on as the
+        sole capture mechanism for anything safety-critical (for example,
+        medically urgent requests). You remain responsible for your enquiries,
+        communications, bookings, and customer interactions.
+      </p>
+
       <h2>11. Limitation of liability</h2>
       <p>
         To the maximum extent permitted by law, our aggregate liability for any claim in any 12-month period is capped

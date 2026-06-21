@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "next-env.d.ts",
+    "src/types/**/*.ts",
+    "src/lib/landing/**/*.ts",
+    "src/components/landing/**/*.tsx",
+    "src/__tests__/landing-templates.test.ts"
+  ]
+}

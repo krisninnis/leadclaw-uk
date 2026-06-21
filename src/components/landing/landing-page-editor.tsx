@@ -22,9 +22,18 @@ import type {
 } from "@/lib/landing/types";
 import {
   generateDraftFromTemplate,
+  generateSectionDefaults,
   getLandingTemplate,
   summarizeTemplate,
+  type LandingSectionKey,
 } from "@/lib/landing/templates";
+import {
+  CUSTOM_OPTION,
+  DEFAULT_COUNTRY,
+  LANDING_COUNTRIES,
+  getCitiesForCountry,
+  getRegionsForCountry,
+} from "@/lib/landing/locations";
 
 type EditorTemplate = {
   id: string;
@@ -83,7 +92,7 @@ function initialForm(page: LandingPageRow | null): FormState {
     niche: page?.niche || "",
     city: page?.city || "",
     region: page?.region || "",
-    country: page?.country || "GB",
+    country: page?.country || DEFAULT_COUNTRY,
     seo_title: page?.seo_title || "",
     seo_description: page?.seo_description || "",
     canonical_path: page?.canonical_path || "",
@@ -194,6 +203,96 @@ export default function LandingPageEditor({ mode, initialPage, templates }: Prop
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
 
+  // Region / city support a dropdown of common values plus a manual fallback.
+  // A field is in "custom" mode when its current value is not in the country's
+  // list (so existing/typed values are preserved across country changes).
+  const [regionCustom, setRegionCustom] = useState<boolean>(() => {
+    const f = initialForm(initialPage);
+    return (
+      !!f.region &&
+      !getRegionsForCountry(f.country || DEFAULT_COUNTRY).includes(f.region)
+    );
+  });
+  const [cityCustom, setCityCustom] = useState<boolean>(() => {
+    const f = initialForm(initialPage);
+    return (
+      !!f.city &&
+      !getCitiesForCountry(f.country || DEFAULT_COUNTRY).includes(f.city)
+    );
+  });
+
+  const regionOptions = getRegionsForCountry(form.country);
+  const cityOptions = getCitiesForCountry(form.country);
+
+  // Changing country swaps the region/city option lists. Any existing value
+  // that is not in the new lists drops into manual ("custom") entry so it is
+  // never silently lost.
+  function changeCountry(code: string) {
+    set("country", code);
+    setRegionCustom(
+      !!form.region && !getRegionsForCountry(code).includes(form.region),
+    );
+    setCityCustom(
+      !!form.city && !getCitiesForCountry(code).includes(form.city),
+    );
+  }
+
+  function changeRegionSelect(value: string) {
+    if (value === CUSTOM_OPTION) {
+      setRegionCustom(true);
+      return;
+    }
+    setRegionCustom(false);
+    set("region", value);
+  }
+
+  function changeCitySelect(value: string) {
+    if (value === CUSTOM_OPTION) {
+      setCityCustom(true);
+      return;
+    }
+    setCityCustom(false);
+    set("city", value);
+  }
+
+  // Replace a single content section with the template defaults for the current
+  // city/region, after confirmation. Touches only that one section.
+  function applySectionDefaults(section: LandingSectionKey) {
+    if (!templateDef) {
+      setMessage("Choose a template first.");
+      return;
+    }
+    if (!form.city.trim()) {
+      setMessage("Enter a city before using template defaults.");
+      return;
+    }
+    const label = section === "useCases" ? "Use cases" : section;
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Replace the ${label} section with the template defaults? Your current edits in this section will be lost.`,
+      )
+    ) {
+      return;
+    }
+    const defaults = generateSectionDefaults(templateDef, {
+      city: form.city,
+      region: form.region,
+      country: form.country,
+    });
+    if (section === "faq") {
+      set(
+        "faq",
+        defaults.faq.map((item) => ({ ...item })),
+      );
+    } else {
+      set(section, defaults[section]);
+    }
+    setMessage(
+      "Section filled from template defaults — review before publishing.",
+    );
+  }
+
   // Live mirror of the server publish gate.
   const validation = useMemo(
     () =>
@@ -218,6 +317,19 @@ export default function LandingPageEditor({ mode, initialPage, templates }: Prop
     ? getLandingTemplate(selectedTemplate.key)
     : undefined;
   const templateSummary = templateDef ? summarizeTemplate(templateDef) : null;
+
+  // Small per-section "Use template defaults" control. Disabled until a
+  // template is selected. Replaces only its own section after confirmation.
+  const sectionDefaultsButton = (section: LandingSectionKey) => (
+    <button
+      type="button"
+      className="shrink-0 rounded-lg border border-border px-2.5 py-1 text-xs font-medium hover:bg-surface-2 disabled:opacity-50"
+      disabled={busy !== null || !templateDef}
+      onClick={() => applySectionDefaults(section)}
+    >
+      Use template defaults
+    </button>
+  );
 
   // Selecting a template sets it and pre-fills the niche when empty. It does
   // NOT overwrite content — use "Generate draft" for that.
@@ -391,6 +503,10 @@ export default function LandingPageEditor({ mode, initialPage, templates }: Prop
         {/* Targeting + template */}
         <section className="card-premium p-6 md:p-8">
           <h2 className="text-lg font-semibold text-foreground">Targeting</h2>
+          <p className="mt-1 text-sm text-muted">
+            Choose a template, country, region and city, then generate a draft.
+            You can edit every field before saving or publishing.
+          </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
             <div className="space-y-3 md:col-span-2">
               <label className="block space-y-1.5">
@@ -460,30 +576,78 @@ export default function LandingPageEditor({ mode, initialPage, templates }: Prop
               />
             </label>
             <label className="space-y-1.5">
-              <span className="text-sm font-medium text-foreground">City</span>
-              <input
-                className="w-full rounded-xl border px-3 py-2 text-sm"
-                placeholder="Nottingham"
-                value={form.city}
-                onChange={(e) => set("city", e.target.value)}
-              />
-            </label>
-            <label className="space-y-1.5">
-              <span className="text-sm font-medium text-foreground">Region</span>
-              <input
-                className="w-full rounded-xl border px-3 py-2 text-sm"
-                placeholder="East Midlands"
-                value={form.region}
-                onChange={(e) => set("region", e.target.value)}
-              />
-            </label>
-            <label className="space-y-1.5">
               <span className="text-sm font-medium text-foreground">Country</span>
-              <input
+              <select
                 className="w-full rounded-xl border px-3 py-2 text-sm"
                 value={form.country}
-                onChange={(e) => set("country", e.target.value)}
-              />
+                onChange={(e) => changeCountry(e.target.value)}
+                aria-label="Country"
+              >
+                {LANDING_COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="text-sm font-medium text-foreground">Region</span>
+              <select
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                value={regionCustom ? CUSTOM_OPTION : form.region}
+                onChange={(e) => changeRegionSelect(e.target.value)}
+                aria-label="Region"
+              >
+                <option value="">No region</option>
+                {regionOptions.map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+                <option value={CUSTOM_OPTION}>Other (type manually)…</option>
+              </select>
+              {regionCustom ? (
+                <input
+                  className="mt-2 w-full rounded-xl border px-3 py-2 text-sm"
+                  placeholder="Type a region"
+                  aria-label="Custom region"
+                  value={form.region}
+                  onChange={(e) => set("region", e.target.value)}
+                />
+              ) : null}
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="text-sm font-medium text-foreground">City</span>
+              <select
+                className="w-full rounded-xl border px-3 py-2 text-sm"
+                value={cityCustom ? CUSTOM_OPTION : form.city}
+                onChange={(e) => changeCitySelect(e.target.value)}
+                aria-label="City"
+              >
+                <option value="">Select a city</option>
+                {cityOptions.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+                <option value={CUSTOM_OPTION}>Custom city…</option>
+              </select>
+              {cityCustom ? (
+                <>
+                  <input
+                    className="mt-2 w-full rounded-xl border px-3 py-2 text-sm"
+                    placeholder="Type a city"
+                    aria-label="Custom city"
+                    value={form.city}
+                    onChange={(e) => set("city", e.target.value)}
+                  />
+                  <span className="block text-xs text-muted">
+                    Use custom city when the location is not listed.
+                  </span>
+                </>
+              ) : null}
             </label>
 
             <label className="space-y-1.5 md:col-span-2">
@@ -613,30 +777,50 @@ export default function LandingPageEditor({ mode, initialPage, templates }: Prop
               />
             </label>
 
-            <RepeatableField
-              label="Pain points"
-              values={form.pains}
-              onChange={(v) => set("pains", v)}
-              placeholder="A locally-specific problem this page addresses"
-              multiline
-            />
-            <RepeatableField
-              label="Benefits"
-              values={form.benefits}
-              onChange={(v) => set("benefits", v)}
-              multiline
-            />
-            <RepeatableField
-              label="Features / steps"
-              values={form.features}
-              onChange={(v) => set("features", v)}
-            />
-            <RepeatableField
-              label="Use cases"
-              values={form.useCases}
-              onChange={(v) => set("useCases", v)}
-              multiline
-            />
+            <div className="space-y-2">
+              <div className="flex items-center justify-end">
+                {sectionDefaultsButton("pains")}
+              </div>
+              <RepeatableField
+                label="Pain points"
+                values={form.pains}
+                onChange={(v) => set("pains", v)}
+                placeholder="A locally-specific problem this page addresses"
+                multiline
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-end">
+                {sectionDefaultsButton("benefits")}
+              </div>
+              <RepeatableField
+                label="Benefits"
+                values={form.benefits}
+                onChange={(v) => set("benefits", v)}
+                multiline
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-end">
+                {sectionDefaultsButton("features")}
+              </div>
+              <RepeatableField
+                label="Features / steps"
+                values={form.features}
+                onChange={(v) => set("features", v)}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-end">
+                {sectionDefaultsButton("useCases")}
+              </div>
+              <RepeatableField
+                label="Use cases"
+                values={form.useCases}
+                onChange={(v) => set("useCases", v)}
+                multiline
+              />
+            </div>
 
             {/* FAQ pairs */}
             <div className="space-y-2">
@@ -644,7 +828,10 @@ export default function LandingPageEditor({ mode, initialPage, templates }: Prop
                 <span className="text-sm font-medium text-foreground">
                   FAQ (min 3 to publish)
                 </span>
-                <span className="text-xs text-muted-2">{form.faq.length}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-2">{form.faq.length}</span>
+                  {sectionDefaultsButton("faq")}
+                </div>
               </div>
               {form.faq.map((row, index) => (
                 <div key={index} className="space-y-2 rounded-xl border p-3">
@@ -820,7 +1007,10 @@ export default function LandingPageEditor({ mode, initialPage, templates }: Prop
               />
             </label>
 
-            <div className="md:col-span-2">
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex items-center justify-end">
+                {sectionDefaultsButton("services")}
+              </div>
               <RepeatableField
                 label="Services"
                 values={form.services}

@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import AccountMarketingConsent from "@/components/account-marketing-consent";
+import AiDisclaimer from "@/components/ai-disclaimer";
 
 export default function PortalSettingsPage() {
   const [reviewUrl, setReviewUrl] = useState("");
@@ -148,6 +150,10 @@ export default function PortalSettingsPage() {
               </div>
             </div>
           </div>
+
+          <AccountMarketingConsent />
+
+          <AiDisclaimer />
 
           {error && (
             <div className="rounded-[16px] border border-red-200 bg-red-50 p-4 text-sm text-red-700">

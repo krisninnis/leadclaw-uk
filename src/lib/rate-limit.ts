@@ -57,6 +57,16 @@ export const visibilityRateLimit = new Ratelimit({
   prefix: "leadclaw:visibility",
 });
 
+// Competitor benchmark runs — 3 per minute per user. Each run audits up to 5
+// competitor sites (several outbound fetches each), so this is the most
+// expensive authenticated readiness action: keep it tight.
+export const competitorBenchmarkRateLimit = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(3, "1 m"),
+  analytics: true,
+  prefix: "leadclaw:competitor-benchmark",
+});
+
 // Landing page builder — admin CRUD. 30 per minute (form-driven, several
 // saves per editing session).
 export const landingAdminRateLimit = new Ratelimit({

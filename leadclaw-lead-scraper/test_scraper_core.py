@@ -14,6 +14,7 @@ from email_discovery import (
     merge_email_discovery_into_lead,
     public_page_urls,
 )
+from email_backfill_bridge import run_email_backfill
 from scraper_core import (
     GOOGLE_HTTP_STATUS_KEY,
     build_config,
@@ -546,6 +547,39 @@ class ScraperCoreTests(unittest.TestCase):
             "website_public_contact_page",
         )
         self.assertNotIn("test-google-key", str(log_event.call_args_list))
+
+    def test_email_backfill_bridge_returns_discovered_email_and_notes(self):
+        with patch(
+            "email_backfill_bridge.discover_public_email",
+            return_value=EmailDiscoveryResult(
+                contact_email="info@example.com",
+                confidence="high",
+                source_url="https://example.com/contact",
+                candidates_count=1,
+                pages_checked=2,
+                status="found",
+            ),
+        ):
+            result = run_email_backfill(
+                {
+                    "leads": [
+                        {
+                            "id": "lead_1",
+                            "company_name": "Example Ltd",
+                            "website": "https://example.com",
+                            "notes": "{\"source\":\"google-places\"}",
+                        }
+                    ]
+                }
+            )
+
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["results"][0]["id"], "lead_1")
+        self.assertEqual(result["results"][0]["contact_email"], "info@example.com")
+        self.assertEqual(
+            json.loads(result["results"][0]["notes"])["email_collection"],
+            "website_public_contact_page",
+        )
 
 
 if __name__ == "__main__":

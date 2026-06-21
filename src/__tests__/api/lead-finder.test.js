@@ -17,6 +17,20 @@ function makeCallbackRequest(body = {}, token = "callback-token") {
   });
 }
 
+function makeSchedulerRequest(token = "scheduler-token") {
+  return new Request(
+    "http://localhost:3000/api/admin/lead-finder/scheduled/start",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+      body: "{}",
+    },
+  );
+}
+
 function mockAdminForConfig() {
   const upsert = jest.fn(() => ({
     select: jest.fn(() => ({
@@ -74,6 +88,42 @@ function mockAdminForRun() {
   };
 }
 
+function mockAdminForScheduledStart({ configs = [] } = {}) {
+  const selectChain = {
+    eq: jest.fn().mockReturnThis(),
+    order: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockResolvedValue({ data: configs, error: null }),
+  };
+  const insert = jest.fn(() => ({
+    select: jest.fn(() => ({
+      single: jest.fn().mockResolvedValue({
+        data: { id: "scheduled_run_1" },
+        error: null,
+      }),
+    })),
+  }));
+
+  return {
+    admin: {
+      from: jest.fn((table) => {
+        if (table === "lead_finder_configs") {
+          return {
+            select: jest.fn(() => selectChain),
+          };
+        }
+
+        if (table === "lead_finder_runs") {
+          return { insert };
+        }
+
+        throw new Error(`Unexpected table: ${table}`);
+      }),
+    },
+    selectChain,
+    insert,
+  };
+}
+
 describe("Lead Finder admin API", () => {
   const originalFetch = global.fetch;
 
@@ -82,6 +132,7 @@ describe("Lead Finder admin API", () => {
     process.env.LEAD_FINDER_EXECUTION_MODE = "local";
     delete process.env.GITHUB_ACTIONS_DISPATCH_TOKEN;
     delete process.env.LEAD_FINDER_CALLBACK_TOKEN;
+    delete process.env.LEAD_FINDER_SCHEDULER_TOKEN;
     global.fetch = originalFetch;
   });
 
@@ -89,6 +140,7 @@ describe("Lead Finder admin API", () => {
     delete process.env.LEAD_FINDER_EXECUTION_MODE;
     delete process.env.GITHUB_ACTIONS_DISPATCH_TOKEN;
     delete process.env.LEAD_FINDER_CALLBACK_TOKEN;
+    delete process.env.LEAD_FINDER_SCHEDULER_TOKEN;
     global.fetch = originalFetch;
   });
 
@@ -168,9 +220,96 @@ describe("Lead Finder admin API", () => {
         locations: ["Coventry", "Birmingham"],
         lead_limit: 25,
         schedule_enabled: true,
+        run_time_local: "09:00",
+        timezone: "Europe/London",
         created_by: "admin_1",
       }),
       { onConflict: "name" },
+    );
+  });
+
+  it("rejects scheduled Lead Finder starts without the scheduler token", async () => {
+    process.env.LEAD_FINDER_SCHEDULER_TOKEN = "scheduler-token";
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn(),
+    }));
+
+    const { POST } = require("@/app/api/admin/lead-finder/scheduled/start/route");
+    const res = await POST(makeSchedulerRequest(""));
+    const body = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(body).toEqual({ ok: false, error: "unauthorized" });
+  });
+
+  it("creates a scheduled run from the latest enabled config", async () => {
+    process.env.LEAD_FINDER_SCHEDULER_TOKEN = "scheduler-token";
+    const mockDb = mockAdminForScheduledStart({
+      configs: [
+        {
+          id: "config_1",
+          name: "Default Lead Finder",
+          niche_mode: "local-service",
+          niches: ["plumber", "heating"],
+          locations: ["Coventry", "Birmingham"],
+          lead_limit: 25,
+          discover_emails: true,
+          email_discovery_max_pages: 7,
+          dry_run: false,
+          schedule_enabled: true,
+          run_time_local: "09:00:00",
+          timezone: "Europe/London",
+        },
+      ],
+    });
+
+    jest.doMock("@/lib/supabase/admin", () => ({
+      createAdminClient: jest.fn().mockReturnValue(mockDb.admin),
+    }));
+
+    const { POST } = require("@/app/api/admin/lead-finder/scheduled/start/route");
+    const res = await POST(makeSchedulerRequest());
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({
+      ok: true,
+      run_id: "scheduled_run_1",
+      config: expect.objectContaining({
+        niche_mode: "local-service",
+        niches: ["plumber", "heating"],
+        locations: ["Coventry", "Birmingham"],
+        limit: 25,
+        dry_run: false,
+        discover_emails: true,
+        email_discovery_max_pages: 7,
+        schedule_enabled: true,
+        run_time_local: "09:00",
+        timezone: "Europe/London",
+      }),
+    });
+    expect(mockDb.selectChain.eq).toHaveBeenCalledWith(
+      "schedule_enabled",
+      true,
+    );
+    expect(mockDb.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        config_id: "config_1",
+        status: "running",
+        trigger_source: "scheduled",
+        dry_run: false,
+        execution_mode: "github_actions",
+        config_snapshot: expect.objectContaining({
+          niche_mode: "local-service",
+          locations: ["Coventry", "Birmingham"],
+        }),
+        summary: expect.objectContaining({
+          message: "Scheduled GitHub Actions workflow started.",
+          run_time_local: "09:00",
+          timezone: "Europe/London",
+        }),
+      }),
     );
   });
 

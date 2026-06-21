@@ -1,4 +1,5 @@
 ﻿import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
 import {
   evaluateStripeEnvironment,
   getStripeKeyMode,
@@ -18,8 +19,16 @@ function maskTail(value?: string | null, keep = 4) {
 }
 
 export async function GET() {
-  const env = process.env;
+  const admin = await requireAdmin();
 
+  if (!admin.ok) {
+    return NextResponse.json(
+      { ok: false, error: "forbidden" },
+      { status: 403 },
+    );
+  }
+
+  const env = process.env;
   const stripeEnv = evaluateStripeEnvironment(env);
 
   return NextResponse.json({

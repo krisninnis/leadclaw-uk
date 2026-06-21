@@ -7,7 +7,9 @@ import { describe, it, expect } from "@jest/globals";
 import {
   LANDING_TEMPLATES,
   LANDING_TEMPLATE_KEYS,
+  LANDING_SECTION_KEYS,
   generateDraftFromTemplate,
+  generateSectionDefaults,
   getLandingTemplate,
   summarizeTemplate,
   type GeneratedDraft,
@@ -186,6 +188,54 @@ describe("summarizeTemplate", () => {
     expect(summary.pains).toBe(def.pains.length);
     expect(summary.features).toBe(def.features.length);
     expect(summary.useCases).toBe(def.useCases.length);
+  });
+});
+
+describe("section-level defaults", () => {
+  it("exposes the six list-style section keys", () => {
+    expect(LANDING_SECTION_KEYS).toEqual([
+      "pains",
+      "benefits",
+      "features",
+      "useCases",
+      "faq",
+      "services",
+    ]);
+  });
+
+  it("returns localised defaults matching a full draft, per section", () => {
+    const def = getLandingTemplate("electrician")!;
+    const input = { city: "Coventry", region: "West Midlands", country: "GB" };
+    const draft = generateDraftFromTemplate(def, input);
+    const sections = generateSectionDefaults(def, input);
+
+    expect(sections.pains).toEqual(draft.content.pains);
+    expect(sections.benefits).toEqual(draft.content.benefits);
+    expect(sections.features).toEqual(draft.content.features);
+    expect(sections.useCases).toEqual(draft.content.useCases);
+    expect(sections.faq).toEqual(draft.content.faq);
+    expect(sections.services).toEqual(draft.services);
+
+    // Localised, no leftover tokens.
+    expect(sections.pains.join(" ")).toContain("Coventry");
+    for (const item of [
+      ...sections.pains,
+      ...sections.benefits,
+      ...sections.services,
+    ]) {
+      expect(item.includes("{")).toBe(false);
+    }
+  });
+
+  it("never produces fabricated business fields", () => {
+    const sections = generateSectionDefaults(getLandingTemplate("dentist")!, {
+      city: "Leicester",
+    });
+    // Only the editable list sections exist — nothing here is an address,
+    // phone, rating, or business name.
+    expect(Object.keys(sections).sort()).toEqual(
+      ["benefits", "faq", "features", "pains", "services", "useCases"].sort(),
+    );
   });
 });
 

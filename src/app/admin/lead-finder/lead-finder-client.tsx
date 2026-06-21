@@ -121,7 +121,11 @@ export default function LeadFinderClient({
       });
       const body = (await res.json()) as ConfigResponse;
       if (!res.ok || !body.ok) throw new Error(body.error || "Save failed");
-      setMessage("Lead Finder configuration saved.");
+      setMessage(
+        form.schedule_enabled
+          ? `Scheduled daily at ${form.run_time_local} ${form.timezone}.`
+          : "Lead Finder schedule disabled. Configuration saved.",
+      );
     } catch (error: unknown) {
       setMessage(error instanceof Error ? error.message : "Save failed");
     } finally {
@@ -187,8 +191,9 @@ export default function LeadFinderClient({
             Finder configuration
           </h2>
           <p className="text-sm leading-6 text-muted">
-            Run small Google Places discovery batches through the existing
-            scraper CLI. This tool never triggers the outreach sender.
+            Run small Google Places discovery batches through GitHub Actions.
+            This tool imports or previews leads only and never triggers the
+            outreach sender.
           </p>
         </div>
 
@@ -345,10 +350,10 @@ export default function LeadFinderClient({
             />
             <span>
               <span className="block text-sm font-medium text-foreground">
-                Save as scheduled config
+                Daily schedule enabled
               </span>
               <span className="block text-xs text-muted">
-                Stored for the future scheduler; no scheduler is created yet.
+                GitHub Actions will use this saved config for scheduled runs.
               </span>
             </span>
           </label>
@@ -385,6 +390,32 @@ export default function LeadFinderClient({
               }
             />
           </label>
+        </div>
+
+        <div className="mt-6 rounded-xl border bg-slate-50 p-4 text-sm">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-medium text-foreground">
+                {form.schedule_enabled
+                  ? `Scheduled daily at ${form.run_time_local} ${form.timezone}`
+                  : "Schedule disabled"}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-muted">
+                The GitHub cron currently runs at 08:00 UTC, which is intended
+                to approximate 09:00 UK time. BST/DST adjustment is not
+                automated yet.
+              </p>
+            </div>
+            <span
+              className={`w-fit rounded-full px-2.5 py-1 text-xs font-medium ${
+                form.schedule_enabled
+                  ? "bg-emerald-100 text-emerald-700"
+                  : "bg-slate-200 text-slate-600"
+              }`}
+            >
+              {form.schedule_enabled ? "Enabled" : "Disabled"}
+            </span>
+          </div>
         </div>
 
         <div className="mt-6 flex flex-col gap-3 border-t pt-5 sm:flex-row">

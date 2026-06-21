@@ -67,8 +67,65 @@ jobs:
           python -m compileall leadclaw-lead-scraper
           python -m unittest discover -s leadclaw-lead-scraper -p "test_*.py"
 
+      - name: Start scheduled Lead Finder run
+        id: start_scheduled
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          LEAD_FINDER_SCHEDULER_TOKEN: ${{ secrets.LEAD_FINDER_SCHEDULER_TOKEN }}
+          LEADCLAW_BASE_URL: https://www.leadclaw.uk
+        shell: bash
+        run: |
+          set -euo pipefail
+          : "${LEAD_FINDER_SCHEDULER_TOKEN:?Missing LEAD_FINDER_SCHEDULER_TOKEN secret}"
+
+          python - <<'PY'
+          import json
+          import os
+          import urllib.error
+          import urllib.request
+
+          def emit(name, value):
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as handle:
+                  handle.write(f"{name}={value}\n")
+
+          request = urllib.request.Request(
+              f"{os.environ['LEADCLAW_BASE_URL'].rstrip('/')}/api/admin/lead-finder/scheduled/start",
+              data=b"{}",
+              headers={
+                  "Authorization": f"Bearer {os.environ['LEAD_FINDER_SCHEDULER_TOKEN']}",
+                  "Content-Type": "application/json",
+              },
+              method="POST",
+          )
+
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  payload = json.loads(response.read().decode("utf-8"))
+          except urllib.error.HTTPError as exc:
+              body = exc.read().decode("utf-8", errors="replace")
+              print(body)
+              raise
+
+          if not payload.get("ok"):
+              print(payload.get("error") or "No enabled Lead Finder schedule.")
+              emit("should_run", "false")
+              raise SystemExit(0)
+
+          config = payload["config"]
+          emit("should_run", "true")
+          emit("lead_finder_run_id", payload["run_id"])
+          emit("dry_run", str(config.get("dry_run", True)).lower())
+          emit("limit", config.get("limit", 25))
+          emit("niche_mode", config.get("niche_mode", "clinic"))
+          emit("niches", " ".join(config.get("niches") or []))
+          emit("locations", " ".join(config.get("locations") or []))
+          emit("discover_emails", str(config.get("discover_emails", True)).lower())
+          emit("email_discovery_max_pages", config.get("email_discovery_max_pages", 7))
+          PY
+
       - name: Run scraper
         id: run_scraper
+        if: ${{ github.event_name != 'schedule' || steps.start_scheduled.outputs.should_run == 'true' }}
         continue-on-error: true
         env:
           GOOGLE_PLACES_API_KEY: ${{ secrets.GOOGLE_PLACES_API_KEY }}
@@ -78,14 +135,14 @@ jobs:
         run: |
           set -euo pipefail
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            DRY_RUN="false"
-            LIMIT="25"
-            NICHE_MODE="clinic"
-            LOCATIONS="Coventry Birmingham Leicester Nottingham"
-            NICHES=""
-            DISCOVER_EMAILS="true"
-            EMAIL_DISCOVERY_MAX_PAGES="7"
-            LEAD_FINDER_RUN_ID=""
+            DRY_RUN="${{ steps.start_scheduled.outputs.dry_run }}"
+            LIMIT="${{ steps.start_scheduled.outputs.limit }}"
+            NICHE_MODE="${{ steps.start_scheduled.outputs.niche_mode }}"
+            LOCATIONS="${{ steps.start_scheduled.outputs.locations }}"
+            NICHES="${{ steps.start_scheduled.outputs.niches }}"
+            DISCOVER_EMAILS="${{ steps.start_scheduled.outputs.discover_emails }}"
+            EMAIL_DISCOVERY_MAX_PAGES="${{ steps.start_scheduled.outputs.email_discovery_max_pages }}"
+            LEAD_FINDER_RUN_ID="${{ steps.start_scheduled.outputs.lead_finder_run_id }}"
           else
             DRY_RUN="${{ inputs.dry_run }}"
             LIMIT="${{ inputs.limit }}"

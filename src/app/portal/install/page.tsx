@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildWidgetSnippet } from "@/lib/onboarding";
 import InstallSnippetCard from "@/components/install-snippet-card";
 import InstallStatusActions from "@/components/install-status-actions";
+import InstallPrivacyAcknowledgement from "@/components/install-privacy-acknowledgement";
 import { SectionHeading } from "@/components/ui";
 import {
   canUseLeadClawProduct,
@@ -229,6 +230,8 @@ export default async function PortalInstallPage() {
         </div>
 
         <InstallStatusActions canSendTest={hasWidgetAccess} />
+
+        <InstallPrivacyAcknowledgement />
 
         <div className="mt-6 grid gap-4 md:grid-cols-2">
           <div className="rounded-[22px] border border-border bg-white p-5">

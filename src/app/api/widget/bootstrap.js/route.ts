@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { canUseLeadClawProduct } from "@/lib/subscription-access";
+import { WIDGET_CONSENT_NOTICE } from "@/lib/legal-consent";
 
 type WidgetSiteRow = {
   id: string | null;
@@ -179,6 +180,7 @@ export async function GET(req: NextRequest) {
   const safeSiteId = escapeForScript(siteId);
   const safeClinicDomain = escapeForScript(clinicDomain);
   const safeSiteStatus = escapeForScript(siteStatus);
+  const safeConsentNotice = escapeForScript(WIDGET_CONSENT_NOTICE);
 
   const script = `
 (() => {
@@ -191,6 +193,7 @@ export async function GET(req: NextRequest) {
   const SITE_ID = \`${safeSiteId}\`;
   const CLINIC_DOMAIN = \`${safeClinicDomain}\`;
   const SITE_STATUS = \`${safeSiteStatus}\`;
+  const CONSENT_NOTICE = \`${safeConsentNotice}\`;
   const DEMO_MODE = ${isDemoMode ? "true" : "false"};
 
   // Best-effort installation ping so the portal can confirm the widget is
@@ -460,6 +463,13 @@ export async function GET(req: NextRequest) {
       color: #64748b;
       line-height: 1.5;
     }
+    .lcw-consent {
+      margin: 8px 0 0;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #94a3b8;
+      text-align: center;
+    }
     .lcw-success {
       display: grid;
       gap: 12px;
@@ -627,6 +637,7 @@ export async function GET(req: NextRequest) {
       '    <button class="lcw-submit" type="submit">Send request</button>',
       '    <span class="lcw-mini">Usually takes less than a minute</span>',
       '  </div>',
+      '  <p class="lcw-consent">' + CONSENT_NOTICE + '</p>',
       '</form>',
       '<div class="lcw-footer">Powered by LeadClaw</div>',
     ].join("");

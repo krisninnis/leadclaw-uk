@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import PortalChat from "@/components/portal-chat";
 import { SectionHeading } from "@/components/ui";
+import AiDisclaimer from "@/components/ai-disclaimer";
 
 export default async function PortalSupportPage() {
   const supabase = await createClient();
@@ -127,6 +128,8 @@ export default async function PortalSupportPage() {
           </div>
         </div>
       </div>
+
+      <AiDisclaimer />
 
       <div id="support-chat">
         <PortalChat />
