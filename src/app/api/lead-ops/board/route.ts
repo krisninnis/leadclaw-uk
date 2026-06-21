@@ -44,11 +44,16 @@ export async function GET() {
     );
   }
 
+  // Order by created_at (lead arrival) rather than updated_at so that
+  // never-touched scraper leads (status 'new', updated_at frozen at insert)
+  // remain inside the window and stay visible in the Command Centre. Ordering
+  // by updated_at pushed untouched leads out of the cap once enough rows had
+  // newer activity. Limit is 500 (was 300) for additional headroom.
   const { data: leads, error: leadsErr } = await (admin as unknown as SupabaseUntypedClient)
     .from("leads")
     .select("id,company_name,contact_email,city,status,notes,updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(300);
+    .order("created_at", { ascending: false })
+    .limit(500);
 
   if (leadsErr) {
     return NextResponse.json(
