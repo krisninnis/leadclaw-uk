@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@/lib/analytics";
 
 type TestState =
   | { kind: "idle" }
@@ -38,6 +39,7 @@ export default function InstallStatusActions({
       }
 
       setTestState({ kind: "success" });
+      track("test_enquiry_sent", { surface: "install_page" });
       // Surface the new test enquiry in the portal lists.
       router.refresh();
     } catch (error) {

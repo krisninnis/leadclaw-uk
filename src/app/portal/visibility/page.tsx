@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import TrackOnMount from "@/components/analytics/track-on-mount";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Badge, SectionHeading, StatCard } from "@/components/ui";
@@ -42,6 +43,7 @@ export default async function PortalVisibilityPage() {
 
   return (
     <div className="space-y-6">
+      <TrackOnMount event="portal_viewed" props={{ section: "visibility" }} />
       {/* Hero */}
       <section className="card-premium p-6 md:p-8">
         <Badge tone="violet">AI Readiness</Badge>

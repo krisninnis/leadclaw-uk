@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import TrackOnMount from "@/components/analytics/track-on-mount";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SectionHeading } from "@/components/ui";
@@ -125,6 +126,7 @@ export default async function PortalLeadsPage() {
 
   return (
     <div className="space-y-6">
+      <TrackOnMount event="leads_viewed" />
       <div className="card-premium p-6 md:p-8">
         <SectionHeading
           eyebrow="Lead inbox"

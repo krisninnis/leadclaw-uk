@@ -3,6 +3,8 @@ import path from "node:path";
 import type { Metadata } from "next";
 import Link from "next/link";
 import TrialCtaLink from "@/components/trial-cta-link";
+import PosthogCtaLink from "@/components/analytics/posthog-cta-link";
+import SocialDemoVideo from "@/components/analytics/social-demo-video";
 
 const siteUrl = "https://www.leadclaw.uk";
 
@@ -66,12 +68,22 @@ export default function SocialLandingPage() {
             >
               Start free trial
             </TrialCtaLink>
-            <Link href={demoHref} className="button-secondary">
+            <PosthogCtaLink
+              href={demoHref}
+              event="demo_clicked"
+              className="button-secondary"
+              props={{ location: "social_hero" }}
+            >
               Book demo
-            </Link>
-            <Link href={auditHref} className="button-secondary">
+            </PosthogCtaLink>
+            <PosthogCtaLink
+              href={auditHref}
+              event="free_audit_clicked"
+              className="button-secondary"
+              props={{ location: "social_hero" }}
+            >
               Run free website audit
-            </Link>
+            </PosthogCtaLink>
           </div>
         </div>
       </section>
@@ -113,18 +125,7 @@ export default function SocialLandingPage() {
             </p>
 
             {hasDemoVideo ? (
-              <div className="mt-6 overflow-hidden rounded-2xl border border-border bg-black">
-                <video
-                  className="aspect-video w-full"
-                  controls
-                  playsInline
-                  preload="metadata"
-                >
-                  <source src={demoVideoSrc} type="video/mp4" />
-                  Your browser does not support embedded video. Use the links
-                  below to start a free trial or book a demo.
-                </video>
-              </div>
+              <SocialDemoVideo src={demoVideoSrc} />
             ) : (
               <div className="mt-6 rounded-2xl border border-dashed border-border bg-surface-2 p-6 text-center">
                 <p className="text-sm font-medium text-foreground">
@@ -144,12 +145,22 @@ export default function SocialLandingPage() {
               >
                 Start free trial
               </TrialCtaLink>
-              <Link href={demoHref} className="button-secondary">
+              <PosthogCtaLink
+                href={demoHref}
+                event="demo_clicked"
+                className="button-secondary"
+                props={{ location: "social_video" }}
+              >
                 Book demo
-              </Link>
-              <Link href={auditHref} className="button-secondary">
+              </PosthogCtaLink>
+              <PosthogCtaLink
+                href={auditHref}
+                event="free_audit_clicked"
+                className="button-secondary"
+                props={{ location: "social_video" }}
+              >
                 Run free website audit
-              </Link>
+              </PosthogCtaLink>
             </div>
           </div>
         </div>

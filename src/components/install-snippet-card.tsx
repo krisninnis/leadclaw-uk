@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { track } from "@/lib/analytics";
 
 export default function InstallSnippetCard({
   widgetSnippet,
@@ -13,6 +14,7 @@ export default function InstallSnippetCard({
     try {
       await navigator.clipboard.writeText(widgetSnippet);
       setCopied(true);
+      track("widget_snippet_copied", { surface: "install_page" });
       window.setTimeout(() => setCopied(false), 2000);
     } catch (error) {
       console.error("[install-snippet-card] copy failed", error);

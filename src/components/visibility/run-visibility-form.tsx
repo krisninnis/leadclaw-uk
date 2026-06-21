@@ -7,6 +7,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { track } from "@/lib/analytics";
 
 type Props = {
   label?: string;
@@ -35,6 +36,7 @@ export default function RunVisibilityForm({
         setError(data.message || friendlyError(data.error));
         return;
       }
+      track("ai_readiness_generated", {});
       // Server component re-reads the latest scan on refresh.
       router.refresh();
     } catch {

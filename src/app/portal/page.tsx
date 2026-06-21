@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import GaEventOnMount from "@/components/analytics/ga-event-on-mount";
+import TrackOnMount from "@/components/analytics/track-on-mount";
 import LogoutButton from "@/components/logout-button";
 import PortalPlanUpgrade from "@/components/portal-plan-upgrade";
 import PortalChat from "@/components/portal-chat";
@@ -285,6 +286,7 @@ export default async function PortalPage({
 
   return (
     <div className="space-y-6">
+      <TrackOnMount event="portal_viewed" />
       {portalConversionFlow ? (
         <>
           <GaEventOnMount

@@ -7,6 +7,7 @@ import {
   safePlanFromHref,
   trackGaEvent,
 } from "@/lib/ga";
+import { track } from "@/lib/analytics";
 
 export default function TrialCtaLink({
   href,
@@ -26,6 +27,9 @@ export default function TrialCtaLink({
       location,
       href,
     });
+
+    track("cta_clicked", { cta: "free_trial", location, href });
+    track("free_trial_clicked", { location, href });
 
     trackGaEvent("trial_start_clicked", {
       location,

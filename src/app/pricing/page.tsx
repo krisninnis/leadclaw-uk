@@ -6,6 +6,7 @@ import PricingCta from "./_components/pricing-cta";
 import { faqs } from "./pricing-data";
 import type { Metadata } from "next";
 import GaEventOnMount from "@/components/analytics/ga-event-on-mount";
+import TrackOnMount from "@/components/analytics/track-on-mount";
 
 export const metadata: Metadata = {
   title: "LeadClaw Pricing | AI Receptionist Software",
@@ -34,6 +35,7 @@ const faqSchema = {
 export default function PricingPage() {
   return (
     <>
+      <TrackOnMount event="pricing_viewed" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
