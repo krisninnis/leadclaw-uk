@@ -68,6 +68,38 @@ export default async function PortalPage({
 
   if (!user) redirect("/login");
 
+  // Onboarding gate: route users who haven't finished the setup wizard there
+  // first, so nobody lands in the portal without installing the widget.
+  if (user.email) {
+    const gateAdmin = createAdminClient({ optional: true });
+    if (gateAdmin) {
+      const { data: gateClient } = await (gateAdmin as unknown as SupabaseUntypedClient)
+        .from("onboarding_clients")
+        .select("id")
+        .eq("contact_email", user.email)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const gateClientId = (gateClient as { id: string } | null)?.id || null;
+      if (gateClientId) {
+        const { data: gateSite } = await (gateAdmin as unknown as SupabaseUntypedClient)
+          .from("onboarding_sites")
+          .select("settings")
+          .eq("onboarding_client_id", gateClientId)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        const gateSettings =
+          ((gateSite as { settings: Record<string, unknown> | null } | null)?.settings ||
+            {}) as Record<string, unknown>;
+        const gateOnboarding = (gateSettings.onboarding || {}) as Record<string, unknown>;
+        if (gateOnboarding.completed !== true) {
+          redirect("/portal/onboarding");
+        }
+      }
+    }
+  }
+
   const params = (await searchParams) || {};
   const trialStarted = params.trial === "started";
   const trialAlreadyActive = params.trial === "active";
