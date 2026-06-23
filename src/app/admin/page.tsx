@@ -359,7 +359,10 @@ export default async function AdminPage() {
     (row) => !!row.clinicId,
   ).length;
 
-  const liveWidgets = clinicManagementRows.filter(
+  // NOTE: this counts ACTIVE WIDGET TOKENS (issued), not live widgets.
+  // Real-time liveness (last_seen_at) is shown in the Command Centre
+  // "Widget Health" section. Kept here as a provisioning signal.
+  const activeWidgetTokens = clinicManagementRows.filter(
     (row) => row.widgetTokenActive,
   ).length;
 
@@ -459,8 +462,11 @@ export default async function AdminPage() {
           </div>
 
           <div className="rounded-xl border bg-slate-50 p-4">
-            <p className="text-sm text-slate-500">Live widgets</p>
-            <p className="text-2xl font-semibold">{liveWidgets}</p>
+            <p className="text-sm text-slate-500">Active widget tokens</p>
+            <p className="text-2xl font-semibold">{activeWidgetTokens}</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Tokens issued — not live pings. See Command Centre &rarr; Widget Health.
+            </p>
           </div>
 
           <div className="rounded-xl border bg-slate-50 p-4">

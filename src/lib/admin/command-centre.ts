@@ -575,3 +575,166 @@ export function computeThisWeek(
 
   return { newTrials, newCustomers, leadsImported, enquiriesCaptured };
 }
+
+// ---- Widget health (Phase 5) ----------------------------------------------
+// Operationally useful recency breakdown of installed widgets, derived purely
+// from widget_tokens.last_seen_at (no new query). Replaces the single ambiguous
+// "Live Widgets" number that conflicted with the active-token count shown in the
+// Business overview grid (which counted issued tokens, not liveness).
+
+export type WidgetSeenBucket = "live" | "today" | "stale" | "never";
+
+// Returns null when the clinic has no widget at all (no active token and never
+// seen) — such clinics are an onboarding blocker, not a widget-health data point.
+export function widgetSeenBucket(
+  lastSeenAt: string | null,
+  now: number,
+  hasToken: boolean,
+): WidgetSeenBucket | null {
+  const hasWidget = hasToken || Boolean(lastSeenAt);
+  if (!hasWidget) return null;
+  if (!lastSeenAt) return "never";
+  const t = new Date(lastSeenAt).getTime();
+  if (!Number.isFinite(t)) return "never";
+  const age = now - t;
+  if (age <= WIDGET_LIVE_WINDOW_MS) return "live"; // <= 15 min
+  if (age <= DAY_MS) return "today"; // <= 24 h
+  return "stale"; // > 24 h
+}
+
+export type WidgetHealth = {
+  totalWithWidget: number;
+  seenLast15Min: number;
+  seenLast24Hours: number; // cumulative: live + today (<= 24h)
+  seenEarlier: number; // > 24h
+  neverSeen: number;
+};
+
+export function computeWidgetHealth(
+  clinics: ClinicRecord[],
+  now: number,
+): WidgetHealth {
+  let live = 0;
+  let today = 0;
+  let stale = 0;
+  let never = 0;
+  for (const c of clinics) {
+    const bucket = widgetSeenBucket(c.widgetLastSeenAt, now, c.widgetTokenActive);
+    if (bucket === null) continue;
+    if (bucket === "live") live += 1;
+    else if (bucket === "today") today += 1;
+    else if (bucket === "stale") stale += 1;
+    else never += 1;
+  }
+  return {
+    totalWithWidget: live + today + stale + never,
+    seenLast15Min: live,
+    seenLast24Hours: live + today,
+    seenEarlier: stale,
+    neverSeen: never,
+  };
+}
+
+// ---- Production-customer helpers (Phase 4) --------------------------------
+
+// Per-clinic monthly price. Mirrors the MRR rule in computeFounderMetrics:
+// only an ACTIVE subscription contributes, priced by plan.
+export function monthlyPriceFor(c: ClinicRecord): number {
+  if (lower(c.subscriptionStatus) !== "active") return 0;
+  const plan = normalizePlan(c.subscriptionPlan);
+  return PLAN_MONTHLY_PRICES[plan]?.amount || 0;
+}
+
+// Excluded from the Production Customers table by default: demo/test clinics
+// (isDemoClinic already covers demo|test|example and test.leadclaw.uk) plus
+// LeadClaw internal accounts/domains (anything containing "leadclaw", e.g.
+// www.leadclaw.uk or @leadclaw.uk). The "Show Test Data" toggle bypasses this.
+export function isExcludedFromProduction(c: ClinicRecord): boolean {
+  if (c.isDemo) return true;
+  const haystacks = [c.name, c.email, c.domain].map(lower);
+  for (const h of haystacks) {
+    if (!h) continue;
+    if (h.includes("leadclaw")) return true; // internal company accounts/sites
+  }
+  return false;
+}
+
+// ---- Onboarding blockers (Phase 3) ----------------------------------------
+
+export type OnboardingBlocker = {
+  id: string;
+  name: string;
+  code: string;
+  problem: string;
+  action: string;
+  severity: number; // higher = more severe (used for sort order)
+};
+
+// One row per non-demo clinic that needs action, carrying its single
+// most-severe blocker. Clinics with no blocker are omitted ("only show clinics
+// requiring action"). Reuses the same ClinicRecord signals as the rest of the
+// dashboard — no new query or duplicate aggregation.
+export function computeOnboardingBlockers(
+  clinics: ClinicRecord[],
+): OnboardingBlocker[] {
+  const out: OnboardingBlocker[] = [];
+
+  for (const c of clinics) {
+    if (c.isDemo) continue;
+    const widgetInstalled = Boolean(c.widgetLastSeenAt) || c.widgetTokenActive;
+
+    // Ordered most-severe first; first match wins for this clinic.
+    let blocker: Omit<OnboardingBlocker, "id" | "name"> | null = null;
+
+    if (!c.hasSite) {
+      blocker = {
+        code: "broken_onboarding",
+        severity: 60,
+        problem: "Broken onboarding state — no onboarding site exists",
+        action: "Re-run provisioning to create the site and widget token",
+      };
+    } else if (!c.clinicId) {
+      blocker = {
+        code: "no_clinic_linked",
+        severity: 50,
+        problem: "No clinic linked to the onboarding site",
+        action: "Link the clinic record (clinic_id) to the site",
+      };
+    } else if (!c.domain) {
+      blocker = {
+        code: "missing_domain",
+        severity: 40,
+        problem: "No website domain set",
+        action: "Add the clinic's website domain in onboarding",
+      };
+    } else if (!widgetInstalled) {
+      blocker = {
+        code: "no_widget",
+        severity: 30,
+        problem: "Widget not installed (no active token, never seen)",
+        action: "Send the install snippet and confirm it is on the site",
+      };
+    } else if (!c.subscriptionStatus) {
+      blocker = {
+        code: "missing_subscription",
+        severity: 20,
+        problem: "No subscription on record for this account",
+        action: "Check billing — no subscription is linked to this email",
+      };
+    } else if (c.totalEnquiries === 0) {
+      blocker = {
+        code: "no_enquiry",
+        severity: 10,
+        problem: "No enquiries captured yet",
+        action: "Send a test enquiry and review widget placement",
+      };
+    }
+
+    if (!blocker) continue;
+    out.push({ id: c.id, name: c.name, ...blocker });
+  }
+
+  // Most severe first, then alphabetical for stable display.
+  out.sort((a, b) => b.severity - a.severity || a.name.localeCompare(b.name));
+  return out;
+}

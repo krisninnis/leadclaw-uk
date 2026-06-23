@@ -215,3 +215,31 @@ export function computeAtRiskTrials(
 
   return out;
 }
+
+// ---- Revenue Pipeline (Phase 2) -------------------------------------------
+// Focused trial -> activated -> paid view for the founder dashboard. Reuses the
+// same predicates as the Growth Funnel (isActivated / isPaidCustomer) so the
+// numbers are guaranteed consistent — no duplicate aggregation logic.
+
+export type RevenuePipeline = {
+  trialsStarted: number;
+  activatedTrials: number;
+  payingCustomers: number;
+  trialToActivatedPct: number | null;
+  activatedToPaidPct: number | null;
+};
+
+export function computeRevenuePipeline(clinics: ClinicRecord[]): RevenuePipeline {
+  const real = clinics.filter((c) => !c.isDemo);
+  const trialsStarted = real.length;
+  const activatedTrials = real.filter(isActivated).length;
+  const payingCustomers = real.filter(isPaidCustomer).length;
+
+  return {
+    trialsStarted,
+    activatedTrials,
+    payingCustomers,
+    trialToActivatedPct: conversion(activatedTrials, trialsStarted),
+    activatedToPaidPct: conversion(payingCustomers, activatedTrials),
+  };
+}

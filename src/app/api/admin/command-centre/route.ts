@@ -7,10 +7,15 @@ import {
   onboardingProgress,
   buildTimeline,
   widgetIsLive,
+  widgetSeenBucket,
   computeActionRequired,
   computeFounderMetrics,
+  computeWidgetHealth,
+  computeOnboardingBlockers,
   computePipeline,
   computeThisWeek,
+  monthlyPriceFor,
+  isExcludedFromProduction,
   type RawClient,
   type RawSite,
   type RawToken,
@@ -21,6 +26,7 @@ import {
 import {
   computeGrowthFunnel,
   computeAtRiskTrials,
+  computeRevenuePipeline,
 } from "@/lib/admin/growth-funnel";
 
 export const runtime = "nodejs";
@@ -122,8 +128,12 @@ export async function GET() {
         email: c.email,
         domain: c.domain,
         isDemo: c.isDemo,
+        // Stricter exclusion for the Production Customers table (Phase 4):
+        // demo/test clinics plus LeadClaw internal accounts/domains.
+        excludedFromProduction: isExcludedFromProduction(c),
         subscriptionStatus: c.subscriptionStatus,
         subscriptionPlan: c.subscriptionPlan,
+        mrr: monthlyPriceFor(c),
         totalEnquiries: c.totalEnquiries,
         realEnquiries: c.realEnquiries,
         testEnquiries: c.testEnquiries,
@@ -137,6 +147,7 @@ export async function GET() {
         },
         widget: {
           live: widgetIsLive(c.widgetLastSeenAt, now),
+          bucket: widgetSeenBucket(c.widgetLastSeenAt, now, c.widgetTokenActive),
           tokenActive: c.widgetTokenActive,
           lastSeenAt: c.widgetLastSeenAt,
           lastSeenDomain: c.widgetLastSeenDomain,
@@ -149,7 +160,10 @@ export async function GET() {
       ok: true,
       generatedAt: new Date(now).toISOString(),
       growthFunnel: computeGrowthFunnel(clinics, visitors),
+      revenuePipeline: computeRevenuePipeline(clinics),
       atRisk: computeAtRiskTrials(clinics, now),
+      onboardingBlockers: computeOnboardingBlockers(clinics),
+      widgetHealth: computeWidgetHealth(clinics, now),
       actionRequired: computeActionRequired(clinics, now),
       founderMetrics: computeFounderMetrics(clinics, leads, enquiries, now),
       thisWeek: computeThisWeek(clinics, leads, enquiries, now),

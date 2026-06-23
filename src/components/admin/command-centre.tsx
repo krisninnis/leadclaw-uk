@@ -9,6 +9,7 @@ import { useEffect, useMemo, useState } from "react";
 type ActionItem = { id: string; name: string };
 type HealthStatus = "healthy" | "attention" | "critical";
 type RiskLevel = "critical" | "warning" | "attention";
+type WidgetBucket = "live" | "today" | "stale" | "never" | null;
 
 type ClinicView = {
   id: string;
@@ -16,8 +17,10 @@ type ClinicView = {
   email: string | null;
   domain: string | null;
   isDemo: boolean;
+  excludedFromProduction: boolean;
   subscriptionStatus: string | null;
   subscriptionPlan: string | null;
+  mrr: number;
   totalEnquiries: number;
   realEnquiries: number;
   testEnquiries: number;
@@ -31,6 +34,7 @@ type ClinicView = {
   };
   widget: {
     live: boolean;
+    bucket: WidgetBucket;
     tokenActive: boolean;
     lastSeenAt: string | null;
     lastSeenDomain: string | null;
@@ -54,6 +58,15 @@ type AtRiskItem = {
   action: string;
 };
 
+type BlockerItem = {
+  id: string;
+  name: string;
+  code: string;
+  problem: string;
+  action: string;
+  severity: number;
+};
+
 type Payload = {
   ok: boolean;
   generatedAt: string;
@@ -61,11 +74,26 @@ type Payload = {
     visitorsAvailable: boolean;
     stages: FunnelStageView[];
   };
+  revenuePipeline: {
+    trialsStarted: number;
+    activatedTrials: number;
+    payingCustomers: number;
+    trialToActivatedPct: number | null;
+    activatedToPaidPct: number | null;
+  };
   atRisk: {
     critical: AtRiskItem[];
     warning: AtRiskItem[];
     attention: AtRiskItem[];
     all: AtRiskItem[];
+  };
+  onboardingBlockers: BlockerItem[];
+  widgetHealth: {
+    totalWithWidget: number;
+    seenLast15Min: number;
+    seenLast24Hours: number;
+    seenEarlier: number;
+    neverSeen: number;
   };
   actionRequired: {
     widgetNotInstalled: ActionItem[];
@@ -116,6 +144,10 @@ function relativeTime(iso: string | null): string {
   if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
   const days = Math.round(hrs / 24);
   return `${days} day${days === 1 ? "" : "s"} ago`;
+}
+
+function pctText(p: number | null): string {
+  return p === null ? "—" : `${p}%`;
 }
 
 function Section({
@@ -170,6 +202,204 @@ function Metric({
       <p className="mt-1 text-2xl font-semibold text-foreground">{value}</p>
       {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
     </div>
+  );
+}
+
+// ---- Revenue Pipeline (Phase 2) -------------------------------------------
+
+function RevenuePipelineSection({ rp }: { rp: Payload["revenuePipeline"] }) {
+  return (
+    <Section
+      title="Revenue Pipeline"
+      subtitle="Trials → Activated → Paying, with stage conversion."
+    >
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Metric label="Trials Started" value={rp.trialsStarted} hint="Onboarding client exists" />
+        <Metric
+          label="Activated Trials"
+          value={rp.activatedTrials}
+          hint="Widget installed + ≥1 enquiry"
+        />
+        <Metric label="Paying Customers" value={rp.payingCustomers} hint="Active paid subscription" />
+      </div>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-sm text-slate-500">Trials → Activated</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground">
+            {pctText(rp.trialToActivatedPct)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <p className="text-sm text-slate-500">Activated → Paid</p>
+          <p className="mt-1 text-2xl font-semibold text-foreground">
+            {pctText(rp.activatedToPaidPct)}
+          </p>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+// ---- Widget Health (Phase 5) ----------------------------------------------
+
+function WidgetHealthSection({ wh }: { wh: Payload["widgetHealth"] }) {
+  return (
+    <Section
+      title="Widget Health"
+      subtitle={`${wh.totalWithWidget} widget${wh.totalWithWidget === 1 ? "" : "s"} — recency from last_seen_at`}
+    >
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Metric label="Seen last 15 min" value={wh.seenLast15Min} hint="Live right now" />
+        <Metric
+          label="Seen last 24 hours"
+          value={wh.seenLast24Hours}
+          hint="Active today (incl. last 15 min)"
+        />
+        <Metric label="Seen earlier" value={wh.seenEarlier} hint="Last seen > 24h ago" />
+        <Metric label="Never seen" value={wh.neverSeen} hint="Token issued, never pinged" />
+      </div>
+    </Section>
+  );
+}
+
+// ---- Onboarding Blockers (Phase 3) ----------------------------------------
+
+const BLOCKER_TONE: Record<string, string> = {
+  broken_onboarding: "bg-rose-100 text-rose-700",
+  no_clinic_linked: "bg-rose-100 text-rose-700",
+  missing_domain: "bg-amber-100 text-amber-700",
+  no_widget: "bg-amber-100 text-amber-700",
+  missing_subscription: "bg-amber-100 text-amber-700",
+  no_enquiry: "bg-yellow-100 text-yellow-700",
+};
+
+function OnboardingBlockersSection({ blockers }: { blockers: BlockerItem[] }) {
+  return (
+    <Section
+      title={`Onboarding Blockers${blockers.length > 0 ? ` (${blockers.length})` : ""}`}
+      subtitle="Clinics requiring action — most severe first."
+      accent={blockers.some((b) => b.severity >= 50) ? "danger" : undefined}
+    >
+      {blockers.length === 0 ? (
+        <p className="text-sm text-muted">No onboarding blockers — every clinic is set up.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                <th className="py-2 pr-4 font-medium">Clinic</th>
+                <th className="py-2 pr-4 font-medium">Problem</th>
+                <th className="py-2 font-medium">Recommended action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {blockers.map((b) => (
+                <tr key={b.id} className="border-b border-slate-100 align-top">
+                  <td className="py-2 pr-4 font-medium text-slate-900">{b.name}</td>
+                  <td className="py-2 pr-4">
+                    <span
+                      className={`whitespace-normal rounded-full px-2 py-0.5 text-xs font-medium ${
+                        BLOCKER_TONE[b.code] || "bg-slate-100 text-slate-700"
+                      }`}
+                    >
+                      {b.problem}
+                    </span>
+                  </td>
+                  <td className="py-2 text-slate-600">{b.action}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Section>
+  );
+}
+
+// ---- Production Customers (Phase 4) ---------------------------------------
+
+const WIDGET_BUCKET_LABEL: Record<string, string> = {
+  live: "🟢 Live (≤15m)",
+  today: "🟡 Seen today",
+  stale: "🔴 Stale (>24h)",
+  never: "⚪ Never seen",
+};
+
+function ProductionCustomersSection({ clinics }: { clinics: ClinicView[] }) {
+  const [showTestData, setShowTestData] = useState(false); // default OFF
+
+  const rows = useMemo(() => {
+    const filtered = showTestData
+      ? clinics
+      : clinics.filter((c) => !c.excludedFromProduction);
+    // Highest MRR first, then alphabetical.
+    return [...filtered].sort((a, b) => b.mrr - a.mrr || a.name.localeCompare(b.name));
+  }, [clinics, showTestData]);
+
+  const totalMrr = rows.reduce((sum, c) => sum + c.mrr, 0);
+
+  return (
+    <Section
+      title="Production Customers"
+      subtitle={`${rows.length} account${rows.length === 1 ? "" : "s"} · ${gbp(totalMrr)} MRR`}
+    >
+      <div className="mb-4 flex flex-wrap items-center gap-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm">
+        <label className="flex items-center gap-2 text-slate-600">
+          <input
+            type="checkbox"
+            checked={showTestData}
+            onChange={(e) => setShowTestData(e.target.checked)}
+          />
+          Show Test Data
+        </label>
+        <span className="text-xs text-slate-400">
+          Off by default — hides demo, test.leadclaw.uk, and LeadClaw internal accounts.
+        </span>
+      </div>
+
+      {rows.length === 0 ? (
+        <p className="text-sm text-muted">No production customers match the current filter.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                <th className="py-2 pr-4 font-medium">Customer</th>
+                <th className="py-2 pr-4 font-medium">Plan</th>
+                <th className="py-2 pr-4 font-medium">MRR</th>
+                <th className="py-2 pr-4 font-medium">Widget status</th>
+                <th className="py-2 pr-4 font-medium">Leads received</th>
+                <th className="py-2 font-medium">Health</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((c) => {
+                const meta = HEALTH_META[c.health.status];
+                return (
+                  <tr key={c.id} className="border-b border-slate-100 align-top">
+                    <td className="py-2 pr-4">
+                      <div className="font-medium text-slate-900">{c.name}</div>
+                      <div className="text-xs text-slate-500">{c.domain || c.email || "—"}</div>
+                    </td>
+                    <td className="py-2 pr-4 text-slate-600">{c.subscriptionPlan || "—"}</td>
+                    <td className="py-2 pr-4 font-medium text-slate-900">{gbp(c.mrr)}</td>
+                    <td className="py-2 pr-4 whitespace-nowrap text-slate-600">
+                      {c.widget.bucket ? WIDGET_BUCKET_LABEL[c.widget.bucket] : "— No widget"}
+                    </td>
+                    <td className="py-2 pr-4 font-medium text-slate-700">{c.realEnquiries}</td>
+                    <td className="py-2">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${meta.cls}`}>
+                        {meta.label}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Section>
   );
 }
 
@@ -545,6 +775,9 @@ export default function CommandCentre() {
         </div>
       </Section>
 
+      {/* PHASE 2 — Revenue Pipeline (above Founder Dashboard) */}
+      <RevenuePipelineSection rp={data.revenuePipeline} />
+
       {/* PART 2 — Founder Dashboard */}
       <Section title="Founder Dashboard" subtitle="Key business metrics at a glance.">
         <div className="space-y-5">
@@ -576,11 +809,13 @@ export default function CommandCentre() {
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
               Usage
             </p>
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Metric label="Live Widgets" value={fm.usage.liveWidgets} />
+            <div className="grid gap-4 sm:grid-cols-2">
               <Metric label="Total Enquiries" value={fm.usage.totalEnquiries} />
               <Metric label="Enquiries (30 days)" value={fm.usage.enquiriesLast30Days} />
             </div>
+            <p className="mt-2 text-xs text-slate-500">
+              Live widget counts moved to the Widget Health section below.
+            </p>
           </div>
           <div>
             <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -599,6 +834,15 @@ export default function CommandCentre() {
           </div>
         </div>
       </Section>
+
+      {/* PHASE 5 — Widget Health */}
+      <WidgetHealthSection wh={data.widgetHealth} />
+
+      {/* PHASE 3 — Onboarding Blockers */}
+      <OnboardingBlockersSection blockers={data.onboardingBlockers} />
+
+      {/* PHASE 4 — Production Customers */}
+      <ProductionCustomersSection clinics={data.clinics} />
 
       {/* PART 9 — This Week */}
       <Section title="This Week" subtitle="Last 7 days." defaultOpen={false}>
