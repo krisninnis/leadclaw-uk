@@ -9,6 +9,7 @@ import {
   widgetIsLive,
   widgetSeenBucket,
   computeActionRequired,
+  computeFounderInbox,
   computeFounderMetrics,
   computeWidgetHealth,
   computeOnboardingBlockers,
@@ -159,6 +160,7 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       generatedAt: new Date(now).toISOString(),
+      founderInbox: computeFounderInbox(clinics, now),
       growthFunnel: computeGrowthFunnel(clinics, visitors),
       revenuePipeline: computeRevenuePipeline(clinics),
       atRisk: computeAtRiskTrials(clinics, now),

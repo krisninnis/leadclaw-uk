@@ -58,6 +58,16 @@ type AtRiskItem = {
   action: string;
 };
 
+type FounderInboxItem = {
+  id: string;
+  name: string;
+  score: number;
+  tier: "critical" | "high" | "medium";
+  code: string;
+  status: string;
+  action: string;
+};
+
 type BlockerItem = {
   id: string;
   name: string;
@@ -70,6 +80,10 @@ type BlockerItem = {
 type Payload = {
   ok: boolean;
   generatedAt: string;
+  founderInbox: {
+    items: FounderInboxItem[];
+    counts: { all: number; critical: number; high: number; medium: number };
+  };
   growthFunnel: {
     visitorsAvailable: boolean;
     stages: FunnelStageView[];
@@ -202,6 +216,86 @@ function Metric({
       <p className="mt-1 text-2xl font-semibold text-foreground">{value}</p>
       {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
     </div>
+  );
+}
+
+// ---- Founder Inbox (priority work queue) ----------------------------------
+
+const INBOX_TIER_META: Record<
+  "critical" | "high" | "medium",
+  { label: string; cls: string }
+> = {
+  critical: { label: "🔴 CRITICAL", cls: "bg-rose-100 text-rose-700" },
+  high: { label: "🟠 HIGH", cls: "bg-amber-100 text-amber-700" },
+  medium: { label: "🟡 MEDIUM", cls: "bg-yellow-100 text-yellow-700" },
+};
+
+function FounderInboxSection({ inbox }: { inbox: Payload["founderInbox"] }) {
+  const [filter, setFilter] = useState<"all" | "critical" | "high" | "medium">("all");
+
+  const items =
+    filter === "all" ? inbox.items : inbox.items.filter((i) => i.tier === filter);
+
+  const tabs: {
+    key: "all" | "critical" | "high" | "medium";
+    label: string;
+    count: number;
+  }[] = [
+    { key: "all", label: "All", count: inbox.counts.all },
+    { key: "critical", label: "Critical", count: inbox.counts.critical },
+    { key: "high", label: "High", count: inbox.counts.high },
+    { key: "medium", label: "Medium", count: inbox.counts.medium },
+  ];
+
+  return (
+    <Section
+      title="Founder Inbox"
+      subtitle="Highest impact actions to move revenue forward."
+      accent={inbox.counts.critical > 0 ? "danger" : undefined}
+    >
+      <div className="mb-4 flex flex-wrap gap-2">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            onClick={() => setFilter(t.key)}
+            className={`rounded-full border px-3 py-1 text-xs font-medium ${
+              filter === t.key
+                ? "border-brand bg-brand/10 text-brand-strong"
+                : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            {t.label} ({t.count})
+          </button>
+        ))}
+      </div>
+
+      {items.length === 0 ? (
+        <p className="text-sm text-muted">Nothing requires attention today.</p>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((i) => {
+            const meta = INBOX_TIER_META[i.tier];
+            return (
+              <li key={i.id} className="rounded-xl border border-slate-200 p-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span
+                    className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold ${meta.cls}`}
+                  >
+                    {meta.label}
+                  </span>
+                  <span className="font-medium text-slate-900">{i.name}</span>
+                  <span className="text-sm text-slate-500">— {i.status}</span>
+                </div>
+                <p className="mt-1 text-sm text-slate-600">
+                  <span className="font-medium text-slate-700">Action:</span> {i.action}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Section>
   );
 }
 
@@ -735,6 +829,9 @@ export default function CommandCentre() {
 
   return (
     <div className="space-y-6">
+      {/* Founder Inbox — top priority actions for today */}
+      <FounderInboxSection inbox={data.founderInbox} />
+
       {/* Founder Funnel Dashboard — Growth Funnel */}
       <GrowthFunnelSection funnel={data.growthFunnel} />
 

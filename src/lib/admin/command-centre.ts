@@ -738,3 +738,214 @@ export function computeOnboardingBlockers(
   out.sort((a, b) => b.severity - a.severity || a.name.localeCompare(b.name));
   return out;
 }
+
+// ---- Founder Inbox (priority work queue) ----------------------------------
+// "What requires action today" — not metrics, not reports. Each non-demo clinic
+// is scored against an ordered list of issues; the single HIGHEST-priority issue
+// it matches becomes one inbox item (higher score = more urgent = shown first).
+// Purely derived from existing ClinicRecord signals — no new query, table, or
+// migration. Mirrors the broken-account / widget / enquiry derivations used by
+// computeActionRequired so the inbox never disagrees with the rest of the board.
+
+// Hard structural breakage. Note: "past_due" is intentionally NOT here — it is a
+// recoverable billing state scored separately (50), distinct from a broken
+// account (100). This is BROKEN_SUB_STATUSES minus past_due.
+const HARD_BROKEN_SUB_STATUSES = new Set([
+  "canceled",
+  "cancelled",
+  "unpaid",
+  "incomplete_expired",
+]);
+
+const WIDGET_OFFLINE_DAYS = 7;
+const TRIAL_EXPIRY_SOON_DAYS = 3;
+
+export type FounderInboxTier = "critical" | "high" | "medium";
+
+export type FounderInboxItem = {
+  id: string;
+  name: string;
+  score: number;
+  tier: FounderInboxTier;
+  code: string;
+  status: string;
+  action: string;
+};
+
+export type FounderInbox = {
+  items: FounderInboxItem[];
+  counts: { all: number; critical: number; high: number; medium: number };
+};
+
+// Score -> tier. Calibrated to the spec examples: 80 = CRITICAL, 70 = HIGH,
+// 60 = MEDIUM. Anything above 80 (broken=100, paid-no-widget=90) is CRITICAL;
+// anything below 60 (past due=50, expiring=40, offline=30, no-notifs=20) is
+// MEDIUM. There is no "low" tier in the filter set, so everything maps into one
+// of the three.
+export function founderInboxTier(score: number): FounderInboxTier {
+  if (score >= 80) return "critical";
+  if (score >= 65) return "high";
+  return "medium";
+}
+
+function daysAgo(iso: string | null, now: number): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return null;
+  return Math.floor((now - t) / DAY_MS);
+}
+
+function daysUntil(iso: string | null, now: number): number | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (!Number.isFinite(t)) return null;
+  return Math.ceil((t - now) / DAY_MS);
+}
+
+// Returns the single highest-priority issue for a clinic, or null if nothing
+// requires action. Order matters: first match (highest score) wins.
+function scoreClinic(
+  c: ClinicRecord,
+  now: number,
+): Omit<FounderInboxItem, "id" | "name" | "tier"> | null {
+  const status = lower(c.subscriptionStatus);
+  const widgetInstalled = Boolean(c.widgetLastSeenAt) || c.widgetTokenActive;
+  const isPaid =
+    status === "active" && isPaidPlan(normalizePlan(c.subscriptionPlan));
+  const isTrial = status === "trialing";
+  const trialAge = daysAgo(c.createdAt, now) ?? 0;
+
+  // 100 — Broken account (structural).
+  const broken =
+    !c.hasSite ||
+    (c.hasSite && !c.clinicId) ||
+    !c.subscriptionStatus ||
+    HARD_BROKEN_SUB_STATUSES.has(status);
+  if (broken) {
+    return {
+      score: 100,
+      code: "broken_account",
+      status: "Broken account — non-functional",
+      action: "Investigate: missing site, clinic link, or subscription record",
+    };
+  }
+
+  // 90 — Paid customer, widget never installed.
+  if (isPaid && !widgetInstalled) {
+    return {
+      score: 90,
+      code: "paid_no_widget",
+      status: "Paid customer · Widget never installed",
+      action: "Contact the customer and assist installation urgently",
+    };
+  }
+
+  // 80 — Trial older than 7 days, widget not installed.
+  if (isTrial && trialAge > 7 && !widgetInstalled) {
+    return {
+      score: 80,
+      code: "old_trial_no_widget",
+      status: `Trial ${trialAge} days old · Widget not installed`,
+      action: "Contact clinic and assist installation",
+    };
+  }
+
+  // 70 — Widget installed, no enquiry captured.
+  if (widgetInstalled && c.totalEnquiries === 0) {
+    return {
+      score: 70,
+      code: "widget_no_enquiry",
+      status: "Widget installed · No enquiries captured",
+      action: "Run a test enquiry to verify capture",
+    };
+  }
+
+  // 60 — Activated (widget + a lead) but no REAL enquiry.
+  if (widgetInstalled && c.totalEnquiries > 0 && c.realEnquiries === 0) {
+    return {
+      score: 60,
+      code: "activated_no_real_enquiry",
+      status: "Activated · No real enquiries",
+      action: "Review widget placement and site traffic",
+    };
+  }
+
+  // 50 — Subscription past due (recoverable billing state).
+  if (status === "past_due") {
+    return {
+      score: 50,
+      code: "subscription_past_due",
+      status: "Subscription past due",
+      action: "Follow up on payment before access lapses",
+    };
+  }
+
+  // 40 — Trial expires within 3 days.
+  if (isTrial && c.trialEnd) {
+    const left = daysUntil(c.trialEnd, now);
+    if (left !== null && left >= 0 && left <= TRIAL_EXPIRY_SOON_DAYS) {
+      return {
+        score: 40,
+        code: "trial_expiring",
+        status: `Trial expires in ${left} day${left === 1 ? "" : "s"}`,
+        action: "Reach out before the trial ends to convert",
+      };
+    }
+  }
+
+  // 30 — Widget offline for more than 7 days (was live, now silent).
+  if (widgetInstalled && c.widgetLastSeenAt) {
+    const offline = daysAgo(c.widgetLastSeenAt, now);
+    if (offline !== null && offline > WIDGET_OFFLINE_DAYS) {
+      return {
+        score: 30,
+        code: "widget_offline",
+        status: `Widget offline ${offline} days`,
+        action: "Check the widget is still installed and live on the site",
+      };
+    }
+  }
+
+  // 20 — No notification settings configured.
+  if (!c.notificationsConfigured) {
+    return {
+      score: 20,
+      code: "no_notifications",
+      status: "No notification settings configured",
+      action: "Help configure enquiry notifications",
+    };
+  }
+
+  return null;
+}
+
+export function computeFounderInbox(
+  clinics: ClinicRecord[],
+  now: number,
+): FounderInbox {
+  const items: FounderInboxItem[] = [];
+
+  for (const c of clinics) {
+    if (c.isDemo) continue;
+    const scored = scoreClinic(c, now);
+    if (!scored) continue;
+    items.push({
+      id: c.id,
+      name: c.name,
+      tier: founderInboxTier(scored.score),
+      ...scored,
+    });
+  }
+
+  // Highest score first, then alphabetical for stable display.
+  items.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+
+  const counts = {
+    all: items.length,
+    critical: items.filter((i) => i.tier === "critical").length,
+    high: items.filter((i) => i.tier === "high").length,
+    medium: items.filter((i) => i.tier === "medium").length,
+  };
+
+  return { items, counts };
+}
