@@ -24,9 +24,11 @@ export function isWidgetInstalled(c: ClinicRecord): boolean {
   return Boolean(c.widgetLastSeenAt) || c.widgetTokenActive;
 }
 
-// Activated = widget installed AND a test enquiry has been completed.
+// Activated = widget installed AND at least one captured lead (test OR real).
+// Any received enquiry proves the capture loop works, so we no longer require
+// the canonical "LeadClaw Test Enquiry" marker specifically.
 export function isActivated(c: ClinicRecord): boolean {
-  return isWidgetInstalled(c) && c.testEnquiries > 0;
+  return isWidgetInstalled(c) && c.totalEnquiries > 0;
 }
 
 // Paid customer = active subscription on a paid plan. Matches the activePaid
@@ -115,7 +117,7 @@ export function computeGrowthFunnel(
       label: "Activated Trials",
       count: activatedTrials,
       conversionFromPrevPct: conversion(activatedTrials, widgetInstalled),
-      note: "Widget installed + test enquiry",
+      note: "Widget installed + lead captured",
     },
     {
       key: "paid",
@@ -168,8 +170,8 @@ function trialAgeDays(c: ClinicRecord, now: number): number {
 // Action Required). Each clinic falls into at most one bucket; the conditions
 // are mutually exclusive by construction:
 //   CRITICAL   — trial older than 7 days AND widget not installed
-//   WARNING    — widget installed AND no test enquiry
-//   ATTENTION  — activated (widget + test enquiry) AND no real enquiries received
+//   WARNING    — widget installed AND no captured leads at all
+//   ATTENTION  — widget installed + a lead captured AND no real enquiries received
 export function computeAtRiskTrials(
   clinics: ClinicRecord[],
   now: number,
@@ -186,9 +188,9 @@ export function computeAtRiskTrials(
     let status: RiskLevel | null = null;
     if (!installed && ageDays > TRIAL_RISK_AGE_DAYS) {
       status = "critical";
-    } else if (installed && c.testEnquiries === 0) {
+    } else if (installed && c.totalEnquiries === 0) {
       status = "warning";
-    } else if (installed && c.testEnquiries > 0 && c.realEnquiries === 0) {
+    } else if (installed && c.totalEnquiries > 0 && c.realEnquiries === 0) {
       status = "attention";
     }
 

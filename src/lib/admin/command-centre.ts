@@ -212,10 +212,58 @@ export function assembleClinics(input: {
     clientSites.sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
-    const site = clientSites[0] || null;
-    const siteTokens = site ? tokensBySite.get(site.id) || [] : [];
+    const site = clientSites[0] || null; // newest — used for display fields
+
+    // A client can own MORE THAN ONE onboarding_site (e.g. an initial
+    // `test.leadclaw.uk` fallback site from provisioning plus the real-domain
+    // site). The widget token, its last_seen_at, the clinic_id, and captured
+    // enquiries can live on ANY of those sibling sites — not just the newest.
+    // Deriving widget/enquiry status from only the newest site produced false
+    // "widget not installed" / "test lead not completed" / "broken account"
+    // warnings. Aggregate across ALL of the client's sites instead.
+    const siteTokens = clientSites.flatMap((s) => tokensBySite.get(s.id) || []);
     const activeToken = siteTokens.find((t) => t.status === "active") || null;
-    const seenToken = siteTokens.find((t) => t.last_seen_at) || activeToken;
+    const seenToken =
+      siteTokens
+        .filter((t) => t.last_seen_at)
+        .sort(
+          (a, b) =>
+            new Date(b.last_seen_at as string).getTime() -
+            new Date(a.last_seen_at as string).getTime(),
+        )[0] || activeToken;
+
+    // Primary clinic_id: prefer the newest site that has one, else any sibling
+    // site that carries the clinic linkage.
+    const clinicId =
+      site?.clinic_id || clientSites.find((s) => s.clinic_id)?.clinic_id || null;
+
+    // Merge enquiry aggregates across every clinic_id linked to this client's
+    // sites, so leads captured against a sibling site are counted.
+    const clinicIds = Array.from(
+      new Set(
+        clientSites
+          .map((s) => s.clinic_id)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    );
+    let totalEnquiries = 0;
+    let realEnquiries = 0;
+    let testEnquiries = 0;
+    let lastRealEnquiryAt: string | null = null;
+    for (const cid of clinicIds) {
+      const agg = enqByClinic.get(cid);
+      if (!agg) continue;
+      totalEnquiries += agg.total;
+      realEnquiries += agg.real;
+      testEnquiries += agg.test;
+      if (
+        agg.lastRealAt &&
+        (!lastRealEnquiryAt ||
+          new Date(agg.lastRealAt) > new Date(lastRealEnquiryAt))
+      ) {
+        lastRealEnquiryAt = agg.lastRealAt;
+      }
+    }
 
     const email = client.contact_email;
     const sub = email ? latestSubByEmail.get(lower(email)) || null : null;
@@ -229,7 +277,6 @@ export function assembleClinics(input: {
       Boolean(settings.enquiryEmail) ||
       Boolean(settings.notifications);
 
-    const enq = site?.clinic_id ? enqByClinic.get(site.clinic_id) : undefined;
     const name = client.business_name || client.client_name;
 
     return {
@@ -240,7 +287,7 @@ export function assembleClinics(input: {
       platform: site?.platform || null,
       onboardingStatus: client.status,
       settingsCompleted,
-      clinicId: site?.clinic_id || null,
+      clinicId,
       hasSite: Boolean(site),
       widgetTokenActive: Boolean(activeToken),
       widgetLastSeenAt: seenToken?.last_seen_at || null,
@@ -249,10 +296,10 @@ export function assembleClinics(input: {
       subscriptionPlan: sub?.plan || null,
       trialEnd: sub?.trial_end || null,
       subscriptionUpdatedAt: sub?.updated_at || null,
-      totalEnquiries: enq?.total || 0,
-      realEnquiries: enq?.real || 0,
-      testEnquiries: enq?.test || 0,
-      lastRealEnquiryAt: enq?.lastRealAt || null,
+      totalEnquiries,
+      realEnquiries,
+      testEnquiries,
+      lastRealEnquiryAt,
       notificationsConfigured,
       isDemo: isDemoClinic({ name, email, domain: site?.domain }),
       createdAt: client.created_at,
@@ -318,7 +365,9 @@ export function onboardingProgress(c: ClinicRecord): {
     },
     {
       label: "Test Lead Received",
-      done: c.testEnquiries > 0,
+      // Any captured lead (test OR real) proves the widget capture loop works;
+      // not only the canonical "LeadClaw Test Enquiry" marker.
+      done: c.totalEnquiries > 0,
       action: "Send a test enquiry",
     },
     {
@@ -383,7 +432,8 @@ export function computeActionRequired(
     const widgetInstalled = Boolean(c.widgetLastSeenAt) || c.widgetTokenActive;
 
     if (!widgetInstalled) widgetNotInstalled.push(item);
-    else if (c.testEnquiries === 0) testLeadNotCompleted.push(item);
+    // Any captured lead (test OR real) satisfies the verification milestone.
+    else if (c.totalEnquiries === 0) testLeadNotCompleted.push(item);
 
     if (lower(c.subscriptionStatus) === "trialing" && c.trialEnd) {
       const days = (new Date(c.trialEnd).getTime() - now) / DAY_MS;
