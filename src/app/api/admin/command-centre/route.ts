@@ -18,6 +18,10 @@ import {
   type RawEnquiry,
   type RawLead,
 } from "@/lib/admin/command-centre";
+import {
+  computeGrowthFunnel,
+  computeAtRiskTrials,
+} from "@/lib/admin/growth-funnel";
 
 export const runtime = "nodejs";
 
@@ -99,6 +103,16 @@ export async function GET() {
       enquiries,
     });
 
+    // Growth Funnel — Visitors source.
+    // PostHog events are captured client-side (src/lib/analytics.ts /
+    // src/components/posthog-provider.tsx); there is no server-side PostHog read
+    // wired up yet, so Visitors is null and the UI shows a placeholder.
+    // INTEGRATION POINT: add a PostHog Query API read here (count page_view /
+    // social_page_view over the chosen window) and pass the result as the second
+    // argument to computeGrowthFunnel — the funnel and the Visitors→Trials
+    // conversion then populate with no further changes.
+    const visitors: number | null = null;
+
     const clinicViews = clinics.map((c) => {
       const health = classifyHealth(c, now);
       const progress = onboardingProgress(c);
@@ -134,6 +148,8 @@ export async function GET() {
     return NextResponse.json({
       ok: true,
       generatedAt: new Date(now).toISOString(),
+      growthFunnel: computeGrowthFunnel(clinics, visitors),
+      atRisk: computeAtRiskTrials(clinics, now),
       actionRequired: computeActionRequired(clinics, now),
       founderMetrics: computeFounderMetrics(clinics, leads, enquiries, now),
       thisWeek: computeThisWeek(clinics, leads, enquiries, now),

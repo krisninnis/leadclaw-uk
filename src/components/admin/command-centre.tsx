@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from "react";
 
 type ActionItem = { id: string; name: string };
 type HealthStatus = "healthy" | "attention" | "critical";
+type RiskLevel = "critical" | "warning" | "attention";
 
 type ClinicView = {
   id: string;
@@ -37,9 +38,35 @@ type ClinicView = {
   timeline: { label: string; at: string }[];
 };
 
+type FunnelStageView = {
+  key: string;
+  label: string;
+  count: number | null;
+  conversionFromPrevPct: number | null;
+  note?: string;
+};
+
+type AtRiskItem = {
+  id: string;
+  name: string;
+  trialAgeDays: number;
+  status: RiskLevel;
+  action: string;
+};
+
 type Payload = {
   ok: boolean;
   generatedAt: string;
+  growthFunnel: {
+    visitorsAvailable: boolean;
+    stages: FunnelStageView[];
+  };
+  atRisk: {
+    critical: AtRiskItem[];
+    warning: AtRiskItem[];
+    attention: AtRiskItem[];
+    all: AtRiskItem[];
+  };
   actionRequired: {
     widgetNotInstalled: ActionItem[];
     testLeadNotCompleted: ActionItem[];
@@ -143,6 +170,118 @@ function Metric({
       <p className="mt-1 text-2xl font-semibold text-foreground">{value}</p>
       {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
     </div>
+  );
+}
+
+// ---- Growth Funnel ---------------------------------------------------------
+
+function FunnelStageCard({ stage, index }: { stage: FunnelStageView; index: number }) {
+  const isPlaceholder = stage.count === null;
+  return (
+    <div className="flex items-stretch gap-2">
+      {index > 0 ? (
+        <div className="flex flex-col items-center justify-center px-1 text-xs text-slate-400">
+          <span aria-hidden>→</span>
+          <span className="mt-1 whitespace-nowrap font-medium text-slate-500">
+            {stage.conversionFromPrevPct === null
+              ? "—"
+              : `${stage.conversionFromPrevPct}%`}
+          </span>
+        </div>
+      ) : null}
+      <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <p className="text-sm text-slate-500">{stage.label}</p>
+        <p className="mt-1 text-2xl font-semibold text-foreground">
+          {isPlaceholder ? "—" : stage.count?.toLocaleString("en-GB")}
+        </p>
+        {stage.note ? <p className="mt-1 text-xs text-slate-500">{stage.note}</p> : null}
+      </div>
+    </div>
+  );
+}
+
+function GrowthFunnelSection({
+  funnel,
+}: {
+  funnel: Payload["growthFunnel"];
+}) {
+  return (
+    <Section
+      title="Growth Funnel"
+      subtitle="Visitors → Trials → Installed → Activated → Paid, with stage-to-stage conversion."
+    >
+      <div className="grid gap-2 lg:grid-cols-5">
+        {funnel.stages.map((s, i) => (
+          <FunnelStageCard key={s.key} stage={s} index={i} />
+        ))}
+      </div>
+      {!funnel.visitorsAvailable ? (
+        <p className="mt-3 text-xs text-slate-500">
+          Visitors is a placeholder — PostHog events are captured client-side and no
+          server-side read is wired up yet. Integration point documented in
+          <span className="font-mono"> src/lib/admin/growth-funnel.ts</span> and the API
+          route.
+        </p>
+      ) : null}
+    </Section>
+  );
+}
+
+// ---- At Risk Trials --------------------------------------------------------
+
+const RISK_META: Record<RiskLevel, { label: string; cls: string }> = {
+  critical: { label: "🔴 Critical", cls: "bg-rose-100 text-rose-700" },
+  warning: { label: "🟠 Warning", cls: "bg-amber-100 text-amber-700" },
+  attention: { label: "🟡 Attention", cls: "bg-yellow-100 text-yellow-700" },
+};
+
+function AtRiskSection({ atRisk }: { atRisk: Payload["atRisk"] }) {
+  const total = atRisk.all.length;
+  const subtitle = `${atRisk.critical.length} critical · ${atRisk.warning.length} warning · ${atRisk.attention.length} attention`;
+  return (
+    <Section
+      title={`At Risk Trials${total > 0 ? ` (${total})` : ""}`}
+      subtitle={subtitle}
+      accent={atRisk.critical.length > 0 ? "danger" : undefined}
+    >
+      {total === 0 ? (
+        <p className="text-sm text-muted">No trials are currently at risk.</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500">
+                <th className="py-2 pr-4 font-medium">Clinic</th>
+                <th className="py-2 pr-4 font-medium">Trial age</th>
+                <th className="py-2 pr-4 font-medium">Status</th>
+                <th className="py-2 font-medium">Recommended next action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {atRisk.all.map((r) => {
+                const meta = RISK_META[r.status];
+                return (
+                  <tr key={r.id} className="border-b border-slate-100 align-top">
+                    <td className="py-2 pr-4 font-medium text-slate-900">{r.name}</td>
+                    <td className="py-2 pr-4 text-slate-600 whitespace-nowrap">
+                      {r.trialAgeDays} day{r.trialAgeDays === 1 ? "" : "s"}
+                    </td>
+                    <td className="py-2 pr-4">
+                      <span
+                        className={`whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${meta.cls}`}
+                      >
+                        {meta.label}
+                      </span>
+                    </td>
+                    <td className="py-2 text-slate-600">{r.action}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Section>
   );
 }
 
@@ -366,6 +505,12 @@ export default function CommandCentre() {
 
   return (
     <div className="space-y-6">
+      {/* Founder Funnel Dashboard — Growth Funnel */}
+      <GrowthFunnelSection funnel={data.growthFunnel} />
+
+      {/* Founder Funnel Dashboard — At Risk Trials */}
+      <AtRiskSection atRisk={data.atRisk} />
+
       {/* PART 1 — Action Required */}
       <Section
         title={`🚨 Action Required${actionTotal > 0 ? ` (${actionTotal})` : ""}`}
