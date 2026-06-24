@@ -13,6 +13,7 @@ import OpsActivityLog from "@/components/ops-activity-log";
 import AdminSection from "@/components/admin-section";
 import CommandCentre from "@/components/admin/command-centre";
 import PilotRecruitment from "@/components/admin/pilot-recruitment";
+import SeoContentQueue from "@/components/admin/seo-content-queue";
 
 type AppRow = {
   id?: string;
@@ -422,6 +423,8 @@ export default async function AdminPage() {
       <CommandCentre />
 
       <PilotRecruitment />
+
+      <SeoContentQueue />
 
       <div className="rounded-[24px] border bg-white p-6 shadow-sm">
         <h2 className="mb-4 text-xl font-semibold text-foreground">
