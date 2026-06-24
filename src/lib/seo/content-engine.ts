@@ -126,23 +126,6 @@ const CTA_PILOT = "Apply for the missed-call recovery pilot";
 export const CONTENT_BACKLOG: ContentOpportunity[] = [
   // ===== Missed Calls (priority 1) =========================================
   op({
-    slug: "missed-call-recovery-software-uk",
-    title: "Missed Call Recovery Software for UK Businesses",
-    primaryKeyword: "missed call recovery software uk",
-    cluster: "missed-calls",
-    industry: "All",
-    funnelStage: "BOFU",
-    audience: "Owners of UK service businesses losing leads to unanswered calls",
-    pillar: true,
-    commercial: 10,
-    seo: 8,
-    productFit: 10,
-    whyItMatters:
-      "Commercial pillar for the whole missed-call cluster; captures bottom-funnel buyers comparing recovery tools.",
-    internalLinks: ["/seo/missed-call-recovery-uk", "/pricing", "/ai-receptionist-uk"],
-    recommendedCta: CTA_TRIAL,
-  }),
-  op({
     slug: "missed-call-recovery-for-plumbers-uk",
     title: "Missed Call Recovery for Plumbers",
     primaryKeyword: "missed call recovery for plumbers",

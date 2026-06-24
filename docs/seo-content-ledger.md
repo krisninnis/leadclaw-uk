@@ -30,9 +30,9 @@ Last audited: 2026-06-24.
 | --- | --- | --- | --- |
 | `ai-receptionist-pages.ts` (`/ai-receptionist-for-*-uk`) | 35 | BOFU | Deep per-industry coverage (trades, clinics, professional services). |
 | `seo-pages.ts` (`/seo/[slug]`) | 10 | BOFU | Clinic + dental landing pages. |
-| `seo-article-pages.ts` | 4 | MOFU/TOFU | The only true informational/cluster articles. |
+| `seo-article-pages.ts` | 5 | MOFU/TOFU | The only true informational/cluster articles. |
 | Standalone `/seo/*` + hubs | 3 | mixed | `missed-call-recovery-uk`, `best-ai-receptionist-uk`, `missed-call-statistics-uk`. |
-| **Total inventoried** | **52** | | |
+| **Total inventoried** | **53** | | |
 
 ### Existing informational / cluster pages (the thin layer)
 
@@ -43,6 +43,7 @@ Last audited: 2026-06-24.
 | How Much Does an Answering Service Cost (UK) | /how-much-does-an-answering-service-cost-uk | answering service cost uk | ai-receptionists | MOFU | published |
 | Missed Call Statistics UK | /missed-call-statistics-uk | missed call statistics uk | missed-calls | TOFU | published |
 | Missed Call Recovery UK (landing) | /seo/missed-call-recovery-uk | missed call recovery uk | missed-calls | BOFU | published |
+| Missed Call Recovery Software for UK Businesses | /missed-call-recovery-software-uk | missed call recovery software uk | missed-calls | BOFU | published (2026-06-24) |
 | AI Agent for Dental Clinics UK | /seo/ai-agent-for-dental-clinics-uk | ai agent dental clinics | dental | BOFU | published |
 | AI Agent for Aesthetic Clinics UK | /seo/ai-agent-for-aesthetic-clinics-uk | ai agent aesthetic clinics | aesthetic-clinics | BOFU | published |
 | Dental Missed Call Recovery UK | /seo/dental-missed-call-recovery-uk | dental missed call recovery | dental | BOFU | published |
@@ -119,16 +120,15 @@ articles and an internal-linking rule (see `getClusters()` in the engine). Examp
 
 | Rank | Title | URL (proposed) | Keyword | Cluster | Industry | Funnel | C/S/P | Total | Status |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | Missed Call Recovery Software for UK Businesses | /missed-call-recovery-software-uk | missed call recovery software uk | Missed Calls | All | BOFU | 10/8/10 | 28 | backlog |
-| 2 | Missed Call Recovery for Plumbers | /missed-call-recovery-for-plumbers-uk | missed call recovery for plumbers | Missed Calls | Plumbers | BOFU | 10/8/10 | 28 | backlog |
-| 3 | Missed Call Recovery for Dental Practices | /missed-call-recovery-for-dentists-uk | missed call recovery for dentists | Missed Calls | Dental | BOFU | 10/8/10 | 28 | backlog |
-| 4 | Missed Call Recovery for Electricians | /missed-call-recovery-for-electricians-uk | missed call recovery for electricians | Missed Calls | Electricians | BOFU | 10/7/10 | 27 | backlog |
-| 5 | Missed Call Recovery for Roofers | /missed-call-recovery-for-roofers-uk | missed call recovery for roofers | Missed Calls | Roofers | BOFU | 10/7/10 | 27 | backlog |
-| 6 | AI Receptionist Cost in the UK | /ai-receptionist-cost-uk | ai receptionist cost uk | AI Receptionists | All | MOFU | 9/9/9 | 27 | backlog |
-| 7 | Missed Call Text-Back: A Practical Guide | /missed-call-text-back-guide-uk | missed call text back | Missed Calls | All | MOFU | 9/8/10 | 27 | backlog |
-| 8 | How Tradespeople Can Stop Losing Jobs to Missed Calls | /how-tradespeople-stop-losing-jobs-to-missed-calls | tradespeople missed calls | Trades | Trades | MOFU | 9/7/10 | 26 | backlog |
-| 9 | Missed Calls at Dental Practices | /missed-calls-at-dental-practices | missed calls dental practice | Dental | Dental | MOFU | 9/7/10 | 26 | backlog |
-| 10 | Missed Call Recovery for Aesthetic Clinics | /missed-call-recovery-for-aesthetic-clinics-uk | missed call recovery aesthetic clinic | Missed Calls | Aesthetic clinics | BOFU | 9/7/10 | 26 | backlog |
+| 1 | Missed Call Recovery for Plumbers | /missed-call-recovery-for-plumbers-uk | missed call recovery for plumbers | Missed Calls | Plumbers | BOFU | 10/8/10 | 28 | backlog |
+| 2 | Missed Call Recovery for Dental Practices | /missed-call-recovery-for-dentists-uk | missed call recovery for dentists | Missed Calls | Dental | BOFU | 10/8/10 | 28 | backlog |
+| 3 | Missed Call Recovery for Electricians | /missed-call-recovery-for-electricians-uk | missed call recovery for electricians | Missed Calls | Electricians | BOFU | 10/7/10 | 27 | backlog |
+| 4 | Missed Call Recovery for Roofers | /missed-call-recovery-for-roofers-uk | missed call recovery for roofers | Missed Calls | Roofers | BOFU | 10/7/10 | 27 | backlog |
+| 5 | AI Receptionist Cost in the UK | /ai-receptionist-cost-uk | ai receptionist cost uk | AI Receptionists | All | MOFU | 9/9/9 | 27 | backlog |
+| 6 | Missed Call Text-Back: A Practical Guide | /missed-call-text-back-guide-uk | missed call text back | Missed Calls | All | MOFU | 9/8/10 | 27 | backlog |
+| 7 | How Tradespeople Can Stop Losing Jobs to Missed Calls | /how-tradespeople-stop-losing-jobs-to-missed-calls | tradespeople missed calls | Trades | Trades | MOFU | 9/7/10 | 26 | backlog |
+| 8 | Missed Calls at Dental Practices | /missed-calls-at-dental-practices | missed calls dental practice | Dental | Dental | MOFU | 9/7/10 | 26 | backlog |
+| 9 | Missed Call Recovery for Aesthetic Clinics | /missed-call-recovery-for-aesthetic-clinics-uk | missed call recovery aesthetic clinic | Missed Calls | Aesthetic clinics | BOFU | 9/7/10 | 26 | backlog |
 | … | _(42 more — see Command Centre → SEO Content Queue)_ | | | | | | | | |
 
 The full 52-opportunity backlog (≥50 required) lives in `CONTENT_BACKLOG`. The complete,
