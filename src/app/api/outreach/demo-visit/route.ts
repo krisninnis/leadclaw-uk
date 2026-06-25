@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendFounderAlertEmail } from "@/lib/email";
+import { sendLeadNotificationEmail } from "@/lib/communications";
 
 const schema = z.object({
   source: z.string().trim().optional(),
@@ -140,7 +140,10 @@ export async function POST(req: Request) {
       }
 
       if (nextStatus === "hot_demo") {
-        await sendFounderAlertEmail({
+        // Internal founder alert routed through the provider-agnostic
+        // communications layer (email provider + communication_events log).
+        // Behaviour-preserving: the same alert email is still delivered.
+        await sendLeadNotificationEmail({
           title: "LeadClaw Alert: Hot Demo Lead",
           lines: [
             { label: "Clinic", value: clinicName || "Unknown clinic" },
@@ -154,6 +157,10 @@ export async function POST(req: Request) {
             { name: "event", value: "hot_demo" },
             { name: "lead_id", value: leadId },
           ],
+          context: {
+            leadId,
+            metadata: { event: "hot_demo", source: source || "unknown" },
+          },
         });
       }
     }
