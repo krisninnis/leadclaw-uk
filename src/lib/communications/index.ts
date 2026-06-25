@@ -18,6 +18,7 @@ import {
 import { recordCommunicationEvent } from "./events";
 import { MockProvider } from "./providers/mock";
 import { ResendEmailProvider } from "./providers/resend";
+import { TwilioSmsProvider } from "./providers/twilio";
 import type {
   EmailProvider,
   SmsProvider,
@@ -46,12 +47,14 @@ export {
 } from "./events";
 export { MockProvider } from "./providers/mock";
 export { ResendEmailProvider } from "./providers/resend";
+export { TwilioSmsProvider } from "./providers/twilio";
 
 // --- Provider factories ----------------------------------------------------
 // Cached singletons; reset via __resetCommunicationsProviders() in tests.
 
 let emailProvider: EmailProvider | null = null;
 let mockProvider: MockProvider | null = null;
+let twilioSmsProvider: TwilioSmsProvider | null = null;
 
 function getMockProvider(): MockProvider {
   if (!mockProvider) mockProvider = new MockProvider();
@@ -67,12 +70,16 @@ export function getEmailProvider(): EmailProvider {
   return emailProvider;
 }
 
-/** Returns the SMS provider, or null when none is configured (Phase 1). */
+/** Returns the SMS provider, or null when none is configured. */
 function getSmsProvider(): SmsProvider | null {
   const name = getSmsProviderName();
   if (name === "none") return null;
   if (name === "mock") return getMockProvider();
-  // twilio / telnyx / vonage / plivo adapters arrive in Phase 2.
+  if (name === "twilio") {
+    if (!twilioSmsProvider) twilioSmsProvider = new TwilioSmsProvider();
+    return twilioSmsProvider;
+  }
+  // telnyx / vonage / plivo adapters arrive in a later phase.
   return null;
 }
 
@@ -90,6 +97,7 @@ export function __resetCommunicationsProviders(): void {
   emailProvider = null;
   mockProvider?.reset();
   mockProvider = null;
+  twilioSmsProvider = null;
 }
 
 // --- Internal email rendering ---------------------------------------------
