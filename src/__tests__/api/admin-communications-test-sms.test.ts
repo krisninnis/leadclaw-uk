@@ -157,8 +157,9 @@ describe("POST /api/admin/communications/test-sms", () => {
     process.env.COMMUNICATIONS_SMS_PROVIDER = "mock";
     const { client, builder } = makeEventClient("evt_mock_1");
     const fetchSpy = mockFetchOnce(() => ({ ok: true, status: 201, body: {} }));
+    const rawMessage = "LeadClaw raw mock SMS body must not be stored";
 
-    const res = await POST(request({ to: "07700 900123" }));
+    const res = await POST(request({ to: "07700 900123", message: rawMessage }));
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -181,11 +182,15 @@ describe("POST /api/admin/communications/test-sms", () => {
       provider: "mock",
       status: "sent",
       to_address: "***0123",
+      body_preview: "[mock sms body redacted]",
+      provider_message_id: "mock-sms-1",
       metadata: {
         source: "admin_sms_test",
         requestedBy: "admin-1",
       },
     });
+    expect(insertCalls[0][0].body_preview).not.toBe(rawMessage);
+    expect(String(insertCalls[0][0].body_preview)).not.toContain(rawMessage);
   });
 
   it("routes through Twilio when configured, with network mocked", async () => {

@@ -251,6 +251,12 @@ export async function sendSms(input: SendSmsInput): Promise<CommunicationResult>
     from: input.from ?? getDefaultFromSms(),
   });
 
+  // Mock sends prove the communications path without delivering a real SMS.
+  // Persist a clear test marker, not the caller-supplied body, so test/demo
+  // messages are never stored raw in communication_events.
+  const bodyPreview =
+    result.provider === "mock" ? "[mock sms body redacted]" : input.body;
+
   const eventId = await recordCommunicationEvent({
     channel: "sms",
     direction: "outbound",
@@ -258,7 +264,7 @@ export async function sendSms(input: SendSmsInput): Promise<CommunicationResult>
     status: result.ok ? "sent" : "failed",
     toAddress: input.to,
     fromAddress: input.from ?? getDefaultFromSms() ?? null,
-    bodyPreview: input.body,
+    bodyPreview,
     providerMessageId: result.ok ? result.providerMessageId : null,
     errorMessage: result.ok ? null : result.detail ?? result.error,
     leadId: input.context?.leadId ?? null,
