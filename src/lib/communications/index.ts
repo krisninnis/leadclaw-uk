@@ -251,7 +251,7 @@ export async function sendSms(input: SendSmsInput): Promise<CommunicationResult>
     from: input.from ?? getDefaultFromSms(),
   });
 
-  await recordCommunicationEvent({
+  const eventId = await recordCommunicationEvent({
     channel: "sms",
     direction: "outbound",
     provider: result.provider,
@@ -266,6 +266,13 @@ export async function sendSms(input: SendSmsInput): Promise<CommunicationResult>
     enquiryId: input.context?.enquiryId ?? null,
     metadata: input.context?.metadata,
   });
+
+  if (result.ok) {
+    return {
+      ...result,
+      eventId,
+    };
+  }
 
   return result;
 }
