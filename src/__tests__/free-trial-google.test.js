@@ -54,6 +54,8 @@ describe("free trial Google sign-in", () => {
       screen.getByRole("button", { name: /continue with google/i }),
     );
 
+    // No user-entered details -> we must NOT create a junk empty intake row,
+    // but OAuth still has to launch so the user can sign in.
     expect(props.saveIntakeToBackend).not.toHaveBeenCalled();
     expect(props.supabase.auth.signInWithOAuth).toHaveBeenCalledTimes(1);
 
@@ -64,6 +66,27 @@ describe("free trial Google sign-in", () => {
     expect(decodeURIComponent(oauthRequest.options.redirectTo)).toContain(
       "/api/auth/callback?next=/portal?startTrial=1&trial=started&setup=ready&plan=growth",
     );
+  });
+
+  it("posts the intake before OAuth when the user has entered details", async () => {
+    const props = renderSignupForm();
+
+    // A single user-entered field is enough to make the intake worth saving
+    // before the redirect (which would otherwise lose the typed details).
+    await userEvent.type(
+      screen.getByPlaceholderText(/business or workspace name/i),
+      "Bright Dental",
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /continue with google/i }),
+    );
+
+    expect(props.saveIntakeToBackend).toHaveBeenCalledTimes(1);
+    const savedIntake = props.saveIntakeToBackend.mock.calls[0][0];
+    expect(savedIntake).toMatchObject({ clinicName: "Bright Dental" });
+
+    expect(props.supabase.auth.signInWithOAuth).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the Google button out of the password form submit path", () => {

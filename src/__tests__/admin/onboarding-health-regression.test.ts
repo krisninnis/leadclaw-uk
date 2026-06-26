@@ -139,7 +139,7 @@ describe("multi-site join: token + enquiries live on an older sibling site", () 
   it("marks onboarding widget + test-lead steps complete", () => {
     const p = onboardingProgress(c);
     const byLabel = Object.fromEntries(p.steps.map((s) => [s.label, s.done]));
-    expect(byLabel["Widget Installed"]).toBe(true);
+    expect(byLabel["Widget Token Issued"]).toBe(true);
     expect(byLabel["Test Lead Received"]).toBe(true);
   });
 });

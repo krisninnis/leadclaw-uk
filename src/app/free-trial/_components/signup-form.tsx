@@ -60,6 +60,15 @@ export default function SignupForm({
     };
   }
 
+  // True only when the user has actually typed something worth keeping. Email is
+  // intentionally excluded: Google supplies the email after OAuth, so an intake
+  // with only an email (or nothing at all) is not worth a pre-redirect backend row.
+  function hasEnteredIntakeContent(): boolean {
+    return [clinicName, website, contactName, phone, city].some(
+      (value) => value.trim() !== "",
+    );
+  }
+
   async function signInWithGoogle() {
     setGoogleLoading(true);
     setStatus("");
@@ -72,7 +81,12 @@ export default function SignupForm({
 
       const intake = buildIntake(collectIntakeInput());
       saveTrialIntake(intake);
-      await saveIntakeToBackend(intake);
+      // Only persist to the backend before the OAuth redirect when the user has
+      // entered real details. An all-empty intake would just create a junk row,
+      // so we skip the backend save and let OAuth proceed unchanged.
+      if (hasEnteredIntakeContent()) {
+        await saveIntakeToBackend(intake);
+      }
       const next = buildNextUrl();
       trackGaEvent(
         "signup_started",
