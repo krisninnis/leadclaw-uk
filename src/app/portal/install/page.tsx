@@ -5,10 +5,7 @@ import { buildWidgetSnippet } from "@/lib/onboarding";
 import InstallSnippetCard from "@/components/install-snippet-card";
 import InstallStatusActions from "@/components/install-status-actions";
 import { SectionHeading } from "@/components/ui";
-import {
-  canUseLeadClawProduct,
-  hasFullLeadClawAccess,
-} from "@/lib/subscription-access";
+import { canUseLeadClawProduct } from "@/lib/subscription-access";
 
 type SubscriptionPlanStatusRow = {
   status: string | null;
@@ -178,12 +175,6 @@ export default async function PortalInstallPage() {
     : "";
   const snippetReady = widgetSnippet.trim().length > 0;
   const widgetDetected = Boolean(portalContext?.widgetLastSeenAt);
-  const lastSeenMs = portalContext?.widgetLastSeenAt
-    ? new Date(portalContext.widgetLastSeenAt).getTime()
-    : 0;
-  const widgetDetectedRecently =
-    lastSeenMs > 0 && Date.now() - lastSeenMs < 15 * 60 * 1000;
-
   const widgetStatus = !hasWidgetAccess
     ? "Paused"
     : widgetDetected
@@ -244,11 +235,7 @@ export default async function PortalInstallPage() {
           <div className="rounded-[22px] border border-border bg-white p-5">
             <p className="text-sm font-medium text-muted">Widget detection</p>
             <p className="mt-2 text-base font-semibold text-foreground">
-              {widgetDetectedRecently
-                ? "Detected recently"
-                : widgetDetected
-                  ? "Detected earlier"
-                  : "Not detected yet"}
+              {widgetDetected ? "Detected" : "Not detected yet"}
             </p>
             <p className="mt-2 text-sm text-muted">
               Last seen:{" "}

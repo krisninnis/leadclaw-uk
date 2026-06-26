@@ -107,10 +107,10 @@ export function computeGrowthFunnel(
     },
     {
       key: "installed",
-      label: "Widget Installed",
+      label: "Widget Token Issued",
       count: widgetInstalled,
       conversionFromPrevPct: conversion(widgetInstalled, trialsStarted),
-      note: "Widget verified / last seen",
+      note: "Active token issued or widget detected",
     },
     {
       key: "activated",
@@ -154,7 +154,7 @@ const RISK_ACTIONS: Record<RiskLevel, string> = {
   critical:
     "Trial >7 days with widget not installed — reach out and help them install the snippet.",
   warning:
-    "Widget installed but unverified — ask them to send a test enquiry to confirm capture.",
+    "Widget token issued but not detected — ask them to install the snippet, then send a test enquiry.",
   attention:
     "Activated but no real enquiries yet — review widget placement and site traffic.",
 };

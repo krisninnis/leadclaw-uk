@@ -359,7 +359,7 @@ export function onboardingProgress(c: ClinicRecord): {
       action: "Add the clinic website",
     },
     {
-      label: "Widget Installed",
+      label: "Widget Token Issued",
       done: Boolean(c.widgetLastSeenAt) || c.widgetTokenActive,
       action: "Install the widget snippet",
     },
